@@ -1,0 +1,48 @@
+# Alibaba Cloud Serverless Devs (s.yaml) descriptor for MemoPilot IQ.
+# Deploys the FastAPI backend to Alibaba Cloud Function Compute (FC3.0)
+# behind an HTTP trigger. Run with: `s deploy` (after `npm i -g @serverless-devs/s`).
+#
+# Secrets (QWEN_API_KEY, ALIBABA_* keys) must be provided via environment
+# variables in the Function Compute console or a CI secret store — never commit them.
+edition: 3.0.0
+name: memopilot-iq
+access: default
+
+vars:
+  region: ${env(ALIBABA_REGION)}
+
+resources:
+  memopilot-backend:
+    component: fc3
+    props:
+      region: ${vars.region}
+      functionName: memopilot-iq-backend
+      runtime: custom.debian10
+      cpu: 0.5
+      memorySize: 1024
+      timeout: 60
+      instanceConcurrency: 5
+      environmentVariables:
+        APP_MODE: alibaba
+        MEMORY_STORE: alibaba
+        QWEN_BASE_URL: https://dashscope-intl.aliyuncs.com/compatible-mode/v1
+        QWEN_CHAT_MODEL: qwen-plus
+        QWEN_EMBEDDING_MODEL: text-embedding-v3
+        # QWEN_API_KEY / ALIBABA_* injected as encrypted env vars in the console.
+      customRuntimeConfig:
+        command:
+          - sh
+          - "-c"
+          - uvicorn app.main:app --host 0.0.0.0 --port 9000
+        port: 9000
+      code: ./
+      triggers:
+        - triggerName: http
+          triggerType: http
+          triggerConfig:
+            authType: anonymous
+            methods:
+              - GET
+              - POST
+              - PATCH
+              - DELETE

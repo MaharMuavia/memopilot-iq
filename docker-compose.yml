@@ -1,0 +1,38 @@
+# One-command full stack for MemoPilot IQ.
+#   docker compose up --build
+# Then open http://localhost:5173 (frontend) — it proxies /api to the backend.
+#
+# Runs in LOCAL_MODE by default. To enable Qwen / Alibaba Cloud, create a
+# backend/.env (see .env.example) — it is loaded automatically below.
+services:
+  backend:
+    build: ./backend
+    container_name: memopilot-backend
+    ports:
+      - "8000:8000"
+    environment:
+      APP_MODE: local
+      MEMORY_STORE: sqlite
+      DATABASE_URL: sqlite:////data/memopilot.db
+      FRONTEND_ORIGIN: http://localhost:5173
+    env_file:
+      - path: ./backend/.env
+        required: false
+    volumes:
+      - memopilot-data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build: ./frontend
+    container_name: memopilot-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  memopilot-data:

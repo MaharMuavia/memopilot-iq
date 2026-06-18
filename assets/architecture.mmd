@@ -1,0 +1,27 @@
+flowchart TD
+    U[User] --> FE[React + Vite + Tailwind Frontend]
+    FE -->|REST /api| BE[FastAPI Backend]
+
+    subgraph MOS[MemoryOS — Memory Intelligence Layer]
+        EX[Memory Extractor]
+        CL[Memory Classifier]
+        SC[Memory Scorer]
+        RET[Hybrid Retriever]
+        CB[Context Budget Manager]
+        FE2[Forgetting Engine]
+        SUP[Contradiction / Supersession]
+        TR[Memory Trace Explainer]
+        EV[Evaluation Benchmark Runner]
+    end
+
+    BE --> MOS
+    EX --> QC[Qwen Cloud Chat API]
+    RET --> QE[Qwen Embedding API]
+    CB --> QC
+    QC --> RESP[Answer + Trace] --> FE
+
+    MOS -->|LOCAL_MODE| LS[(SQLite + Local Vectors)]
+    MOS -->|ALIBABA_CLOUD_MODE| TS[(Alibaba Tablestore)]
+    MOS --> OSS[(Alibaba OSS — logs / snapshots / eval reports)]
+
+    BE -.deployed on.-> ECS[Alibaba Cloud ECS / Function Compute / ACK]

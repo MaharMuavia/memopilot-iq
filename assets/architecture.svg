@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="620" viewBox="0 0 940 620" font-family="Inter, Segoe UI, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7f9fc"/>
+      <stop offset="1" stop-color="#eef2ff"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 z" fill="#64748b"/>
+    </marker>
+    <style>
+      .box{rx:14;ry:14;stroke-width:1.5;}
+      .t{font-size:13px;fill:#0f172a;}
+      .h{font-size:14px;font-weight:700;fill:#0f172a;}
+      .s{font-size:11px;fill:#475569;}
+      .edge{stroke:#64748b;stroke-width:1.5;fill:none;marker-end:url(#arrow);}
+      .dash{stroke-dasharray:5 4;}
+    </style>
+  </defs>
+
+  <rect width="940" height="620" fill="url(#bg)"/>
+  <text x="30" y="40" class="h" font-size="20">MemoPilot IQ — Architecture (Track 1: MemoryAgent)</text>
+
+  <!-- User -->
+  <rect x="40" y="80" width="150" height="56" rx="14" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="115" y="106" class="h" text-anchor="middle">User</text>
+  <text x="115" y="124" class="s" text-anchor="middle">developer / student</text>
+
+  <!-- Frontend -->
+  <rect x="40" y="180" width="150" height="70" rx="14" fill="#e0ecff" stroke="#93c5fd"/>
+  <text x="115" y="208" class="h" text-anchor="middle">Frontend</text>
+  <text x="115" y="226" class="s" text-anchor="middle">React + Vite + TS</text>
+  <text x="115" y="240" class="s" text-anchor="middle">Tailwind (light UI)</text>
+
+  <!-- Backend -->
+  <rect x="40" y="300" width="150" height="70" rx="14" fill="#dbeafe" stroke="#60a5fa"/>
+  <text x="115" y="328" class="h" text-anchor="middle">FastAPI</text>
+  <text x="115" y="346" class="s" text-anchor="middle">async REST /api</text>
+  <text x="115" y="360" class="s" text-anchor="middle">CORS · /health</text>
+
+  <!-- MemoryOS -->
+  <rect x="260" y="160" width="360" height="300" rx="16" fill="#ffffff" stroke="#a5b4fc"/>
+  <text x="440" y="186" class="h" text-anchor="middle" fill="#4338ca">MemoryOS — Memory Intelligence Layer</text>
+  <g>
+    <rect x="280" y="200" width="155" height="40" rx="10" fill="#eef2ff" stroke="#c7d2fe"/><text x="357" y="225" class="t" text-anchor="middle">Extractor + Classifier</text>
+    <rect x="445" y="200" width="155" height="40" rx="10" fill="#eef2ff" stroke="#c7d2fe"/><text x="522" y="225" class="t" text-anchor="middle">Scorer</text>
+    <rect x="280" y="250" width="155" height="40" rx="10" fill="#eef2ff" stroke="#c7d2fe"/><text x="357" y="275" class="t" text-anchor="middle">Hybrid Retriever</text>
+    <rect x="445" y="250" width="155" height="40" rx="10" fill="#eef2ff" stroke="#c7d2fe"/><text x="522" y="275" class="t" text-anchor="middle">Context Budget</text>
+    <rect x="280" y="300" width="155" height="40" rx="10" fill="#eef2ff" stroke="#c7d2fe"/><text x="357" y="325" class="t" text-anchor="middle">Forgetting Engine</text>
+    <rect x="445" y="300" width="155" height="40" rx="10" fill="#eef2ff" stroke="#c7d2fe"/><text x="522" y="325" class="t" text-anchor="middle">Supersession</text>
+    <rect x="280" y="350" width="155" height="40" rx="10" fill="#eef2ff" stroke="#c7d2fe"/><text x="357" y="375" class="t" text-anchor="middle">Trace Explainer</text>
+    <rect x="445" y="350" width="155" height="40" rx="10" fill="#eef2ff" stroke="#c7d2fe"/><text x="522" y="375" class="t" text-anchor="middle">Eval Benchmark</text>
+    <rect x="280" y="400" width="320" height="40" rx="10" fill="#f1f5f9" stroke="#cbd5e1"/><text x="440" y="425" class="t" text-anchor="middle">User Memory Controls — pin · archive · forget · export</text>
+  </g>
+
+  <!-- Qwen Cloud -->
+  <rect x="690" y="180" width="210" height="80" rx="14" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="795" y="208" class="h" text-anchor="middle" fill="#c2410c">Qwen Cloud</text>
+  <text x="795" y="226" class="s" text-anchor="middle">Chat / reasoning (qwen-plus)</text>
+  <text x="795" y="240" class="s" text-anchor="middle">Memory extraction (JSON)</text>
+  <text x="795" y="254" class="s" text-anchor="middle">Embeddings (text-embedding-v3)</text>
+
+  <!-- Stores -->
+  <rect x="690" y="290" width="210" height="56" rx="14" fill="#fef3c7" stroke="#fcd34d"/>
+  <text x="795" y="314" class="h" text-anchor="middle" fill="#b45309">Alibaba Tablestore</text>
+  <text x="795" y="332" class="s" text-anchor="middle">persistent memory (or SQLite local)</text>
+
+  <rect x="690" y="360" width="210" height="56" rx="14" fill="#fef3c7" stroke="#fcd34d"/>
+  <text x="795" y="384" class="h" text-anchor="middle" fill="#b45309">Alibaba OSS</text>
+  <text x="795" y="402" class="s" text-anchor="middle">logs · snapshots · eval reports</text>
+
+  <!-- Deploy -->
+  <rect x="690" y="450" width="210" height="50" rx="14" fill="#ecfeff" stroke="#67e8f9"/>
+  <text x="795" y="472" class="h" text-anchor="middle" fill="#0e7490">Alibaba ECS / FC / ACK</text>
+  <text x="795" y="489" class="s" text-anchor="middle">backend deployment target</text>
+
+  <!-- edges -->
+  <line x1="115" y1="136" x2="115" y2="180" class="edge"/>
+  <line x1="115" y1="250" x2="115" y2="300" class="edge"/>
+  <line x1="190" y1="335" x2="260" y2="320" class="edge"/>
+  <line x1="620" y1="230" x2="690" y2="222" class="edge"/>
+  <line x1="620" y1="300" x2="690" y2="315" class="edge"/>
+  <line x1="620" y1="370" x2="690" y2="385" class="edge"/>
+  <line x1="190" y1="365" x2="690" y2="470" class="edge dash"/>
+
+  <text x="30" y="600" class="s">Response = answer + used_memories + memory_actions + trace + mode. Mode auto-resolves LOCAL ↔ ALIBABA_CLOUD with safe fallback.</text>
+</svg>

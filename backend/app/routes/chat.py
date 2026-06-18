@@ -1,0 +1,83 @@
+"""Chat endpoint — the core memory-augmented conversation loop.
+
+Flow for each request:
+  1. Build context from MemoryOS (retrieve + score + budget) -> system prompt + trace.
+  2. Call Qwen with the budgeted context.
+  3. Extract new memories from the user message (after answering).
+  4. Snapshot the turn to OSS (or local fallback).
+  5. Return answer + used memories + memory actions + trace + mode.
+"""
+from __future__ import annotations
+
+from fastapi import APIRouter, Request
+
+from ..models import ChatRequest, ChatResponse
+from ..utils.logging import get_logger
+
+router = APIRouter(prefix="/api", tags=["chat"])
+logger = get_logger("chat")
+
+
+@router.post("/chat", response_model=ChatResponse)
+async def chat(req: ChatRequest, request: Request) -> ChatResponse:
+    memos = request.app.state.memos
+    oss = request.app.state.oss
+
+    # 1 + 2: build budgeted context and answer.
+    system_prompt, trace, used = await memos.build_context(
+        req.user_id, req.project_id, req.message
+    )
+    answer = await memos.qwen.chat(
+        [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": req.message},
+        ]
+    )
+
+    # 3: extract + persist new memories from this user message.
+    actions = await memos.remember(
+        user_id=req.user_id,
+        project_id=req.project_id,
+        session_id=req.session_id,
+        message=req.message,
+    )
+
+    # 4: snapshot the turn (OSS in cloud mode, local file otherwise).
+    try:
+        oss.put_snapshot(
+            "turns",
+            {
+                "user_id": req.user_id,
+                "project_id": req.project_id,
+                "session_id": req.session_id,
+                "message": req.message,
+                "answer": answer,
+                "used_memory_ids": [m.memory_id for m in used],
+                "memory_actions": actions.model_dump(),
+            },
+        )
+    except Exception as exc:  # pragma: no cover - snapshot must never break chat
+        logger.warning("Snapshot failed: %s", exc)
+
+    # Persist the latest trace per session so GET /api/trace/{session_id} works.
+    traces = getattr(request.app.state, "last_traces", None)
+    if traces is None:
+        traces = {}
+        request.app.state.last_traces = traces
+    traces[req.session_id] = {
+        "session_id": req.session_id,
+        "user_id": req.user_id,
+        "project_id": req.project_id,
+        "query": req.message,
+        "answer": answer,
+        "trace": trace.model_dump(),
+        "memory_actions": actions.model_dump(),
+    }
+
+    return ChatResponse(
+        answer=answer,
+        used_memories=[m.public_view() for m in used],
+        memory_actions=actions,
+        trace=trace,
+        mode=memos.mode,
+    )

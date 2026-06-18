@@ -1,0 +1,209 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  api,
+  DEFAULT_PROJECT,
+  DEFAULT_USER,
+  type ChatResponse,
+  type HealthInfo,
+} from "../api";
+import { GITHUB_URL } from "../config";
+import { ChatPanel } from "../components/ChatPanel";
+import { MemoryTracePanel } from "../components/MemoryTracePanel";
+import { MemoryTimeline } from "../components/MemoryTimeline";
+import { MemoryControls } from "../components/MemoryControls";
+import { EvaluationDashboard } from "../components/EvaluationDashboard";
+import { JudgeDemoPanel } from "../components/JudgeDemoPanel";
+import { SettingsPanel } from "../components/SettingsPanel";
+import { MemoryGraph } from "../components/MemoryGraph";
+import { AnalyticsPanel } from "../components/AnalyticsPanel";
+import { ModeBadge } from "../components/StatusBadge";
+
+type Tab =
+  | "chat" | "trace" | "graph" | "timeline"
+  | "analytics" | "eval" | "controls" | "settings";
+
+const TABS: { id: Tab; label: string; icon: string }[] = [
+  { id: "chat", label: "Chat", icon: "💬" },
+  { id: "trace", label: "Memory Trace", icon: "🪞" },
+  { id: "graph", label: "Graph", icon: "🕸️" },
+  { id: "timeline", label: "Timeline", icon: "🕒" },
+  { id: "analytics", label: "Analytics", icon: "📈" },
+  { id: "eval", label: "Evaluation", icon: "📊" },
+  { id: "controls", label: "Controls", icon: "⚙️" },
+  { id: "settings", label: "Settings", icon: "🛠️" },
+];
+
+export default function DashboardPage() {
+  const [tab, setTab] = useState<Tab>("chat");
+  const [health, setHealth] = useState<HealthInfo | null>(null);
+  const [healthLoaded, setHealthLoaded] = useState(false);
+  const [last, setLast] = useState<ChatResponse | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const sessionId =
+    "session-" + new Date().toISOString().slice(11, 19).replace(/:/g, "");
+
+  useEffect(() => {
+    api
+      .health()
+      .then(setHealth)
+      .catch(() => setHealth(null))
+      .finally(() => setHealthLoaded(true));
+  }, []);
+
+  function onActivity(resp: ChatResponse) {
+    setLast(resp);
+    setRefreshKey((k) => k + 1);
+  }
+
+  return (
+    <div className="min-h-screen">
+      {/* Top bar */}
+      <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/80 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <Link
+              to="/"
+              className="text-xs text-slate-400 transition hover:text-brand-600"
+              title="Back to landing page"
+            >
+              ← Home
+            </Link>
+            <div className="h-4 w-px bg-slate-200" />
+            <div className="flex items-center gap-2">
+              <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand-600 text-sm font-bold text-white">
+                M
+              </span>
+              <div>
+                <h1 className="text-sm font-bold leading-tight text-slate-800">
+                  MemoPilot <span className="text-brand-600">IQ</span>
+                </h1>
+                <p className="text-[11px] leading-tight text-slate-400">
+                  {DEFAULT_PROJECT} · {sessionId}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadges health={health} healthLoaded={healthLoaded} />
+            <a
+              href={GITHUB_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-ghost py-1.5 text-xs"
+            >
+              GitHub
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <div className="mx-auto max-w-6xl px-4 py-6">
+        {/* Judge demo — the headline proof of MemoryOS */}
+        <JudgeDemoPanel onComplete={() => setRefreshKey((k) => k + 1)} />
+
+        {/* Tabs */}
+        <nav className="mb-5 flex flex-wrap gap-1.5">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`btn ${
+                tab === t.id
+                  ? "bg-brand-600 text-white shadow-glass"
+                  : "bg-white/70 text-slate-600 border border-slate-200 hover:bg-white"
+              }`}
+            >
+              <span className="mr-0.5">{t.icon}</span>
+              {t.label}
+            </button>
+          ))}
+        </nav>
+
+        <main>
+          {tab === "chat" && (
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="h-[72vh]">
+                <ChatPanel sessionId={sessionId} onActivity={onActivity} />
+              </div>
+              <div className="max-h-[72vh] overflow-y-auto">
+                <MemoryTracePanel last={last} />
+              </div>
+            </div>
+          )}
+          {tab === "trace" && <MemoryTracePanel last={last} />}
+          {tab === "graph" && <MemoryGraph refreshKey={refreshKey} />}
+          {tab === "timeline" && <MemoryTimeline refreshKey={refreshKey} />}
+          {tab === "analytics" && (
+            <AnalyticsPanel
+              refreshKey={refreshKey}
+              onChange={() => setRefreshKey((k) => k + 1)}
+            />
+          )}
+          {tab === "eval" && <EvaluationDashboard />}
+          {tab === "controls" && (
+            <MemoryControls
+              refreshKey={refreshKey}
+              onChange={() => setRefreshKey((k) => k + 1)}
+            />
+          )}
+          {tab === "settings" && (
+            <SettingsPanel health={health} sessionId={sessionId} />
+          )}
+        </main>
+
+        <footer className="mt-10 border-t border-slate-200/70 pt-4 text-center text-xs text-slate-400">
+          Qwen Cloud Global AI Hackathon · Track 1: MemoryAgent ·{" "}
+          {health ? `store: ${health.memory_store}` : "backend offline"}
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+function StatusBadges({
+  health,
+  healthLoaded,
+}: {
+  health: HealthInfo | null;
+  healthLoaded: boolean;
+}) {
+  if (!healthLoaded) {
+    return <span className="chip bg-slate-100 text-slate-500">connecting…</span>;
+  }
+  if (!health) {
+    return <span className="chip bg-rose-100 text-rose-700">backend offline</span>;
+  }
+  const cloud = health.memory_store.includes("alibaba");
+  return (
+    <>
+      <ModeBadge mode={health.mode} />
+      <span
+        className={`chip ${
+          health.qwen_configured
+            ? "bg-emerald-100 text-emerald-700"
+            : "bg-slate-200 text-slate-600"
+        }`}
+        title={
+          health.qwen_configured
+            ? `Qwen online · ${health.qwen_model}`
+            : "Qwen offline — deterministic local fallback"
+        }
+      >
+        <span
+          className={`h-1.5 w-1.5 rounded-full ${
+            health.qwen_configured ? "bg-emerald-500" : "bg-slate-400"
+          }`}
+        />
+        {health.qwen_configured ? "Qwen Online" : "Qwen Offline"}
+      </span>
+      <span
+        className={`chip ${cloud ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-700"}`}
+        title={`Memory store: ${health.memory_store}`}
+      >
+        {cloud ? "Alibaba Store" : "SQLite"}
+      </span>
+    </>
+  );
+}

@@ -1,0 +1,67 @@
+{
+  "description": "MemoPilot IQ evaluation scenarios. Each scenario seeds setup messages, then asks a test question. The benchmark compares a memory-augmented agent against a no-memory baseline.",
+  "scenarios": [
+    {
+      "id": "preference_recall",
+      "title": "Preference recall",
+      "setup_messages": [
+        "I prefer a FastAPI backend and a React + Vite frontend. I like short, practical answers."
+      ],
+      "test_question": "What backend framework should I use for my new service?",
+      "expected_answer_keywords": ["fastapi"],
+      "must_not_use_keywords": ["django", "flask", "express"]
+    },
+    {
+      "id": "cross_session_project_recall",
+      "title": "Cross-session project decision recall",
+      "setup_messages": [
+        "This project is for the Qwen Hackathon Track 1 MemoryAgent.",
+        "We will deploy the backend on Alibaba Cloud."
+      ],
+      "test_question": "Remind me what this project is and where we deploy it.",
+      "expected_answer_keywords": ["track 1", "alibaba"],
+      "must_not_use_keywords": ["azure", "heroku"]
+    },
+    {
+      "id": "contradiction_supersession",
+      "title": "Contradiction / supersession test",
+      "setup_messages": [
+        "Use React + Vite for the frontend.",
+        "Actually, I changed my mind. Use Next.js instead of React + Vite."
+      ],
+      "test_question": "What frontend stack should I use now?",
+      "expected_answer_keywords": ["next.js"],
+      "must_not_use_keywords": ["react + vite", "vite"]
+    },
+    {
+      "id": "expired_deadline",
+      "title": "Expired deadline test",
+      "setup_messages": [
+        "Temporary note: the staging server is down today only."
+      ],
+      "test_question": "Is the staging server still down?",
+      "expected_answer_keywords": [],
+      "must_not_use_keywords": ["down today only"]
+    },
+    {
+      "id": "critical_memory_recall",
+      "title": "Critical memory recall",
+      "setup_messages": [
+        "Never commit API keys to the repository. This is critical."
+      ],
+      "test_question": "Write me a quick deployment checklist.",
+      "expected_answer_keywords": ["api keys"],
+      "must_not_use_keywords": []
+    },
+    {
+      "id": "no_memory_vs_memory",
+      "title": "No-memory vs memory-agent comparison",
+      "setup_messages": [
+        "I prefer FastAPI, React + Vite, Alibaba Cloud, light UI, and short answers."
+      ],
+      "test_question": "Design the backend architecture for my project.",
+      "expected_answer_keywords": ["fastapi", "alibaba"],
+      "must_not_use_keywords": ["azure"]
+    }
+  ]
+}

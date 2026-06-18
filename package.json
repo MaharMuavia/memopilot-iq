@@ -1,0 +1,20 @@
+{
+  "name": "memopilot-iq",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MemoPilot IQ — a self-improving persistent-memory agent (Qwen Cloud Global AI Hackathon, Track 1: MemoryAgent).",
+  "license": "MIT",
+  "scripts": {
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm:dev:backend\" \"npm:dev:frontend\"",
+    "dev:backend": "cd backend && uvicorn app.main:app --reload --port 8000",
+    "dev:frontend": "cd frontend && npm run dev",
+    "seed": "cd backend && cross-env SEED_DEMO=1 uvicorn app.main:app --port 8000",
+    "test:backend": "cd backend && python -m pytest",
+    "build:frontend": "cd frontend && npm run build",
+    "install:all": "cd frontend && npm install && cd ../backend && pip install -r requirements.txt"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3"
+  }
+}
