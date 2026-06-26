@@ -1,0 +1,6 @@
+# Shell scripts must use LF endings or they fail on Linux (e.g. on Alibaba ECS)
+# with "bad interpreter: /bin/bash^M". Force LF regardless of the OS that commits.
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
