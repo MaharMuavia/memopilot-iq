@@ -240,19 +240,25 @@ The under-3-minute walkthrough is in [docs/demo_script.md](docs/demo_script.md).
 The Chat tab has four starter buttons that replay the 5-session demo.
 
 ## Evaluation results
-Run **Evaluation → Run benchmark** in the UI, or `POST /api/eval/run`. Example
-report shape (offline run; values improve with a live Qwen key):
+Run **Evaluation → Run benchmark** in the UI, or `POST /api/eval/run`.
+**Live run with `qwen3.7-max`** (full breakdown in
+[docs/evaluation_results.md](docs/evaluation_results.md)):
 
 ```json
 {
-  "memory_agent_accuracy": 0.90,
-  "baseline_no_memory_accuracy": 0.45,
-  "memory_recall_at_5": 0.88,
+  "memory_agent_accuracy": 1.00,
+  "baseline_no_memory_accuracy": 0.33,
+  "memory_recall_at_5": 1.00,
   "outdated_memory_errors": 0,
-  "token_savings_percent": 60,
-  "avg_retrieval_latency_ms": 120
+  "preference_adherence": 1.00,
+  "token_savings_percent": 97,
+  "avg_retrieval_latency_ms": 8.9
 }
 ```
+
+The memory agent triples task accuracy over the no-memory baseline (+0.67),
+with zero outdated-memory leaks. The four scenarios the baseline fails all
+require persistent state (cross-session recall, supersession).
 
 ## Judging criteria mapping
 See [docs/judging_mapping.md](docs/judging_mapping.md) for the full rubric and

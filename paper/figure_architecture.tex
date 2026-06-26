@@ -1,0 +1,98 @@
+% ---------------------------------------------------------------------------
+% MemoPilot IQ / MemoryOS architecture figure (TikZ).
+% Requires in the preamble:
+%   \usepackage{tikz}
+%   \usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc}
+% Use with \input{figure_architecture} inside the document body.
+% ---------------------------------------------------------------------------
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[
+  font=\small,
+  node distance=6mm and 9mm,
+  >={Stealth[length=2.4mm]},
+  stage/.style={
+    rectangle, rounded corners=2pt, draw=blue!55!black, line width=0.7pt,
+    fill=blue!6, minimum height=11mm, text width=20mm, align=center,
+    inner sep=2pt},
+  edge/.style={->, line width=0.8pt, draw=black!70},
+  dedge/.style={->, line width=0.7pt, draw=black!55, dashed},
+  io/.style={
+    rectangle, rounded corners=6pt, draw=black!60, line width=0.7pt,
+    fill=black!4, minimum height=11mm, text width=18mm, align=center},
+  llm/.style={
+    rectangle, rounded corners=2pt, draw=teal!60!black, line width=0.8pt,
+    fill=teal!10, minimum height=11mm, text width=20mm, align=center},
+  store/.style={
+    rectangle, draw=orange!70!black, line width=0.7pt, fill=orange!10,
+    minimum height=10mm, text width=24mm, align=center, inner sep=2pt},
+  forget/.style={
+    rectangle, rounded corners=2pt, draw=red!55!black, line width=0.8pt,
+    fill=red!7, minimum height=10mm, text width=24mm, align=center},
+  lbl/.style={font=\scriptsize\itshape, text=black!55},
+]
+
+% ---- Input ----
+\node[io] (user) {User\\message};
+
+% ---- MemoryOS pipeline (left to right) ----
+\node[stage, right=of user] (extract) {\textbf{Extract}\\\scriptsize typed memories,\\updates, forget};
+\node[stage, right=of extract] (embed) {\textbf{Embed}\\\scriptsize dense vectors};
+\node[stage, right=of embed] (retrieve) {\textbf{Retrieve}\\\scriptsize dense\,+\,sparse\\+\,filters};
+\node[stage, right=of retrieve] (score) {\textbf{Score}\\\scriptsize interpretable\\linear model};
+\node[stage, right=of score] (budget) {\textbf{Assemble}\\\scriptsize critical-first,\\token-capped};
+
+% ---- LLM + outputs (far right, stacked) ----
+\node[llm, right=12mm of budget] (llm) {\textbf{LLM}\\\scriptsize Qwen chat\\(offline fallback)};
+\node[io, above=8mm of llm] (answer) {Answer};
+\node[io, below=8mm of llm] (trace) {Memory\\Trace};
+
+% ---- Pipeline edges ----
+\draw[edge] (user) -- (extract);
+\draw[edge] (extract) -- (embed);
+\draw[edge] (embed) -- (retrieve);
+\draw[edge] (retrieve) -- (score);
+\draw[edge] (score) -- (budget);
+\draw[edge] (budget) -- node[lbl, above]{prompt} (llm);
+\draw[edge] (llm) -- (answer);
+\draw[edge] (budget.south) |- (trace.west);
+
+% ---- Storage layer (bottom) ----
+\node[store, below=16mm of retrieve, xshift=-8mm] (db)
+  {\textbf{Memory \& event store}\\\scriptsize SQLite \,$\big|$\, Alibaba Tablestore};
+\node[store, right=10mm of db] (oss)
+  {\textbf{Object store}\\\scriptsize logs, snapshots,\\eval reports (OSS)};
+
+% ---- Forgetting engine ----
+\node[forget, left=10mm of db] (forget)
+  {\textbf{Forgetting sweep}\\\scriptsize expire \,$\cdot$\, archive\\$\cdot$\, supersede};
+
+% ---- Storage edges ----
+\draw[dedge] (extract.south) |- (db.west);
+\draw[dedge] (db.north) -- ++(0,4mm) -| (retrieve.south)
+  node[lbl, pos=0.25, below]{candidates};
+\draw[dedge] (forget) -- (db);
+\draw[dedge] (db) -- (oss);
+
+% ---- MemoryOS grouping box ----
+\begin{scope}[on background layer]
+  \node[draw=blue!45!black, line width=0.9pt, rounded corners=4pt,
+        fill=blue!2, inner sep=6mm,
+        fit=(extract)(budget)(db)(oss)(forget)] (osbox) {};
+  \node[anchor=north west, font=\small\bfseries, text=blue!45!black]
+        at (osbox.north west) {\;MemoryOS};
+\end{scope}
+
+\end{tikzpicture}
+\caption{Architecture and request lifecycle of \osname{}. A user message is
+converted into \emph{typed} memories (Extract), embedded, and retrieved with a
+hybrid dense\,+\,sparse signal under structured filters; candidates are ranked by
+the interpretable linear score (Eq.~\ref{eq:score}) and assembled into the prompt
+under a strict token budget that always injects critical/pinned memories. The LLM
+produces the answer; a complete \emph{Memory Trace} records every inclusion and
+skip decision. A periodic \emph{forgetting sweep} expires, archives, and
+supersedes records out-of-band through auditable state transitions. The same
+pipeline runs offline (SQLite, deterministic fallback) and in the cloud
+(Tablestore\,/\,OSS, Qwen).}
+\label{fig:arch}
+\end{figure*}
