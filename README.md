@@ -80,7 +80,7 @@ See [docs/architecture.md](docs/architecture.md) for the full Mermaid diagram an
 request lifecycle. Rendered diagram: [assets/architecture.svg](assets/architecture.svg)
 (Mermaid source: [assets/architecture.mmd](assets/architecture.mmd)).
 
-![Architecture](assets/architecture.svg)
+![Architecture](assets/architecture.png)
 
 ```
 User → React + Vite frontend → FastAPI backend → MemoryOS
