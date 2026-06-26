@@ -137,7 +137,7 @@ function ActionSummary({ actions }: { actions: ChatResponse["memory_actions"] })
   if (actions.superseded.length) parts.push(`↻${actions.superseded.length} superseded`);
   if (actions.updated.length) parts.push(`~${actions.updated.length} merged`);
   if (actions.forgotten.length) parts.push(`–${actions.forgotten.length} forgotten`);
-  if (actions.redacted.length) parts.push(`🔒 secret redacted`);
+  if (actions.redacted.length) parts.push(`secret redacted`);
   if (parts.length === 0) return null;
   return <div className="mt-1 text-[11px] text-slate-400">{parts.join(" · ")}</div>;
 }

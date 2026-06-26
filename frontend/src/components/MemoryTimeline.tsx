@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import { api, type TimelineEvent } from "../api";
 
-const KIND_ICON: Record<string, string> = {
-  created: "✨",
-  updated: "↻",
-  superseded: "⤵",
-  expired: "⏰",
-  archived: "📦",
-  deleted: "🗑",
-  pinned: "📌",
+// Each event kind gets a distinct dot colour on the timeline rail.
+const KIND_COLOR: Record<string, string> = {
+  created: "bg-emerald-500",
+  updated: "bg-sky-500",
+  superseded: "bg-rose-500",
+  expired: "bg-orange-500",
+  archived: "bg-slate-400",
+  deleted: "bg-zinc-400",
+  pinned: "bg-amber-500",
 };
 
 export function MemoryTimeline({ refreshKey }: { refreshKey: number }) {
@@ -46,11 +47,11 @@ export function MemoryTimeline({ refreshKey }: { refreshKey: number }) {
 
       <ol className="relative space-y-3 border-l border-slate-200 pl-4">
         {shown.map((e, i) => (
-          <li key={i} className="relative">
-            <span className="absolute -left-[22px] flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs shadow">
-              {KIND_ICON[e.kind] || "•"}
+          <li key={i} className="relative animate-fade-up" style={{ animationDelay: `${Math.min(i, 8) * 0.05}s` }}>
+            <span className="absolute -left-[23px] top-3 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-white shadow ring-2 ring-white">
+              <span className={`h-2.5 w-2.5 rounded-full ${KIND_COLOR[e.kind] || "bg-slate-400"}`} />
             </span>
-            <div className="rounded-xl border border-slate-200 bg-white/60 p-2.5">
+            <div className="card-hover rounded-xl border border-slate-200 bg-white/60 p-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase text-slate-500">
                   {e.kind} · {e.type}

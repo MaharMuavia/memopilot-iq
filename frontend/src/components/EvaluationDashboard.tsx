@@ -1,5 +1,18 @@
 import { useState } from "react";
 import { api, type EvalReport } from "../api";
+import { IconCheck } from "./icons";
+
+function Mark({ ok }: { ok: boolean }) {
+  return ok ? (
+    <span className="inline-grid h-5 w-5 place-items-center rounded-full bg-emerald-100 text-emerald-700">
+      <IconCheck size={12} />
+    </span>
+  ) : (
+    <span className="inline-grid h-5 w-5 place-items-center rounded-full bg-slate-100 text-slate-400">
+      <span className="h-0.5 w-2 rounded bg-slate-400" />
+    </span>
+  );
+}
 
 export function EvaluationDashboard() {
   const [report, setReport] = useState<EvalReport | null>(null);
@@ -65,10 +78,16 @@ export function EvaluationDashboard() {
               {report.scenarios.map((s) => (
                 <tr key={s.id} className="border-t border-slate-100">
                   <td className="py-1.5 text-slate-700">{s.title}</td>
-                  <td>{s.memory_agent_correct ? "✅" : "❌"}</td>
-                  <td>{s.baseline_correct ? "✅" : "❌"}</td>
+                  <td><Mark ok={s.memory_agent_correct} /></td>
+                  <td><Mark ok={s.baseline_correct} /></td>
                   <td className="text-slate-500">{s.tokens_used}</td>
-                  <td>{s.forbidden_leaked ? "⚠️" : "—"}</td>
+                  <td>
+                    {s.forbidden_leaked ? (
+                      <span className="text-xs font-medium text-rose-600">leak</span>
+                    ) : (
+                      <span className="text-slate-300">—</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

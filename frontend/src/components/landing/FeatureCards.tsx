@@ -1,41 +1,47 @@
+import {
+  IconLayers, IconLink, IconHourglass, IconPin, IconTarget,
+  IconTrace, IconGauge, IconEval,
+} from "../icons";
+import { Reveal } from "./Reveal";
+
 const FEATURES = [
   {
-    icon: "🗄️",
+    Icon: IconLayers,
     title: "Persistent Memory",
     body: "Structured memory records persist across sessions in SQLite or Alibaba Cloud Tablestore.",
   },
   {
-    icon: "🔗",
+    Icon: IconLink,
     title: "Cross-Session Recall",
     body: "Preferences and decisions from earlier sessions resurface exactly when they are relevant.",
   },
   {
-    icon: "⏳",
+    Icon: IconHourglass,
     title: "Timely Forgetting",
     body: "Deadlines expire and unused, low-value memories archive automatically — non-destructively.",
   },
   {
-    icon: "📌",
+    Icon: IconPin,
     title: "Critical Memory Pinning",
     body: "Critical rules like ‘never commit API keys’ are always included, even under tight budgets.",
   },
   {
-    icon: "🎯",
+    Icon: IconTarget,
     title: "Limited Context Retrieval",
     body: "A scoring formula + token budget inject only the highest-value memories into the prompt.",
   },
   {
-    icon: "🪞",
+    Icon: IconTrace,
     title: "Transparent Memory Trace",
     body: "Every answer shows which memories were used, skipped, superseded, or forgotten — and why.",
   },
   {
-    icon: "📏",
+    Icon: IconGauge,
     title: "Context Budget Manager",
     body: "A token budget injects only the highest-value memories and reports the tokens saved.",
   },
   {
-    icon: "📊",
+    Icon: IconEval,
     title: "Evaluation Benchmark",
     body: "Built-in scenarios score the memory agent against a no-memory baseline on recall and accuracy.",
   },
@@ -54,17 +60,16 @@ export function FeatureCards() {
         </p>
       </div>
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {FEATURES.map((f) => (
-          <div
-            key={f.title}
-            className="glass p-6 transition hover:-translate-y-0.5 hover:shadow-lg"
-          >
-            <div className="mb-3 grid h-11 w-11 place-items-center rounded-xl bg-brand-50 text-xl">
-              {f.icon}
+        {FEATURES.map((f, i) => (
+          <Reveal key={f.title} delay={(i % 3) * 0.06}>
+            <div className="glass card-hover h-full p-6">
+              <div className="mb-3 grid h-11 w-11 place-items-center rounded-xl bg-brand-50 text-brand-600">
+                <f.Icon size={20} />
+              </div>
+              <h3 className="text-base font-semibold text-slate-800">{f.title}</h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{f.body}</p>
             </div>
-            <h3 className="text-base font-semibold text-slate-800">{f.title}</h3>
-            <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{f.body}</p>
-          </div>
+          </Reveal>
         ))}
       </div>
     </section>

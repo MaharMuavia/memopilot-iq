@@ -1,16 +1,19 @@
+import { IconPuzzle, IconRepeat, IconTrendingDown } from "../icons";
+import { Reveal } from "./Reveal";
+
 const PROBLEMS = [
   {
-    icon: "🧩",
+    Icon: IconPuzzle,
     title: "Lost project context",
     body: "Assistants forget your stack, decisions, and constraints the moment a session ends — so you re-explain everything.",
   },
   {
-    icon: "🔁",
+    Icon: IconRepeat,
     title: "Outdated instructions",
     body: "When you change your mind, the assistant keeps repeating the old plan and gives stale, contradictory advice.",
   },
   {
-    icon: "📉",
+    Icon: IconTrendingDown,
     title: "Wasted context window",
     body: "Dumping full chat history burns tokens on irrelevant text and crowds out what actually matters.",
   },
@@ -39,14 +42,16 @@ export function ProblemSolution() {
           </p>
         </div>
         <div className="grid gap-5 md:grid-cols-3">
-          {PROBLEMS.map((p) => (
-            <div key={p.title} className="glass p-6">
-              <div className="mb-3 grid h-11 w-11 place-items-center rounded-xl bg-rose-50 text-xl">
-                {p.icon}
+          {PROBLEMS.map((p, i) => (
+            <Reveal key={p.title} delay={i * 0.08}>
+              <div className="glass card-hover h-full p-6">
+                <div className="mb-3 grid h-11 w-11 place-items-center rounded-xl bg-rose-50 text-rose-500">
+                  <p.Icon size={20} />
+                </div>
+                <h3 className="text-base font-semibold text-slate-800">{p.title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{p.body}</p>
               </div>
-              <h3 className="text-base font-semibold text-slate-800">{p.title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{p.body}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </section>
@@ -64,15 +69,17 @@ export function ProblemSolution() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {MEMORYOS.map((m, i) => (
-              <div key={m.title} className="glass flex gap-3 p-5">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-600 text-sm font-semibold text-white">
-                  {i + 1}
-                </span>
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-800">{m.title}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-slate-600">{m.body}</p>
+              <Reveal key={m.title} delay={(i % 3) * 0.07}>
+                <div className="glass card-hover flex h-full gap-3 p-5">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-600 text-sm font-semibold text-white">
+                    {i + 1}
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-800">{m.title}</h3>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-600">{m.body}</p>
+                  </div>
                 </div>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>

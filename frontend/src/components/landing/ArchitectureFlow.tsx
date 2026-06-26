@@ -1,11 +1,16 @@
+import {
+  IconUser, IconMonitor, IconServer, IconCpu, IconCloud, IconDatabase, IconTrace,
+} from "../icons";
+import { Reveal } from "./Reveal";
+
 const FLOW = [
-  { label: "User", icon: "👤", tone: "slate" },
-  { label: "React Frontend", icon: "⚛️", tone: "blue" },
-  { label: "FastAPI Backend", icon: "⚡", tone: "blue" },
-  { label: "MemoryOS", icon: "🧠", tone: "indigo" },
-  { label: "Qwen Cloud", icon: "☁️", tone: "orange" },
-  { label: "Alibaba Memory Store / OSS", icon: "🗃️", tone: "amber" },
-  { label: "Memory Trace Dashboard", icon: "🪞", tone: "cyan" },
+  { label: "User", Icon: IconUser, tone: "slate" },
+  { label: "React Frontend", Icon: IconMonitor, tone: "blue" },
+  { label: "FastAPI Backend", Icon: IconServer, tone: "blue" },
+  { label: "MemoryOS", Icon: IconCpu, tone: "indigo" },
+  { label: "Qwen Cloud", Icon: IconCloud, tone: "orange" },
+  { label: "Alibaba Memory Store / OSS", Icon: IconDatabase, tone: "amber" },
+  { label: "Memory Trace Dashboard", Icon: IconTrace, tone: "cyan" },
 ];
 
 const TONES: Record<string, string> = {
@@ -33,17 +38,17 @@ export function ArchitectureFlow() {
 
         <div className="flex flex-wrap items-stretch justify-center gap-3">
           {FLOW.map((node, i) => (
-            <div key={node.label} className="flex items-center gap-3">
+            <Reveal key={node.label} delay={i * 0.07} className="flex items-center gap-3">
               <div
                 className={`flex min-w-[150px] flex-col items-center rounded-2xl border px-5 py-4 text-center shadow-glass ${TONES[node.tone]}`}
               >
-                <span className="text-2xl">{node.icon}</span>
-                <span className="mt-1.5 text-sm font-semibold">{node.label}</span>
+                <node.Icon size={24} />
+                <span className="mt-2 text-sm font-semibold">{node.label}</span>
               </div>
               {i < FLOW.length - 1 && (
                 <span className="hidden text-2xl text-slate-300 md:inline">→</span>
               )}
-            </div>
+            </Reveal>
           ))}
         </div>
 

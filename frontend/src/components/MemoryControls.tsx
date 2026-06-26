@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type MemoryRecord } from "../api";
 import { StatusBadge, TypeBadge } from "./StatusBadge";
+import { IconArchive, IconDownload, IconPin, IconTrash } from "./icons";
 
 export function MemoryControls({
   refreshKey,
@@ -62,25 +63,25 @@ export function MemoryControls({
         </h2>
         <div className="flex gap-2">
           <button className="btn-ghost" onClick={exportJson}>
-            Export JSON
+            <IconDownload size={15} /> Export JSON
           </button>
           <button
             className="btn bg-rose-600 text-white hover:bg-rose-700"
             onClick={forgetAll}
           >
-            Forget all
+            <IconTrash size={15} /> Forget all
           </button>
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="stagger space-y-2">
         {memories.length === 0 && (
           <p className="text-sm text-slate-400">No memories stored yet.</p>
         )}
         {memories.map((m) => (
           <div
             key={m.memory_id}
-            className="rounded-xl border border-slate-200 bg-white/60 p-2.5"
+            className="card-hover rounded-xl border border-slate-200 bg-white/60 p-2.5"
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex flex-wrap items-center gap-1.5">
@@ -104,21 +105,21 @@ export function MemoryControls({
                 disabled={busy === m.memory_id}
                 onClick={() => act(() => api.pin(m.memory_id), m.memory_id)}
               >
-                📌 Pin
+                <IconPin size={14} /> Pin
               </button>
               <button
                 className="btn-ghost py-1 text-xs"
                 disabled={busy === m.memory_id}
                 onClick={() => act(() => api.archive(m.memory_id), m.memory_id)}
               >
-                📦 Archive
+                <IconArchive size={14} /> Archive
               </button>
               <button
                 className="btn-ghost py-1 text-xs text-rose-600"
                 disabled={busy === m.memory_id}
                 onClick={() => act(() => api.remove(m.memory_id), m.memory_id)}
               >
-                🗑 Forget
+                <IconTrash size={14} /> Forget
               </button>
             </div>
           </div>

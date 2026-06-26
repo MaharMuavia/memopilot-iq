@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api, type DemoResult } from "../api";
+import { IconPlay } from "./icons";
 
 export function JudgeDemoPanel({ onComplete }: { onComplete?: () => void }) {
   const [result, setResult] = useState<DemoResult | null>(null);
@@ -25,14 +26,19 @@ export function JudgeDemoPanel({ onComplete }: { onComplete?: () => void }) {
   return (
     <div className="mb-5 overflow-hidden rounded-2xl border border-brand-200 bg-gradient-to-r from-brand-50 to-indigo-50 shadow-glass">
       <div className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h3 className="text-sm font-bold text-slate-800">
-            ▶ Run the 90-second Judge Demo
-          </h3>
-          <p className="text-xs text-slate-500">
-            Replays 4 sessions: memory creation → cross-session recall →
-            supersession → critical recall, with full trace accounting.
-          </p>
+        <div className="flex items-center gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-600 text-white shadow-glass">
+            <IconPlay size={16} />
+          </span>
+          <div>
+            <h3 className="text-sm font-bold text-slate-800">
+              Run the 90-second Judge Demo
+            </h3>
+            <p className="text-xs text-slate-500">
+              Replays 4 sessions: memory creation → cross-session recall →
+              supersession → critical recall, with full trace accounting.
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {result && (
@@ -49,7 +55,7 @@ export function JudgeDemoPanel({ onComplete }: { onComplete?: () => void }) {
       {error && <p className="px-4 pb-3 text-xs text-rose-600">{error}</p>}
 
       {result && open && (
-        <div className="space-y-3 border-t border-brand-200/70 bg-white/70 p-4">
+        <div className="stagger space-y-3 border-t border-brand-200/70 bg-white/70 p-4">
           {result.turns.map((t, i) => (
             <div key={t.session_id} className="rounded-xl border border-slate-200 bg-white p-3">
               <div className="flex flex-wrap items-center gap-2">

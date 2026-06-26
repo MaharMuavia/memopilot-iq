@@ -1,3 +1,5 @@
+import { IconCheck } from "../icons";
+
 const CHECKS = [
   "Uses Qwen Cloud API",
   "Supports persistent memory",
@@ -28,8 +30,8 @@ export function Compliance() {
                 key={c}
                 className="flex items-start gap-2 rounded-xl border border-slate-200 bg-white/70 p-3 text-sm text-slate-700"
               >
-                <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-100 text-xs text-emerald-700">
-                  ✓
+                <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-700">
+                  <IconCheck size={13} />
                 </span>
                 {c}
               </li>

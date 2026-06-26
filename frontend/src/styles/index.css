@@ -4,6 +4,7 @@
 
 :root {
   color-scheme: light;
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 body {
@@ -16,6 +17,15 @@ body {
     #f7f9fc;
   color: #0f172a;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Distinctive display face for headings + wordmark; body stays neutral. */
+@layer base {
+  h1, h2, h3, .font-display {
+    font-family: "Sora", ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.018em;
+  }
 }
 
 /* Readable glassmorphism cards on a light theme. */
@@ -27,13 +37,99 @@ body {
     @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium transition;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium;
+    transition: transform 0.18s var(--ease-out-soft), box-shadow 0.18s var(--ease-out-soft),
+      background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease, opacity 0.18s ease;
   }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
   .btn-primary {
-    @apply btn bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50;
+    @apply btn bg-brand-600 text-white disabled:opacity-50;
+    box-shadow: 0 4px 14px -4px rgba(37, 99, 235, 0.5);
   }
+  .btn-primary:hover { @apply bg-brand-700; box-shadow: 0 8px 22px -6px rgba(37, 99, 235, 0.55); }
+  .btn-primary:disabled { transform: none; box-shadow: none; }
   .btn-ghost {
-    @apply btn bg-white/60 text-slate-700 border border-slate-200 hover:bg-white;
+    @apply btn bg-white/60 text-slate-700 border border-slate-200;
+  }
+  .btn-ghost:hover { @apply bg-white border-slate-300; box-shadow: 0 6px 18px -8px rgba(15, 23, 42, 0.25); }
+
+  /* Card that lifts on hover. */
+  .card-hover {
+    transition: transform 0.25s var(--ease-out-soft), box-shadow 0.25s var(--ease-out-soft);
+  }
+  .card-hover:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 40px -18px rgba(30, 41, 55, 0.28);
+  }
+
+  /* Tab pill underline / active treatment helper. */
+  .tab-active {
+    box-shadow: 0 6px 18px -6px rgba(37, 99, 235, 0.5);
+  }
+}
+
+/* ---- Motion system ---------------------------------------------------- */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes pop-in {
+  0%   { opacity: 0; transform: scale(0.8); }
+  60%  { opacity: 1; transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+@keyframes shimmer {
+  0%   { background-position: -468px 0; }
+  100% { background-position: 468px 0; }
+}
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+@keyframes draw-line {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+}
+
+.animate-fade-up { animation: fade-up 0.55s var(--ease-out-soft) both; }
+.animate-fade-in { animation: fade-in 0.5s ease both; }
+.animate-scale-in { animation: scale-in 0.4s var(--ease-out-soft) both; }
+.animate-pop { animation: pop-in 0.4s var(--ease-out-soft) both; }
+.animate-float { animation: float-soft 6s ease-in-out infinite; }
+
+/* Stagger reveal: children fade-up in sequence. */
+.stagger > * { animation: fade-up 0.5s var(--ease-out-soft) both; }
+.stagger > *:nth-child(1) { animation-delay: 0.04s; }
+.stagger > *:nth-child(2) { animation-delay: 0.10s; }
+.stagger > *:nth-child(3) { animation-delay: 0.16s; }
+.stagger > *:nth-child(4) { animation-delay: 0.22s; }
+.stagger > *:nth-child(5) { animation-delay: 0.28s; }
+.stagger > *:nth-child(6) { animation-delay: 0.34s; }
+.stagger > *:nth-child(7) { animation-delay: 0.40s; }
+.stagger > *:nth-child(8) { animation-delay: 0.46s; }
+
+/* Subtle skeleton shimmer for loading states. */
+.shimmer {
+  background: linear-gradient(90deg, #eef2f7 0%, #f7fafc 40%, #eef2f7 80%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+/* Respect users who prefer less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
   }
 }
 
@@ -45,4 +141,7 @@ body {
 *::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.5);
   border-radius: 9999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.6);
 }

@@ -18,20 +18,27 @@ import { SettingsPanel } from "../components/SettingsPanel";
 import { MemoryGraph } from "../components/MemoryGraph";
 import { AnalyticsPanel } from "../components/AnalyticsPanel";
 import { ModeBadge } from "../components/StatusBadge";
+import {
+  IconChat, IconTrace, IconGraph, IconTimeline, IconAnalytics,
+  IconEval, IconControls, IconSettings, IconHome, IconGithub,
+} from "../components/icons";
+import type { ComponentType, SVGProps } from "react";
 
 type Tab =
   | "chat" | "trace" | "graph" | "timeline"
   | "analytics" | "eval" | "controls" | "settings";
 
-const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: "chat", label: "Chat", icon: "💬" },
-  { id: "trace", label: "Memory Trace", icon: "🪞" },
-  { id: "graph", label: "Graph", icon: "🕸️" },
-  { id: "timeline", label: "Timeline", icon: "🕒" },
-  { id: "analytics", label: "Analytics", icon: "📈" },
-  { id: "eval", label: "Evaluation", icon: "📊" },
-  { id: "controls", label: "Controls", icon: "⚙️" },
-  { id: "settings", label: "Settings", icon: "🛠️" },
+type IconCmp = ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
+
+const TABS: { id: Tab; label: string; Icon: IconCmp }[] = [
+  { id: "chat", label: "Chat", Icon: IconChat },
+  { id: "trace", label: "Memory Trace", Icon: IconTrace },
+  { id: "graph", label: "Graph", Icon: IconGraph },
+  { id: "timeline", label: "Timeline", Icon: IconTimeline },
+  { id: "analytics", label: "Analytics", Icon: IconAnalytics },
+  { id: "eval", label: "Evaluation", Icon: IconEval },
+  { id: "controls", label: "Controls", Icon: IconControls },
+  { id: "settings", label: "Settings", Icon: IconSettings },
 ];
 
 export default function DashboardPage() {
@@ -64,10 +71,10 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
             <Link
               to="/"
-              className="text-xs text-slate-400 transition hover:text-brand-600"
+              className="flex items-center gap-1 text-xs text-slate-400 transition hover:text-brand-600"
               title="Back to landing page"
             >
-              ← Home
+              <IconHome size={15} /> Home
             </Link>
             <div className="h-4 w-px bg-slate-200" />
             <div className="flex items-center gap-2">
@@ -93,7 +100,7 @@ export default function DashboardPage() {
               rel="noreferrer"
               className="btn-ghost py-1.5 text-xs"
             >
-              GitHub
+              <IconGithub size={15} /> GitHub
             </a>
           </div>
         </div>
@@ -105,23 +112,23 @@ export default function DashboardPage() {
 
         {/* Tabs */}
         <nav className="mb-5 flex flex-wrap gap-1.5">
-          {TABS.map((t) => (
+          {TABS.map(({ id, label, Icon }) => (
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
+              key={id}
+              onClick={() => setTab(id)}
               className={`btn ${
-                tab === t.id
-                  ? "bg-brand-600 text-white shadow-glass"
+                tab === id
+                  ? "tab-active bg-brand-600 text-white"
                   : "bg-white/70 text-slate-600 border border-slate-200 hover:bg-white"
               }`}
             >
-              <span className="mr-0.5">{t.icon}</span>
-              {t.label}
+              <Icon size={16} className={tab === id ? "opacity-100" : "opacity-70"} />
+              {label}
             </button>
           ))}
         </nav>
 
-        <main>
+        <main key={tab} className="animate-fade-in">
           {tab === "chat" && (
             <div className="grid gap-4 lg:grid-cols-2">
               <div className="h-[72vh]">

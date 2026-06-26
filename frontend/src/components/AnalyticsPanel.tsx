@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type AnalyticsReport, type ReflectionReport } from "../api";
+import { IconSparkle } from "./icons";
 
 const TYPE_COLOR: Record<string, string> = {
   preference: "#3b82f6", project: "#6366f1", decision: "#8b5cf6",
@@ -52,12 +53,17 @@ export function AnalyticsPanel({
       {/* Reflection engine */}
       <div className="overflow-hidden rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 shadow-glass">
         <div className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-slate-800">🧠 Memory Reflection (self-improvement)</h3>
-            <p className="text-xs text-slate-500">
-              Consolidates duplicates, promotes frequently-used memories, and
-              derives higher-level insights.
-            </p>
+          <div className="flex items-center gap-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-amber-500 text-white shadow-glass">
+              <IconSparkle size={16} />
+            </span>
+            <div>
+              <h3 className="text-sm font-bold text-slate-800">Memory Reflection (self-improvement)</h3>
+              <p className="text-xs text-slate-500">
+                Consolidates duplicates, promotes frequently-used memories, and
+                derives higher-level insights.
+              </p>
+            </div>
           </div>
           <button className="btn-primary px-4 py-2 text-sm" onClick={runReflection} disabled={reflecting}>
             {reflecting ? "Reflecting…" : "Run Reflection"}
@@ -84,7 +90,7 @@ export function AnalyticsPanel({
 
       {data && (
         <>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
+          <div className="stagger grid grid-cols-2 gap-3 md:grid-cols-6">
             <Metric label="Total" value={data.totals.total} />
             <Metric label="Active" value={data.totals.active} tone="text-emerald-600" />
             <Metric label="Superseded" value={data.totals.superseded} tone="text-rose-600" />

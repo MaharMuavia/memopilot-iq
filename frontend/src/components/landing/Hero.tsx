@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { IconSparkle } from "../icons";
 
 const BADGES = [
   "Track 1: MemoryAgent",
@@ -21,10 +22,12 @@ export function Hero() {
             "radial-gradient(1100px 520px at 80% -8%, #dbeafe 0%, transparent 60%), radial-gradient(800px 420px at -5% 10%, #ede9fe 0%, transparent 55%)",
         }}
       />
-      <div className="mx-auto max-w-6xl px-4 py-20 text-center md:py-28">
-        <span className="chip mb-5 bg-white/70 text-brand-700 shadow-glass">
-          🧠 Memory intelligence for AI agents
-        </span>
+      <div className="stagger mx-auto max-w-6xl px-4 py-20 text-center md:py-28">
+        <div>
+          <span className="chip mb-5 inline-flex items-center gap-1.5 bg-white/70 text-brand-700 shadow-glass">
+            <IconSparkle size={14} /> Memory intelligence for AI agents
+          </span>
+        </div>
         <h1 className="mx-auto max-w-3xl text-4xl font-extrabold tracking-tight text-slate-900 md:text-6xl">
           MemoPilot <span className="text-brand-600">IQ</span>
         </h1>
