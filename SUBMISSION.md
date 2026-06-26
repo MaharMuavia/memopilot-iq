@@ -60,10 +60,12 @@ endpoint (`https://dashscope-intl.aliyuncs.com/compatible-mode/v1`).
 - [`backend/Dockerfile`](backend/Dockerfile) + [`backend/serverless.yaml`](backend/serverless.yaml) — ECS / Function Compute / ACK.
 - [`docs/deployment_alibaba.md`](docs/deployment_alibaba.md) — full deploy + proof-recording guide.
 
-> For the **deployment recording**, deploy the Docker image to an Alibaba Cloud
-> ECS instance (or Function Compute) and screen-record `GET /health` returning
-> `"mode":"ALIBABA_CLOUD_MODE"` from the public ECS IP, plus the Tablestore/OSS
-> consoles showing data. Steps are in `docs/deployment_alibaba.md`.
+> **One-command ECS deploy:** [`deploy/ecs_deploy.sh`](deploy/ecs_deploy.sh) +
+> step-by-step guide [`deploy/README.md`](deploy/README.md). Build the Docker
+> image on an Alibaba Cloud ECS instance and screen-record `GET /health` (live,
+> `qwen_configured: true`) from the public ECS IP for the proof video. For full
+> `ALIBABA_CLOUD_MODE`, also provision Tablestore + OSS per
+> [`docs/deployment_alibaba.md`](docs/deployment_alibaba.md).
 
 ---
 
