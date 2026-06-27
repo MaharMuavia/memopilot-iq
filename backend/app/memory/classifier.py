@@ -16,6 +16,8 @@ TOPIC_GROUPS: Dict[str, List[str]] = {
     "backend_framework": ["fastapi", "flask", "django", "express", "spring"],
     "cloud_provider": ["alibaba", "aws", "azure", "gcp", "google cloud"],
     "ui_theme": ["light ui", "dark ui", "light mode", "dark mode"],
+    "database": ["postgresql", "postgres", "mysql", "sqlite", "mongodb"],
+    "package_manager": ["pnpm", "npm", "yarn"],
 }
 
 

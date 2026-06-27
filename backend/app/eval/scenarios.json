@@ -1,63 +1,216 @@
 {
-  "description": "MemoPilot IQ evaluation scenarios. Each scenario seeds setup messages, then asks a test question. The benchmark compares a memory-augmented agent against a no-memory baseline.",
+  "description": "MemoPilot IQ evaluation scenarios (v2, 24 scenarios). Each scenario seeds setup messages (which MemoryOS converts to memories), then asks a test question. The harness compares a memory-augmented agent against a no-memory baseline, both for retrieval-quality metrics and for answer accuracy across backbones.",
   "scenarios": [
     {
-      "id": "preference_recall",
-      "title": "Preference recall",
-      "setup_messages": [
-        "I prefer a FastAPI backend and a React + Vite frontend. I like short, practical answers."
-      ],
+      "id": "pref_backend",
+      "title": "Preference recall: backend",
+      "setup_messages": ["I prefer a FastAPI backend for all my services."],
       "test_question": "What backend framework should I use for my new service?",
       "expected_answer_keywords": ["fastapi"],
       "must_not_use_keywords": ["django", "flask", "express"]
     },
     {
-      "id": "cross_session_project_recall",
-      "title": "Cross-session project decision recall",
-      "setup_messages": [
-        "This project is for the Qwen Hackathon Track 1 MemoryAgent.",
-        "We will deploy the backend on Alibaba Cloud."
-      ],
-      "test_question": "Remind me what this project is and where we deploy it.",
-      "expected_answer_keywords": ["track 1", "alibaba"],
+      "id": "pref_frontend",
+      "title": "Preference recall: frontend",
+      "setup_messages": ["I prefer React with Vite for the frontend."],
+      "test_question": "What should I scaffold the UI with?",
+      "expected_answer_keywords": ["react"],
+      "must_not_use_keywords": ["angular", "svelte"]
+    },
+    {
+      "id": "pref_short_answers",
+      "title": "Preference recall: answer style",
+      "setup_messages": ["I prefer short, practical answers with no fluff."],
+      "test_question": "How should you format your replies to me?",
+      "expected_answer_keywords": ["short"],
+      "must_not_use_keywords": []
+    },
+    {
+      "id": "pref_light_ui",
+      "title": "Preference recall: UI theme",
+      "setup_messages": ["I prefer a clean light UI, never dark mode."],
+      "test_question": "What theme should the dashboard use?",
+      "expected_answer_keywords": ["light"],
+      "must_not_use_keywords": ["dark"]
+    },
+    {
+      "id": "pref_language",
+      "title": "Preference recall: language",
+      "setup_messages": ["I prefer Python for backend work."],
+      "test_question": "Which language should I write the service in?",
+      "expected_answer_keywords": ["python"],
+      "must_not_use_keywords": []
+    },
+    {
+      "id": "pref_testing",
+      "title": "Preference recall: testing",
+      "setup_messages": ["I prefer pytest for testing."],
+      "test_question": "What test framework should I set up?",
+      "expected_answer_keywords": ["pytest"],
+      "must_not_use_keywords": []
+    },
+    {
+      "id": "xsession_project",
+      "title": "Cross-session: project identity",
+      "setup_messages": ["This project is the Qwen Hackathon Track 1 MemoryAgent."],
+      "test_question": "Remind me what this project is.",
+      "expected_answer_keywords": ["track 1"],
+      "must_not_use_keywords": []
+    },
+    {
+      "id": "xsession_deploy",
+      "title": "Cross-session: deployment target",
+      "setup_messages": ["We will deploy the backend on Alibaba Cloud."],
+      "test_question": "Where are we deploying the backend?",
+      "expected_answer_keywords": ["alibaba"],
       "must_not_use_keywords": ["azure", "heroku"]
     },
     {
-      "id": "contradiction_supersession",
-      "title": "Contradiction / supersession test",
+      "id": "xsession_multi",
+      "title": "Cross-session: compose two facts",
+      "setup_messages": [
+        "This project is the Qwen Hackathon Track 1 MemoryAgent.",
+        "We deploy on Alibaba Cloud."
+      ],
+      "test_question": "Summarize the project and its deployment target.",
+      "expected_answer_keywords": ["track 1", "alibaba"],
+      "must_not_use_keywords": ["azure"]
+    },
+    {
+      "id": "supersede_frontend",
+      "title": "Supersession: frontend framework",
       "setup_messages": [
         "Use React + Vite for the frontend.",
         "Actually, I changed my mind. Use Next.js instead of React + Vite."
       ],
       "test_question": "What frontend stack should I use now?",
       "expected_answer_keywords": ["next.js"],
-      "must_not_use_keywords": ["react + vite", "vite"]
+      "must_not_use_keywords": ["react + vite"]
     },
     {
-      "id": "expired_deadline",
-      "title": "Expired deadline test",
+      "id": "supersede_backend",
+      "title": "Supersession: backend framework",
       "setup_messages": [
-        "Temporary note: the staging server is down today only."
+        "Use Flask for the backend.",
+        "Actually, use FastAPI instead of Flask."
       ],
+      "test_question": "Which backend framework is current?",
+      "expected_answer_keywords": ["fastapi"],
+      "must_not_use_keywords": ["flask"]
+    },
+    {
+      "id": "supersede_cloud",
+      "title": "Supersession: cloud provider",
+      "setup_messages": [
+        "Deploy on AWS.",
+        "Actually, use Alibaba Cloud instead of AWS."
+      ],
+      "test_question": "Which cloud provider should I deploy to?",
+      "expected_answer_keywords": ["alibaba"],
+      "must_not_use_keywords": ["aws"]
+    },
+    {
+      "id": "supersede_database",
+      "title": "Supersession: database",
+      "setup_messages": [
+        "Use PostgreSQL for storage.",
+        "Actually, use MySQL instead of PostgreSQL."
+      ],
+      "test_question": "What database should I use now?",
+      "expected_answer_keywords": ["mysql"],
+      "must_not_use_keywords": ["postgresql", "postgres"]
+    },
+    {
+      "id": "supersede_pkg",
+      "title": "Supersession: package manager",
+      "setup_messages": [
+        "Use npm for the frontend.",
+        "Actually, use pnpm instead of npm."
+      ],
+      "test_question": "Which package manager should I use?",
+      "expected_answer_keywords": ["pnpm"],
+      "must_not_use_keywords": ["npm"]
+    },
+    {
+      "id": "supersede_theme",
+      "title": "Supersession: UI theme",
+      "setup_messages": [
+        "Use a dark UI.",
+        "Actually, use a light UI instead of dark."
+      ],
+      "test_question": "What UI theme is current?",
+      "expected_answer_keywords": ["light"],
+      "must_not_use_keywords": ["dark"]
+    },
+    {
+      "id": "expire_staging",
+      "title": "Expiry: temporary status",
+      "setup_messages": ["Temporary note: the staging server is down today only."],
       "test_question": "Is the staging server still down?",
       "expected_answer_keywords": [],
       "must_not_use_keywords": ["down today only"]
     },
     {
-      "id": "critical_memory_recall",
-      "title": "Critical memory recall",
-      "setup_messages": [
-        "Never commit API keys to the repository. This is critical."
-      ],
-      "test_question": "Write me a quick deployment checklist.",
-      "expected_answer_keywords": ["api keys"],
+      "id": "expire_temp_flag",
+      "title": "Expiry: temporary feature flag",
+      "setup_messages": ["Temporary: feature flag X is enabled just for today's test."],
+      "test_question": "Is feature flag X still enabled?",
+      "expected_answer_keywords": [],
+      "must_not_use_keywords": ["enabled just for today"]
+    },
+    {
+      "id": "critical_keys",
+      "title": "Critical recall: never commit keys",
+      "setup_messages": ["Never commit API keys to the repository. This is critical."],
+      "test_question": "Should I put the API key in the README to make setup easier?",
+      "expected_answer_keywords": ["api key"],
       "must_not_use_keywords": []
     },
     {
-      "id": "no_memory_vs_memory",
-      "title": "No-memory vs memory-agent comparison",
+      "id": "critical_no_azure",
+      "title": "Critical recall: hard constraint",
+      "setup_messages": ["Hard constraint: do not use Azure for this project, ever."],
+      "test_question": "Can we host the database on Azure?",
+      "expected_answer_keywords": ["azure"],
+      "must_not_use_keywords": []
+    },
+    {
+      "id": "constraint_secrets",
+      "title": "Constraint recall: no secrets in logs",
+      "setup_messages": ["Constraint: never log user secrets or tokens."],
+      "test_question": "Can I log the auth token to debug?",
+      "expected_answer_keywords": ["token"],
+      "must_not_use_keywords": []
+    },
+    {
+      "id": "mistake_recall",
+      "title": "Mistake recall",
+      "setup_messages": ["A past deployment failed because the .env file was missing."],
+      "test_question": "What should I double-check before the next deployment?",
+      "expected_answer_keywords": [".env"],
+      "must_not_use_keywords": []
+    },
+    {
+      "id": "deadline_recall",
+      "title": "Deadline recall",
+      "setup_messages": ["The submission deadline is 2026-07-09."],
+      "test_question": "When is the submission due?",
+      "expected_answer_keywords": ["2026-07-09"],
+      "must_not_use_keywords": []
+    },
+    {
+      "id": "learning_goal",
+      "title": "Learning goal recall",
+      "setup_messages": ["I am learning Agentic AI and Data Science."],
+      "test_question": "What topics am I trying to learn?",
+      "expected_answer_keywords": ["agentic ai"],
+      "must_not_use_keywords": []
+    },
+    {
+      "id": "compose_stack",
+      "title": "End-to-end: compose preferences into a design",
       "setup_messages": [
-        "I prefer FastAPI, React + Vite, Alibaba Cloud, light UI, and short answers."
+        "I prefer a FastAPI backend, React + Vite frontend, and Alibaba Cloud deployment. Never commit API keys."
       ],
       "test_question": "Design the backend architecture for my project.",
       "expected_answer_keywords": ["fastapi", "alibaba"],

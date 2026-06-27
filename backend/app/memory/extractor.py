@@ -166,6 +166,31 @@ class MemoryExtractor:
             actions.created.append({"memory_id": record.memory_id, "type": record.type.value, "content": record.content})
             await self._event(actions, user_id, project_id, "created", record, record.reason)
 
+        # Honor the model's structured supersede/archive updates (complements
+        # the heuristic contradiction detection above; the LLM is good at
+        # spotting "switch from X to Y" phrasings the heuristic may miss).
+        for upd in result.get("updates", []) or []:
+            old_id = str(upd.get("old_memory_id") or "")
+            action = upd.get("action")
+            mem = await self.store.get(old_id) if old_id else None
+            if not mem or mem.status not in {MemoryStatus.active, MemoryStatus.pinned}:
+                continue
+            if mem.is_critical:
+                continue
+            if action == "supersede":
+                mem.status = MemoryStatus.superseded
+                mem.updated_at = datetime.now(timezone.utc)
+                mem.reason = str(upd.get("reason") or "Superseded by a newer decision.")
+                await self.store.update(mem)
+                actions.superseded.append({"memory_id": mem.memory_id, "via": "llm_update"})
+                await self._event(actions, user_id, project_id, "superseded", mem, mem.reason)
+            elif action == "archive":
+                mem.status = MemoryStatus.archived
+                mem.updated_at = datetime.now(timezone.utc)
+                await self.store.update(mem)
+                actions.forgotten.append({"memory_id": mem.memory_id, "action": "archive"})
+                await self._event(actions, user_id, project_id, "archived", mem, str(upd.get("reason") or ""))
+
         # Explicit forget instructions from the model.
         for f in result.get("forget", []) or []:
             mem = await self.store.get(f.get("memory_id", ""))

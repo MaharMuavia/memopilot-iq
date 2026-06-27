@@ -26,9 +26,28 @@ def load_scenarios() -> Dict[str, Any]:
         return json.load(fh)
 
 
+_BASE_SYSTEM = "You are a helpful assistant."
+
+
 def _keywords_present(text: str, keywords: List[str]) -> bool:
     low = text.lower()
     return all(k.lower() in low for k in keywords) if keywords else True
+
+
+def answer_correct(answer: str, expected: List[str], forbidden: List[str]) -> bool:
+    """Grade a generated answer. Correct when all expected keywords appear and
+    no genuinely outdated keyword leaks. A forbidden keyword is only a failure
+    when no expected keyword is present (so "use Next.js instead of React"
+    still counts as correct), or when there are no expected keywords at all
+    (the expiry case, where any mention of the stale fact is a leak)."""
+    low = (answer or "").lower()
+    has_expected = all(e.lower() in low for e in expected) if expected else True
+    if not has_expected:
+        return False
+    has_forbidden = any(f.lower() in low for f in forbidden)
+    if has_forbidden and not expected:
+        return False
+    return True
 
 
 def _any_present(text: str, keywords: List[str]) -> bool:
@@ -58,30 +77,22 @@ class BenchmarkRunner:
         scenarios = data["scenarios"]
         eval_user = f"eval-{uuid.uuid4().hex[:8]}"
 
-        per_scenario: List[Dict[str, Any]] = []
         latencies: List[float] = []
         recall_hits = 0
         recall_total = 0
         outdated_errors = 0
-        mem_correct = 0
-        base_correct = 0
-        baseline_tokens_total = 0
         memory_tokens_total = 0
+        contexts: List[Dict[str, Any]] = []
 
+        # ---- Pass 1: memory-layer diagnostics (no LLM calls) ----
         for sc in scenarios:
-            # Each scenario gets its own project_id for clean isolation.
-            eval_project = f"eval-{sc['id']}"
-            # Seed setup messages as memories.
+            eval_project = f"eval-{sc['id']}"  # isolate each scenario
             for msg in sc["setup_messages"]:
                 await self.memos.remember(
-                    user_id=eval_user,
-                    project_id=eval_project,
-                    session_id="eval",
-                    message=msg,
+                    user_id=eval_user, project_id=eval_project,
+                    session_id="eval", message=msg,
                 )
-
-            # Simulate time passing: backdate temporary memories so the
-            # forgetting engine expires them before retrieval (expiry test).
+            # Simulate time passing so temporary memories expire.
             await self._age_temporary(eval_user, eval_project)
 
             start = time.perf_counter()
@@ -91,92 +102,133 @@ class BenchmarkRunner:
             latency = (time.perf_counter() - start) * 1000.0
             latencies.append(trace.retrieval_latency_ms or latency)
 
-            mem_answer = await self.memos.qwen.chat(
-                [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": sc["test_question"]},
-                ]
-            )
-            # Baseline: a bare system prompt with NO memory block.
-            baseline_answer = await self.memos.qwen.chat(
-                [
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": sc["test_question"]},
-                ]
-            )
-
             injected = [i.model_dump() for i in trace.included]
-            injected_text = " ".join(m["memory"]["content"] for m in injected)
             expected = sc["expected_answer_keywords"]
             forbidden = sc["must_not_use_keywords"]
-
-            # Principled leak detection: a forbidden phrase only counts as a
-            # leak if it appears in an injected memory that does NOT also carry
-            # an expected phrase. This avoids false positives like the
-            # superseding decision "Use Next.js instead of React + Vite"
-            # (which legitimately mentions the old choice).
             leaked = _has_leak(injected, expected, forbidden)
-
-            # Memory agent correct if expected keywords were recalled into
-            # context and no genuinely outdated memory leaked.
-            mem_ok = _keywords_present(injected_text, expected) and not leaked
-            base_ok = _keywords_present(baseline_answer, expected)
 
             if expected:
                 recall_total += 1
+                injected_text = " ".join(m["memory"]["content"] for m in injected)
                 if _keywords_present(injected_text, expected):
                     recall_hits += 1
             if leaked:
                 outdated_errors += 1
-
-            mem_correct += int(mem_ok)
-            base_correct += int(base_ok)
-
-            baseline_tokens_total += _approx_tokens(sc["test_question"]) + 400  # bare guess
             memory_tokens_total += trace.tokens_used
 
-            per_scenario.append(
-                {
-                    "id": sc["id"],
-                    "title": sc["title"],
-                    "memory_agent_correct": mem_ok,
-                    "baseline_correct": base_ok,
-                    "injected_memories": [i.memory["memory_id"] for i in trace.included],
-                    "tokens_used": trace.tokens_used,
-                    "forbidden_leaked": leaked,
-                }
-            )
+            contexts.append({
+                "id": sc["id"], "title": sc["title"],
+                "system_prompt": system_prompt, "question": sc["test_question"],
+                "expected": expected, "forbidden": forbidden,
+                "tokens_used": trace.tokens_used, "leaked": leaked,
+            })
 
         n = len(scenarios)
-        # Token savings: full-history baseline vs budgeted memory context.
         full_history_tokens = sum(
             _approx_tokens(" ".join(sc["setup_messages"]) + sc["test_question"]) + 800
             for sc in scenarios
         )
         token_savings_percent = (
             round(100 * (1 - memory_tokens_total / full_history_tokens))
-            if full_history_tokens
-            else 0
+            if full_history_tokens else 0
         )
 
+        # ---- Pass 2: cross-backbone answer accuracy (LLM calls) ----
+        backbones = await self._run_backbones(contexts)
+        primary = backbones[0] if backbones else None
+        primary_per = {p["id"]: p for p in (primary["per_scenario"] if primary else [])}
+
+        scenarios_out = [
+            {
+                "id": c["id"], "title": c["title"],
+                "memory_agent_correct": primary_per.get(c["id"], {}).get("agent_correct", False),
+                "baseline_correct": primary_per.get(c["id"], {}).get("baseline_correct", False),
+                "tokens_used": c["tokens_used"],
+                "forbidden_leaked": c["leaked"],
+            }
+            for c in contexts
+        ]
+
         report = {
-            "memory_agent_accuracy": round(mem_correct / n, 2),
-            "baseline_no_memory_accuracy": round(base_correct / n, 2),
+            "memory_agent_accuracy": primary["agent_accuracy"] if primary else 0.0,
+            "baseline_no_memory_accuracy": primary["baseline_accuracy"] if primary else 0.0,
             "memory_recall_at_5": round(recall_hits / recall_total, 2) if recall_total else 1.0,
             "outdated_memory_errors": outdated_errors,
             "outdated_memory_avoidance": round(1 - outdated_errors / n, 2),
-            "preference_adherence": round(mem_correct / n, 2),
+            "preference_adherence": primary["agent_accuracy"] if primary else 0.0,
             "token_savings_percent": max(0, token_savings_percent),
-            "response_accuracy_delta": round((mem_correct - base_correct) / n, 2),
+            "response_accuracy_delta": primary["delta"] if primary else 0.0,
             "avg_retrieval_latency_ms": round(sum(latencies) / len(latencies), 1) if latencies else 0.0,
             "retrieval_latency_ms": round(sum(latencies) / len(latencies), 1) if latencies else 0.0,
-            "scenarios": per_scenario,
+            "num_scenarios": n,
+            "backbones": backbones,
+            "scenarios": scenarios_out,
         }
 
-        # Clean up all eval memories (every per-scenario project) so they don't
-        # pollute the demo store.
         await self.memos.store.clear_user(eval_user, None)
         return report
+
+    async def _run_backbones(
+        self, contexts: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """For each available answer-generating backbone, grade the agent (with
+        MemoryOS context) vs a no-memory baseline on the actual answers. The
+        MemoryOS layer is identical across backbones; only the LLM varies."""
+        from .providers import backbone_chat, configured_backbones
+
+        settings = self.memos.settings
+
+        async def primary_chat(messages):
+            return await self.memos.qwen.chat(messages)
+
+        runners: List[Dict[str, Any]] = [{
+            "name": "qwen" if settings.qwen_configured else "offline",
+            "label": (f"Qwen ({settings.qwen_chat_model})"
+                      if settings.qwen_configured else "Offline fallback"),
+            "chat": primary_chat,
+        }]
+        for p in configured_backbones(settings):
+            if p["name"] == "qwen":
+                continue  # already the primary runner
+            runners.append({
+                "name": p["name"], "label": p["label"],
+                "chat": (lambda prov: (lambda m: backbone_chat(prov, m)))(p),
+            })
+
+        results: List[Dict[str, Any]] = []
+        for b in runners:
+            agent_c = base_c = ok = skipped = 0
+            per: List[Dict[str, Any]] = []
+            for c in contexts:
+                agent = await b["chat"]([
+                    {"role": "system", "content": c["system_prompt"]},
+                    {"role": "user", "content": c["question"]},
+                ])
+                base = await b["chat"]([
+                    {"role": "system", "content": _BASE_SYSTEM},
+                    {"role": "user", "content": c["question"]},
+                ])
+                if agent is None or base is None:
+                    skipped += 1  # provider hiccup on this item; skip, keep going
+                    continue
+                a_ok = answer_correct(agent, c["expected"], c["forbidden"])
+                b_ok = answer_correct(base, c["expected"], c["forbidden"])
+                agent_c += int(a_ok)
+                base_c += int(b_ok)
+                ok += 1
+                per.append({"id": c["id"], "agent_correct": a_ok, "baseline_correct": b_ok})
+            if ok == 0:
+                results.append({"name": b["name"], "label": b["label"], "error": True})
+                continue
+            results.append({
+                "skipped": skipped,
+                "name": b["name"], "label": b["label"], "n": ok,
+                "agent_accuracy": round(agent_c / ok, 2),
+                "baseline_accuracy": round(base_c / ok, 2),
+                "delta": round((agent_c - base_c) / ok, 2),
+                "per_scenario": per,
+            })
+        return results
 
 
 def _has_leak(injected, expected, forbidden) -> bool:

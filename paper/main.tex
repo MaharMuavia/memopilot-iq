@@ -40,6 +40,9 @@
 
 \newcommand{\sysname}{MemoPilot~IQ}
 \newcommand{\osname}{MemoryOS}
+\newcommand{\cmark}{\textcolor{green!55!black}{\checkmark}}
+\newcommand{\xmark}{\textcolor{red!65!black}{\ensuremath{\times}}}
+\newcommand{\pmark}{\textcolor{orange!75!black}{$\circ$}}
 
 \title{\textbf{\sysname{}: A Transparent, Budget-Aware Memory Layer\\
 for Persistent Large Language Model Agents}}
@@ -194,7 +197,32 @@ combination, inclusion decisions carry human-readable reasons, forgetting is a
 visible state machine, and a complete per-answer trace is a first-class API
 object. This makes the memory layer auditable and debuggable, which we argue is
 a precondition for deployment in settings where wrong but confident recall is
-costly.
+costly. Table~\ref{tab:comparison} contrasts these governance properties across
+representative memory systems.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Governance properties across representative LLM memory systems, by
+primary design emphasis. \cmark~present, \pmark~partial, \xmark~not a focus.
+\emph{Typed}: typed/structured records (vs.\ a raw stream); \emph{Interp.}:
+inspectable scoring; \emph{Crit.}: guaranteed inclusion of critical items;
+\emph{Audit.\ forget}: forgetting as an auditable state machine; \emph{Trace}:
+per-answer inclusion/skip explanation.}
+\label{tab:comparison}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{System} & \textbf{Typed} & \textbf{Interp.} & \textbf{Crit.}
+  & \textbf{Audit.} & \textbf{Trace} \\
+\midrule
+Generative Agents~\citep{park2023generative} & \xmark & \pmark & \xmark & \xmark & \xmark \\
+MemGPT~\citep{packer2023memgpt}              & \xmark & \xmark & \xmark & \xmark & \xmark \\
+MemoryBank~\citep{zhong2024memorybank}       & \xmark & \pmark & \xmark & \pmark & \xmark \\
+A-Mem~\citep{xu2025amem}                     & \pmark & \xmark & \xmark & \xmark & \xmark \\
+\textbf{\sysname{}} (ours)                   & \cmark & \cmark & \cmark & \cmark & \cmark \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 % ===========================================================================
 \section{System Overview}
