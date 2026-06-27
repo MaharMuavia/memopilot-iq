@@ -91,8 +91,8 @@ full system, benchmark, and trace format to support reproducible study.
 Transformer-based LLMs condition only on the tokens inside their context
 window~\citep{vaswani2017attention,brown2020gpt3}. In a multi-session assistant
 this produces a structural failure mode: once a conversation ends, everything
-the user established---their stack preferences, the decisions made for a
-project, hard constraints, deadlines, and past mistakes---is gone. Users are
+the user established is gone, including their stack preferences, the decisions
+made for a project, hard constraints, deadlines, and past mistakes. Users are
 forced to re-explain context at the start of every session, and, worse, the
 assistant keeps repeating advice that a \emph{later} decision has already
 overturned. A user who first chose React and later switched to Next.js will
@@ -108,16 +108,16 @@ relevant passages from a vector store~\citep{karpukhin2020dpr,johnson2019faiss}.
 RAG addresses \emph{capacity} but not \emph{lifecycle}: a vector store has no
 opinion on whether a retrieved memory is still valid, whether it must always be
 honored, or whether it should have been forgotten. It also typically offers no
-account of \emph{why} a particular memory entered the prompt---an obstacle to
+account of \emph{why} a particular memory entered the prompt, an obstacle to
 trust and debugging.
 
 We take the position that the hard problems of agent memory are not capacity
 problems but \emph{governance} problems: deciding what is worth remembering,
 what must never be dropped, what has become invalid, and being able to
 \emph{explain} every such decision. \sysname{} operationalizes this view through
-\osname{}, a modular memory layer with five cooperating components---structured
+\osname{}, a modular memory layer with five cooperating components (structured
 extraction, interpretable scoring, hybrid retrieval, budget-aware assembly, and
-non-destructive forgetting---unified by a transparent trace. The system runs in
+non-destructive forgetting) unified by a transparent trace. The system runs in
 two interchangeable modes: a fully offline local mode (SQLite with in-process
 vectors and a deterministic embedding/LLM fallback) for reproducible evaluation,
 and a cloud mode backed by managed object and table storage with Qwen
@@ -135,7 +135,7 @@ models~\citep{bai2023qwen,yang2024qwen2} for the language and embedding calls.
   ranking decision decomposes into named, inspectable terms (\S\ref{sec:scoring}).
   \item \textbf{Budget-aware assembly with guaranteed criticality.} A context
   builder that fills a strict token budget by score while \emph{always}
-  injecting critical/pinned memories, even when over budget---separating
+  injecting critical/pinned memories, even when over budget, separating
   ``always honor'' instructions from ``recall if relevant'' ones
   (\S\ref{sec:budget}).
   \item \textbf{Non-destructive forgetting.} An engine that expires, archives,
@@ -158,7 +158,7 @@ Agents}~\citep{park2023generative} introduced a memory stream scored by a
 weighted sum of recency, importance, and relevance, with periodic reflection
 that synthesizes higher-level observations. \osname{}'s scoring function is in
 the same spirit but extends the signal set with confidence, usage, project
-match, and---critically---a set of explicit \emph{penalties} for outdated,
+match, and, critically, a set of explicit \emph{penalties} for outdated,
 private, and superseded content, turning lifecycle state into a ranking signal.
 MemGPT~\citep{packer2023memgpt} frames the LLM as an operating system that pages
 information between a fixed context window and external storage; \sysname{}
@@ -182,8 +182,8 @@ which is robust precisely on the short, entity-heavy memories typical of
 developer assistants (framework names, deployment targets, file paths).
 
 \paragraph{Reasoning and self-improvement.}
-Our reflection pass---which merges duplicates, promotes frequently used
-memories, and derives higher-level insights---is related to
+Our reflection pass, which merges duplicates, promotes frequently used
+memories, and derives higher-level insights, is related to
 Reflexion~\citep{shinn2023reflexion} and to chain-of-thought / ReAct style
 prompting~\citep{wei2022cot,yao2023react}, but operates over the persistent
 memory store rather than over a single episode's trajectory.
@@ -200,7 +200,7 @@ costly.
 \section{System Overview}
 \label{sec:overview}
 
-\sysname{} is a client--server application. A React/Vite frontend issues chat
+\sysname{} is a client/server application. A React/Vite frontend issues chat
 and management requests to a FastAPI backend; all memory logic is encapsulated
 in the \osname{} module so it can be embedded in other agents. Figure~\ref{fig:arch}
 sketches the request lifecycle.
@@ -208,8 +208,8 @@ sketches the request lifecycle.
 \input{figure_architecture}
 
 \paragraph{Dual mode for reproducibility.} A central design choice is that the
-entire system---including extraction, embeddings, retrieval, the benchmark, and
-the test suite---runs with \emph{no external dependencies} via a deterministic
+entire system, including extraction, embeddings, retrieval, the benchmark, and
+the test suite, runs with \emph{no external dependencies} via a deterministic
 offline fallback for both embeddings and chat. This makes every experiment in
 this paper reproducible on a laptop and removes nondeterminism from the
 evaluation of the memory \emph{mechanism} itself. In cloud mode the same
@@ -314,8 +314,8 @@ are central to the system's behavior:
   audited rather than merely trusted.
   \item[Semantics-led but not semantics-only.] Similarity is the largest single
   weight ($0.40$), so relevance dominates, but governance signals can override:
-  a superseded memory pays a $-0.50$ penalty---larger than the full similarity
-  weight---ensuring stale decisions sink below valid ones even when textually
+  a superseded memory pays a $-0.50$ penalty, larger than the full similarity
+  weight, ensuring stale decisions sink below valid ones even when textually
   similar to the query.
   \item[Criticality as a soft-then-hard rule.] The $+0.20$ critical bonus raises
   critical memories in the ranking, and the budget stage (\S\ref{sec:budget})
@@ -343,7 +343,7 @@ similarity is
 \mathrm{sim}(m,q) = \max\!\Big(\text{dense}(m,q),\ \tfrac{1}{2}\text{dense}(m,q) + \tfrac{1}{2}\text{kw}(m,q)\Big),
 \end{equation}
 which never underperforms pure dense retrieval and boosts memories with exact
-lexical overlap---valuable for the identifier-heavy content of developer
+lexical overlap, valuable for the identifier-heavy content of developer
 assistants. Retrieval first applies structured filters (user, project, and the
 exclusion of inactive states), scores all remaining candidates with
 Equation~\eqref{eq:score}, and returns them sorted so that critical/pinned
@@ -366,7 +366,7 @@ cost estimated at $\approx 4$ characters/token:
   exceeds $B$ (the budget is overridden, and the trace records this).
   \item Inject the top-$k$ ($k=8$) remaining memories in score order while they
   fit within $B$.
-  \item Skip the rest, recording for each a reason---either ``token budget
+  \item Skip the rest, recording for each a reason, either ``token budget
   exhausted'' or ``outside the top-$k$ relevance window.''
 \end{enumerate}
 
@@ -376,7 +376,7 @@ dropped because the budget is tight) versus ``recall if relevant'' facts
 (competing for the remaining budget by score). The assembled system prompt wraps
 the selected memories in an explicit \texttt{ACTIVE LONG-TERM MEMORY} block with
 instructions to honor critical items, prefer the most recent decision on
-conflict, and never use superseded/expired content---reinforcing at the prompt
+conflict, and never use superseded/expired content, reinforcing at the prompt
 level the policy already enforced at the data level.
 
 % ===========================================================================
@@ -430,7 +430,7 @@ question}. The harness evaluates two systems on the identical question:
   \item \textbf{Memory agent.} The question is answered with the \osname{}-built
   context (retrieve $\rightarrow$ score $\rightarrow$ budget assembly).
   \item \textbf{No-memory baseline.} The same model answers with a bare system
-  prompt and no long-term memory---isolating the contribution of the memory
+  prompt and no long-term memory, isolating the contribution of the memory
   layer.
 \end{itemize}
 
@@ -439,7 +439,7 @@ Correctness is decided by keyword criteria attached to each scenario:
 must not leak. To avoid penalizing legitimate references to a superseded choice
 (e.g. ``use Next.js \emph{instead of} React''), a forbidden phrase counts as a
 \emph{leak} only when it appears in an injected memory that does not also carry an
-expected phrase---i.e. a genuinely outdated memory rather than a superseding
+expected phrase, i.e. a genuinely outdated memory rather than a superseding
 decision. From these we compute task accuracy, \textsc{recall@5}, supersession
 success, outdated-memory leaks, an accuracy delta over baseline, and token
 savings versus a full-history baseline. The headline numbers are from a live
@@ -492,12 +492,12 @@ between the two systems.}
 \midrule
 Task accuracy            & \textbf{1.00} & 0.33 \\
 Accuracy delta           & \multicolumn{2}{c}{$+0.67$} \\
-\textsc{recall@5}        & 1.00 & --- \\
-Outdated-memory leaks    & \textbf{0} & --- \\
-Outdated-memory avoidance& 1.00 & --- \\
-Preference adherence     & 1.00 & --- \\
-Token savings vs.\ full history & $\approx 97\%$ & --- \\
-Avg.\ retrieval latency  & $\approx 9$~ms & --- \\
+\textsc{recall@5}        & 1.00 & n/a \\
+Outdated-memory leaks    & \textbf{0} & n/a \\
+Outdated-memory avoidance& 1.00 & n/a \\
+Preference adherence     & 1.00 & n/a \\
+Token savings vs.\ full history & $\approx 97\%$ & n/a \\
+Avg.\ retrieval latency  & $\approx 9$~ms & n/a \\
 Context budget           & 2{,}500 tok & (full history) \\
 \bottomrule
 \end{tabular}
@@ -510,10 +510,11 @@ stateless model does not have, so the baseline's successes come only from
 generic priors (e.g. naming a popular framework) rather than from the user's
 actual choices. The zero-leak result is a direct consequence of the lifecycle
 design: superseded and expired records are excluded at retrieval, so they cannot
-reach the budget stage. The $\approx 60\%$ token reduction shows that selective,
-scored injection under a budget retains the relevant facts while discarding the
-bulk of raw history---addressing both cost and the ``lost-in-the-middle''
-degradation of long contexts~\citep{liu2024lostmiddle}.
+reach the budget stage. The large token reduction (about $97\%$ on these
+scenarios) shows that selective, scored injection under a budget retains the
+relevant facts while discarding the bulk of raw history, addressing both cost
+and the ``lost-in-the-middle'' degradation of long
+contexts~\citep{liu2024lostmiddle}.
 
 % ===========================================================================
 \section{Limitations and Future Work}
@@ -529,8 +530,8 @@ human or model-graded answers, and comparison against external memory systems
 A-Mem~\citep{xu2025amem}) on a shared protocol.
 
 \paragraph{Hand-set weights.} The scoring weights in Equation~\eqref{eq:score}
-are interpretable priors, not learned. Learning them---e.g. by optimizing
-downstream task accuracy or from preference feedback---while preserving the
+are interpretable priors, not learned. Learning them, e.g. by optimizing
+downstream task accuracy or from preference feedback, while preserving the
 linear, inspectable form is an attractive direction, as is per-user adaptation.
 
 \paragraph{Extraction reliability.} Memory quality is bounded by extraction
@@ -561,8 +562,8 @@ on trustworthy agent memory.
 
 % ===========================================================================
 \section*{Reproducibility and Availability}
-The complete system---backend, frontend, the benchmark harness, and the test
-suite---runs offline with no external credentials via a deterministic
+The complete system (backend, frontend, the benchmark harness, and the test
+suite) runs offline with no external credentials via a deterministic
 embedding/LLM fallback, making every reported result reproducible on commodity
 hardware. The scoring weights, scenario definitions, and trace schema are
 specified in \S\ref{sec:scoring}--\S\ref{sec:trace} and in the released code.
