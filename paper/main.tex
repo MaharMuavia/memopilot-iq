@@ -177,6 +177,25 @@ reversible. A-Mem~\citep{xu2025amem} builds dynamically linked memory networks;
 our Memory Graph provides a comparable relational view (supersession and
 related-to edges) but is derived from explicit lifecycle metadata.
 
+\paragraph{Production memory frameworks.}
+A second, fast-moving line of work targets deployable memory layers.
+Mem0~\citep{chhikara2025mem0} extracts facts and maintains them with
+LLM-issued add/update/delete operations over a vector (and optional graph)
+store, and reports strong long-conversation question-answering with low latency.
+Zep~\citep{rasmussen2025zep} builds a \emph{temporal} knowledge graph
+(Graphiti) with bi-temporal validity, invalidating facts as they are
+contradicted over time. Letta~\citep{letta2024}, the productionized successor of
+MemGPT, exposes self-editing memory blocks, and LangMem~\citep{langmem2025}
+offers semantic/episodic/procedural memory tools for agent frameworks. Relative
+to these, \sysname{} contributes orthogonally: rather than maximizing
+long-context QA or temporal-graph expressiveness, it makes the \emph{selection
+policy itself} interpretable and the lifecycle auditable. Mem0's update/delete
+and Zep's temporal invalidation achieve supersession; \sysname{} differs in
+exposing supersession as an inspectable state transition with a per-answer trace
+and a guaranteed-inclusion rule for critical content. We regard a head-to-head
+evaluation against Mem0 and Zep on a shared long-conversation benchmark
+(e.g.~LoCoMo) as the most important next experiment (\S\ref{sec:limitations}).
+
 \paragraph{Retrieval.}
 Dense retrieval~\citep{karpukhin2020dpr} and approximate nearest-neighbor
 indexes~\citep{johnson2019faiss} underpin most RAG systems~\citep{lewis2020rag}.
@@ -218,9 +237,11 @@ per-answer inclusion/skip explanation.}
   & \textbf{Audit.} & \textbf{Trace} \\
 \midrule
 Generative Agents~\citep{park2023generative} & \xmark & \pmark & \xmark & \xmark & \xmark \\
-MemGPT~\citep{packer2023memgpt}              & \xmark & \xmark & \xmark & \xmark & \xmark \\
+MemGPT / Letta~\citep{packer2023memgpt,letta2024} & \pmark & \xmark & \xmark & \xmark & \xmark \\
 MemoryBank~\citep{zhong2024memorybank}       & \xmark & \pmark & \xmark & \pmark & \xmark \\
 A-Mem~\citep{xu2025amem}                     & \pmark & \xmark & \xmark & \xmark & \xmark \\
+Mem0~\citep{chhikara2025mem0}                & \cmark & \xmark & \xmark & \pmark & \xmark \\
+Zep~\citep{rasmussen2025zep}                 & \cmark & \pmark & \xmark & \cmark & \pmark \\
 \textbf{\sysname{}} (ours)                   & \cmark & \cmark & \cmark & \cmark & \cmark \\
 \bottomrule
 \end{tabular}
@@ -593,6 +614,45 @@ selective, scored injection under a budget retains the relevant facts while
 discarding the bulk of raw history, addressing both cost and the
 ``lost-in-the-middle'' degradation of long contexts~\citep{liu2024lostmiddle}.
 
+\subsection{Ablation: which mechanism matters?}
+\label{sec:ablation}
+To isolate the contribution of each governance mechanism we disable one at a
+time and measure retrieval/assembly quality at the memory-layer stage, without
+answer generation, which makes the study deterministic and exactly reproducible
+on the offline backend (Table~\ref{tab:ablation}). The decisive result is that
+\emph{lifecycle exclusion} is what suppresses outdated memory: removing it
+(treating superseded and expired records as eligible and zeroing their
+penalties) raises the outdated-leak rate ninefold, from $0.04$ to $0.38$, with no
+recall benefit. By contrast, \textsc{recall@5} and critical inclusion are
+insensitive to the exact scoring weights (both unchanged under a similarity-only
+ranking and under uniform weights), because on these stores the hybrid
+similarity already surfaces the target and the score's critical bonus already
+ranks critical memories highly. The quality of the layer therefore comes from
+its \emph{governance machinery}, lifecycle exclusion and the explicit penalties,
+rather than from delicate weight tuning, which is consistent with our central
+thesis; the hard critical-inclusion guarantee (\S\ref{sec:budget}) is a
+worst-case safety net on top of the bonus that binds only under extreme budget
+pressure.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Governance ablation (24 scenarios, deterministic offline backend).
+Disabling lifecycle exclusion alone increases outdated-memory leaks ninefold;
+recall and critical inclusion are insensitive to the scoring weights.}
+\label{tab:ablation}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Variant} & \textbf{\textsc{recall@5}} & \textbf{Leak rate} & \textbf{Critical incl.} \\
+\midrule
+Full (proposed)              & 0.95 & \textbf{0.04} & 1.00 \\
+$-$ lifecycle exclusion      & 1.00 & 0.38          & 1.00 \\
+similarity-only ranking      & 0.95 & 0.04          & 1.00 \\
+uniform weights              & 0.95 & 0.04          & 1.00 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 % ===========================================================================
 \section{Limitations and Future Work}
 \label{sec:limitations}
@@ -603,8 +663,9 @@ not capture answer fluency or subtle reasoning. The cross-backbone study covers
 two frontier models (Qwen and GPT-4o); broadening it to more models and a
 larger, multi-session benchmark with human or model-graded answers, and a
 direct comparison against external memory systems
-(MemGPT~\citep{packer2023memgpt}, MemoryBank~\citep{zhong2024memorybank},
-A-Mem~\citep{xu2025amem}) on a shared protocol, is the clearest next step.
+(Mem0~\citep{chhikara2025mem0}, Zep~\citep{rasmussen2025zep},
+MemGPT~\citep{packer2023memgpt}, A-Mem~\citep{xu2025amem}) on a shared protocol
+such as LoCoMo, is the clearest next step.
 
 \paragraph{Hand-set weights.} The scoring weights in Equation~\eqref{eq:score}
 are interpretable priors, not learned. Learning them, e.g. by optimizing

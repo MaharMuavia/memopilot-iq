@@ -218,6 +218,7 @@ Interactive OpenAPI docs at `http://localhost:8000/docs`.
 | POST | `/api/memories/forget-all` | Clear all memories for a project |
 | POST | `/api/memory/extract` | Run extraction manually |
 | POST | `/api/eval/run` | Run the benchmark |
+| POST | `/api/eval/ablation` | Run the governance ablation study |
 | GET | `/api/eval/report` | Latest evaluation report |
 | POST | `/api/demo/run` | Run the scripted 4-session judge demo |
 | GET | `/api/trace/{session_id}` | Latest Memory Trace for a session |

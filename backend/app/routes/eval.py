@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
 
+from ..eval.ablation import AblationRunner
 from ..eval.benchmark import BenchmarkRunner
 
 router = APIRouter(prefix="/api/eval", tags=["evaluation"])
@@ -18,6 +19,18 @@ async def run_eval(request: Request):
     # Persist the report (OSS in cloud mode, local snapshot otherwise).
     try:
         request.app.state.oss.put_snapshot("eval-reports", report)
+    except Exception:  # pragma: no cover
+        pass
+    return report
+
+
+@router.post("/ablation")
+async def run_ablation(request: Request):
+    """Run the governance ablation study (deterministic; isolates each mechanism)."""
+    memos = request.app.state.memos
+    report = await AblationRunner(memos).run()
+    try:
+        request.app.state.oss.put_snapshot("ablation-reports", report)
     except Exception:  # pragma: no cover
         pass
     return report
