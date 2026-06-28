@@ -34,10 +34,12 @@ an **Analytics** dashboard, an **Evaluation** benchmark vs. a no-memory
 baseline, and secret-safe storage. Dual runtime: `LOCAL_MODE` (SQLite + local
 vectors, runs with no keys) and `ALIBABA_CLOUD_MODE` (Tablestore + OSS).
 
-**Verified live results (`qwen3.7-max`):** memory-agent accuracy **1.00** vs.
-baseline **0.33**, recall@5 **1.00**, **0** outdated-memory leaks, **97%** token
-savings, **8.9 ms** retrieval latency — see
-[docs/evaluation_results.md](docs/evaluation_results.md).
+**Verified live results (24 scenarios):** the memory layer lifts task accuracy
+for two frontier backbones — Qwen `qwen3.7-max` **0.75** vs. baseline **0.50**
+(+0.25) and GPT-4o **0.79** vs. **0.67** (+0.12); recall@5 **0.77**, token
+savings **≈98%**, retrieval latency **≈4 ms** — see
+[docs/evaluation_results.md](docs/evaluation_results.md). Qwen is the production
+model; GPT-4o is included only to show MemoryOS generalizes.
 
 ---
 

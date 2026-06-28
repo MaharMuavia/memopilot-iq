@@ -241,24 +241,19 @@ The Chat tab has four starter buttons that replay the 5-session demo.
 
 ## Evaluation results
 Run **Evaluation → Run benchmark** in the UI, or `POST /api/eval/run`.
-**Live run with `qwen3.7-max`** (full breakdown in
+**Live 24-scenario, multi-backbone run** (full breakdown in
 [docs/evaluation_results.md](docs/evaluation_results.md)):
 
-```json
-{
-  "memory_agent_accuracy": 1.00,
-  "baseline_no_memory_accuracy": 0.33,
-  "memory_recall_at_5": 1.00,
-  "outdated_memory_errors": 0,
-  "preference_adherence": 1.00,
-  "token_savings_percent": 97,
-  "avg_retrieval_latency_ms": 8.9
-}
-```
+| Answer backbone | Memory agent | No-memory baseline | Delta |
+|---|---|---|---|
+| Qwen (`qwen3.7-max`, production) | **0.75** | 0.50 | **+0.25** |
+| OpenAI (`gpt-4o`, generalization) | **0.79** | 0.67 | **+0.12** |
 
-The memory agent triples task accuracy over the no-memory baseline (+0.67),
-with zero outdated-memory leaks. The four scenarios the baseline fails all
-require persistent state (cross-session recall, supersession).
+Memory-layer diagnostics: recall@5 **0.77**, outdated-memory avoidance **0.83**,
+token savings **≈98%**, retrieval latency **≈4 ms**. The same memory layer lifts
+accuracy for *both* frontier models — evidence the gain is the memory layer, not
+any single model. Correctness uses strict keyword matching, so these are
+conservative lower bounds.
 
 ## Judging criteria mapping
 See [docs/judging_mapping.md](docs/judging_mapping.md) for the full rubric and
