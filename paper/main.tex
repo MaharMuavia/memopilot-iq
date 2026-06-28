@@ -295,9 +295,12 @@ on semantics rather than text spans.
 \texttt{pinned} if the user pins it). It may be \texttt{superseded} by a later,
 contradicting decision; \texttt{expired} when its deadline passes;
 \texttt{archived} when stale and unused; or \texttt{deleted} only on explicit
-user request. Crucially, retrieval excludes \{superseded, expired, deleted,
-archived\} from normal context while preserving them on a timeline, so the
-agent never acts on invalid information yet the history remains auditable.
+user request (Figure~\ref{fig:lifecycle}). Crucially, retrieval excludes
+\{superseded, expired, deleted, archived\} from normal context while preserving
+them on a timeline, so the agent never acts on invalid information yet the
+history remains auditable.
+
+\input{figure_lifecycle}
 
 % ===========================================================================
 \section{Interpretable Memory Scoring}

@@ -1,0 +1,54 @@
+% ---------------------------------------------------------------------------
+% Memory lifecycle state machine (TikZ). Compact wide layout.
+% Requires: \usepackage{tikz,graphicx}; libraries arrows.meta, positioning,
+% fit, backgrounds.
+% ---------------------------------------------------------------------------
+\begin{figure}[tbp]
+\centering
+\resizebox{0.95\linewidth}{!}{%
+\begin{tikzpicture}[
+  font=\footnotesize,
+  >={Stealth[length=2mm]},
+  st/.style={rounded corners=3pt, draw=black!60, line width=0.7pt,
+    minimum height=8mm, text width=18mm, align=center, inner sep=2pt},
+  active/.style={st, draw=green!55!black, fill=green!10},
+  pinned/.style={st, draw=orange!75!black, fill=yellow!18},
+  excl/.style={st, draw=red!55!black, fill=red!7},
+  del/.style={st, draw=black!55, fill=black!10},
+  e/.style={->, line width=0.8pt, draw=black!70},
+  lbl/.style={font=\scriptsize, text=black!60},
+]
+\node[active] (active) {\textbf{active}};
+\node[pinned, above=8mm of active] (pinned) {\textbf{pinned}};
+\node[st, draw=black!45, fill=black!3, left=14mm of active] (new) {new memory};
+
+\node[excl, right=26mm of active, yshift=11mm] (superseded) {superseded};
+\node[excl, right=26mm of active] (expired) {expired};
+\node[excl, right=26mm of active, yshift=-11mm] (archived) {archived};
+\node[del, right=20mm of expired] (deleted) {deleted};
+
+\draw[e] (new) -- (active);
+\draw[e] (active.north) -- node[lbl, right]{pin} (pinned.south);
+\draw[e] (active) -- node[lbl, above, sloped]{contradiction} (superseded.west);
+\draw[e] (active) -- node[lbl, above]{deadline} (expired.west);
+\draw[e] (active) -- node[lbl, below, sloped]{stale, unused} (archived.west);
+\draw[e] (expired) -- node[lbl, above]{user delete} (deleted);
+
+\begin{scope}[on background layer]
+  \node[draw=red!50, dashed, rounded corners=4pt, fill=red!2, inner sep=3mm,
+        fit=(superseded)(archived)] (exclbox) {};
+  \node[anchor=south, font=\scriptsize\itshape, text=red!55!black]
+        at (exclbox.north) {excluded from retrieval; retained on the timeline};
+\end{scope}
+\end{tikzpicture}%
+}
+\caption{The \texttt{MemoryRecord} lifecycle as an auditable state machine. A
+new memory is born \texttt{active} (or \texttt{pinned} on user request). It is
+\texttt{superseded} by a contradicting decision, \texttt{expired} when its
+deadline passes, or \texttt{archived} when stale and unused; only an explicit
+user action \texttt{deletes} it. Crucially, the \texttt{superseded},
+\texttt{expired}, and \texttt{archived} states are excluded from retrieval yet
+retained on the timeline, so the agent never reasons from invalid memory while
+the history stays complete and reversible.}
+\label{fig:lifecycle}
+\end{figure}
