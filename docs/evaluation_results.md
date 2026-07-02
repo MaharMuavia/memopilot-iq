@@ -42,6 +42,23 @@ Disabling one mechanism at a time, measured at the retrieval/assembly stage:
 **~9× (0.04 → 0.38)** with no recall gain — the governance machinery, not weight
 tuning, is what makes the layer trustworthy. (Fully reproducible offline.)
 
+## Scalability (`backend/scripts/scale_bench.py`, deterministic offline)
+
+Full hybrid retrieve → score → rank over synthetic stores (NumPy dense pass +
+two-stage rerank above 1,024 candidates; dim 256, top-k 8, 10 queries/size):
+
+| Store size | Mean latency | p95 |
+|---|---|---|
+| 1,000 | 17 ms | 18 ms |
+| 10,000 | 99 ms | 119 ms |
+| 50,000 | 433 ms | 502 ms |
+| 100,000 | 941 ms | 1,028 ms |
+
+Typical per-user/project stores are ≤10⁴ memories (≤100 ms). Above 10⁵, an ANN
+index (e.g. FAISS) can replace the dense pass behind the same retriever
+interface. Critical/pinned records always join the rerank pool regardless of
+dense rank, so the inclusion guarantee survives the two-stage optimization.
+
 ## Notes
 
 - Correctness is **strict keyword matching on the generated answer** — a

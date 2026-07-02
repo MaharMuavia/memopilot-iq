@@ -23,11 +23,56 @@ async def list_memories(
     user_id: str = "demo-user",
     project_id: str | None = "qwen-memoryagent",
     include_all: bool = False,
+    type: str | None = None,
+    status: str | None = None,
+    q: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
 ):
+    """List memories with structured filters and pagination (production API)."""
     memos = request.app.state.memos
     records = await memos.store.list(user_id, project_id, include_all=include_all)
+    if type is not None:
+        records = [m for m in records if m.type.value == type]
+    if status is not None:
+        records = [m for m in records if m.status.value == status]
+    if q:
+        needle = q.lower()
+        records = [m for m in records if needle in m.content.lower() or needle in " ".join(m.tags).lower()]
     records.sort(key=lambda m: m.updated_at, reverse=True)
-    return {"memories": [m.public_view() for m in records], "count": len(records)}
+    total = len(records)
+    limit = max(1, min(limit, 500))
+    page = records[offset: offset + limit]
+    return {
+        "memories": [m.public_view() for m in page],
+        "count": len(page),
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+@router.get("/memories/{memory_id}/history")
+async def memory_history(
+    memory_id: str,
+    request: Request,
+    user_id: str = "demo-user",
+    project_id: str | None = "qwen-memoryagent",
+):
+    """Full audit trail for one memory: every lifecycle event, oldest first."""
+    memos = request.app.state.memos
+    mem = await memos.store.get(memory_id)
+    events = await memos.store.list_events(user_id, project_id)
+    trail = [e for e in events if e.get("memory_id") == memory_id]
+    trail.sort(key=lambda e: e.get("timestamp", ""))
+    if mem is None and not trail:
+        raise HTTPException(status_code=404, detail="Memory not found and no history recorded.")
+    return {
+        "memory_id": memory_id,
+        "current": mem.public_view() if mem else None,
+        "events": trail,
+        "count": len(trail),
+    }
 
 
 @router.get("/memories/timeline")

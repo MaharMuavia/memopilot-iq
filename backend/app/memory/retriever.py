@@ -16,9 +16,17 @@ import re
 import time
 from typing import List, Optional, Tuple
 
+import heapq
+
 from ..models import MemoryRecord, MemoryStatus
-from .embeddings import cosine_similarity
+from .embeddings import batch_cosine, cosine_similarity  # noqa: F401 (cosine kept for API)
 from .scorer import score_memory
+
+# Two-stage rerank kicks in above this store size; the pool is the number of
+# dense-nearest candidates that receive full hybrid scoring. Critical/pinned
+# records always join the pool regardless of dense rank.
+_RERANK_THRESHOLD = 1024
+_RERANK_POOL = 512
 
 _EXCLUDED_STATES = {
     MemoryStatus.superseded,
@@ -59,10 +67,27 @@ class HybridRetriever:
         memories = await self.store.list(user_id, project_id)
         candidates = [m for m in memories if m.status not in _EXCLUDED_STATES]
 
+        # Stage 1 — dense similarities in one vectorized pass (NumPy when
+        # available): a single matrix-vector product over the whole store.
+        dense_all = batch_cosine(query_embedding, [m.embedding for m in candidates])
+
+        # Stage 2 — full hybrid scoring (sparse overlap + interpretable score)
+        # runs on everything for small stores, and on the dense top pool plus
+        # every critical/pinned record for large ones (retrieve-then-rerank).
+        if len(candidates) > _RERANK_THRESHOLD:
+            keep = set(heapq.nlargest(
+                _RERANK_POOL, range(len(candidates)), key=lambda i: dense_all[i]
+            ))
+            for i, mem in enumerate(candidates):
+                if mem.is_critical or mem.status == MemoryStatus.pinned:
+                    keep.add(i)
+            pool = [(candidates[i], dense_all[i]) for i in keep]
+        else:
+            pool = list(zip(candidates, dense_all))
+
         scored: List[Tuple[MemoryRecord, dict]] = []
-        for mem in candidates:
+        for mem, dense in pool:
             # Hybrid similarity: blend dense vector + sparse keyword overlap.
-            dense = cosine_similarity(query_embedding, mem.embedding)
             sparse = _keyword_overlap(query, mem)
             similarity = max(dense, 0.5 * dense + 0.5 * sparse)
             components = score_memory(mem, similarity, project_id)

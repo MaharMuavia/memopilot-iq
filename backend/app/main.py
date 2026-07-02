@@ -27,6 +27,7 @@ from .routes import (
 from .seed import seed_demo
 from .storage.oss_client import OSSClient
 from .utils.logging import get_logger
+from .utils.platform import install_platform
 
 logger = get_logger("main")
 
@@ -66,6 +67,8 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    install_platform(app)  # API-key auth, rate limiting, /metrics
+
     app.include_router(health.router)
     app.include_router(chat.router)
     app.include_router(memories.router)

@@ -74,6 +74,11 @@ layer that knows what to remember, what to forget, and can prove its reasoning.
 - 🔒 **Secret-safe** — secrets are redacted before storage; never committed.
 - ☁️ **Local ↔ Alibaba Cloud** dual mode with automatic fallback.
 - ✅ **CI + Docker** — GitHub Actions (tests + build) and one-command `docker compose up`.
+- 🏭 **Production platform** — optional API-key auth, per-key rate limiting,
+  Prometheus `/metrics`, paginated + filtered memory API, per-memory audit
+  history, and a two-stage rerank that keeps retrieval fast at 10⁵ memories.
+- 🐍 **Python SDK** — embed MemoryOS in any agent in a few lines
+  ([sdk/python](sdk/python/README.md)).
 
 ## Architecture
 See [docs/architecture.md](docs/architecture.md) for the full Mermaid diagram and
@@ -217,9 +222,17 @@ Interactive OpenAPI docs at `http://localhost:8000/docs`.
 | GET | `/api/memories/export` | Export memories as JSON |
 | POST | `/api/memories/forget-all` | Clear all memories for a project |
 | POST | `/api/memory/extract` | Run extraction manually |
+| GET | `/api/memories/{id}/history` | Per-memory audit trail (all lifecycle events) |
+| GET | `/metrics` | Prometheus metrics (requests, latency, 401/429 counters) |
 | POST | `/api/eval/run` | Run the benchmark |
 | POST | `/api/eval/ablation` | Run the governance ablation study |
 | GET | `/api/eval/report` | Latest evaluation report |
+
+**Production hardening** (all optional, zero-friction locally): set
+`MEMOPILOT_API_KEYS=key1,key2` to require an `X-API-Key` header on `/api/*`,
+and `RATE_LIMIT_PER_MINUTE` (default 120) for per-key/IP rate limiting.
+`GET /api/memories` supports `type`, `status`, `q` (text search), `limit`,
+`offset`. See [sdk/python](sdk/python/README.md) for the embeddable client.
 | POST | `/api/demo/run` | Run the scripted 4-session judge demo |
 | GET | `/api/trace/{session_id}` | Latest Memory Trace for a session |
 | POST | `/api/reflect` | Run the reflection / consolidation pass |
