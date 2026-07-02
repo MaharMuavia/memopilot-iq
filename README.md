@@ -79,6 +79,9 @@ layer that knows what to remember, what to forget, and can prove its reasoning.
   history, and a two-stage rerank that keeps retrieval fast at 10⁵ memories.
 - 🐍 **Python SDK** — embed MemoryOS in any agent in a few lines
   ([sdk/python](sdk/python/README.md)).
+- 🔬 **LoCoMo harness** — evaluate on the standard long-conversation memory
+  benchmark used by Mem0/Zep, with F1/EM grading and a model-independent
+  evidence-recall metric ([docs/locomo.md](docs/locomo.md)).
 
 ## Architecture
 See [docs/architecture.md](docs/architecture.md) for the full Mermaid diagram and

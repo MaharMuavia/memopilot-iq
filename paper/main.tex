@@ -194,7 +194,8 @@ and Zep's temporal invalidation achieve supersession; \sysname{} differs in
 exposing supersession as an inspectable state transition with a per-answer trace
 and a guaranteed-inclusion rule for critical content. We regard a head-to-head
 evaluation against Mem0 and Zep on a shared long-conversation benchmark
-(e.g.~LoCoMo) as the most important next experiment (\S\ref{sec:limitations}).
+(e.g.~LoCoMo~\citep{maharana2024locomo}) as the most important next experiment
+(\S\ref{sec:limitations}).
 
 \paragraph{Retrieval.}
 Dense retrieval~\citep{karpukhin2020dpr} and approximate nearest-neighbor
@@ -665,7 +666,12 @@ larger, multi-session benchmark with human or model-graded answers, and a
 direct comparison against external memory systems
 (Mem0~\citep{chhikara2025mem0}, Zep~\citep{rasmussen2025zep},
 MemGPT~\citep{packer2023memgpt}, A-Mem~\citep{xu2025amem}) on a shared protocol
-such as LoCoMo, is the clearest next step.
+such as LoCoMo~\citep{maharana2024locomo}, is the clearest next step. As a
+substrate for that comparison we release a LoCoMo adapter with the system:
+per-turn ingestion into the memory store, the standard token-F1 / exact-match
+grading by question category, and a model-independent \emph{evidence recall}
+metric that measures whether the annotated evidence turns are injected into
+the assembled context.
 
 \paragraph{Hand-set weights.} The scoring weights in Equation~\eqref{eq:score}
 are interpretable priors, not learned. Learning them, e.g. by optimizing
