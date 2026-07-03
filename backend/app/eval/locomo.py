@@ -301,11 +301,21 @@ class LoCoMoRunner:
 
     @staticmethod
     def _save_checkpoint(path: str, ck: Dict[str, Any]) -> None:
+        import os
+
         tmp = path + ".tmp"
         with open(tmp, "w", encoding="utf-8") as fh:
             json.dump(ck, fh)
-        import os
-        os.replace(tmp, path)
+        # On Windows os.replace raises PermissionError if a reader (editor,
+        # progress watcher) briefly holds the destination open. Retry with
+        # backoff; a skipped save is harmless because we save on every QA.
+        for attempt in range(6):
+            try:
+                os.replace(tmp, path)
+                return
+            except PermissionError:
+                time.sleep(0.2 * (attempt + 1))
+        logger.warning("Checkpoint save skipped (destination locked): %s", path)
 
     @staticmethod
     def _finalize(b: Dict[str, float]) -> Dict[str, Any]:
