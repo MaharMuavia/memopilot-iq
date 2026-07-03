@@ -30,22 +30,58 @@ python scripts/run_locomo.py --max-conversations 3 --max-qa 50   # answer-level 
   at least one annotated evidence turn was actually injected into the context.
   This isolates the *memory layer* from the answer model and runs offline.
 
-## Preliminary results (retrieval level)
+## Results
+
+### Answer level (live run: `qwen3.7-max` + `text-embedding-v3`)
+
+3 conversations (conv-26/30/44), 1,451 turns ingested verbatim, 150 QA,
+top-k 8 within the 2,500-token budget, strict token-F1/EM grading:
+
+| Category | n | F1 | EM | Evidence recall@8 |
+|---|---|---|---|---|
+| temporal | 67 | 0.308 | 0.164 | 0.403 |
+| open-domain | 13 | 0.331 | 0.077 | 0.364 |
+| multi-hop | 57 | 0.189 | 0.018 | 0.333 |
+| single-hop | 13 | 0.158 | 0.077 | 0.231 |
+| **overall** | **150** | **0.252** | **0.093** | **0.358** |
+
+### The decomposition that matters
+
+Conditioning F1 on whether the annotated evidence turn made it into the
+assembled context:
+
+| | n | F1 | EM |
+|---|---|---|---|
+| Evidence **retrieved** into context | 53 | **0.572** | 0.245 |
+| Evidence **missed** | 95 | 0.068 | 0.011 |
+
+An **8.4× F1 uplift** when the memory layer delivers the evidence. The
+answering side works; the binding constraint at this configuration is
+retrieval depth — k=8 memories from ~480 candidate turns under a tight token
+budget. That is a *tunable dial* (raise `--top-k`/budget, or swap in stronger
+embeddings), not a flaw in the governance mechanism, and the harness makes the
+trade-off directly measurable.
+
+### Retrieval level (model-independent)
 
 | Setting | Conversations | QA | Evidence recall@8 |
 |---|---|---|---|
 | Offline hash embeddings (deterministic) | 10 (full) | 1,540 | 0.23 |
-| Live `text-embedding-v3` | 1 (conv-26) | 60 | **0.33** (temporal 0.39, open-domain 0.43) |
+| Live `text-embedding-v3` | 3 | 150 | **0.36** |
 
-Context: each question retrieves from ~420–600 verbatim turn-memories, so
-random evidence recall at k=8 is ≈0.02 — the memory layer is ~12–17× above
-chance, and real embeddings clearly beat the hash fallback. These are
-**retrieval-level** numbers with a tight k=8 / 2,500-token budget; published
-Mem0/Zep LoCoMo results are **answer-level** (LLM-judged/F1) with different
-retrieval depths, so absolute values are not directly comparable. The honest
-head-to-head requires the full answer-level run (same answer model for all
-systems), which this harness supports (`--max-conversations`/`--max-qa` to
-control cost).
+Random evidence recall at k=8 over ~480–600 turns is ≈0.02, so the layer is
+~12–18× above chance.
+
+### Comparability caveats (read before quoting)
+
+These are deliberately conservative first-cut numbers: strict token-F1 (no
+LLM-as-judge), short-phrase prompting, verbatim per-turn ingestion (no
+summarization advantage), and a k=8 / 2,500-token budget. Published Mem0/Zep
+LoCoMo results use **LLM-judged** grading and deeper retrieval, so absolute
+values are **not directly comparable**. The honest head-to-head this harness
+enables is running each system with the *same answer model and grader*;
+checkpoint/resume (`--checkpoint`, on by default) makes long runs
+interruption-safe.
 
 ## Notes
 

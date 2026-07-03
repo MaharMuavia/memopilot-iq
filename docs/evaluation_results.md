@@ -59,6 +59,16 @@ index (e.g. FAISS) can replace the dense pass behind the same retriever
 interface. Critical/pinned records always join the rerank pool regardless of
 dense rank, so the inclusion guarantee survives the two-stage optimization.
 
+## LoCoMo (standard long-conversation benchmark)
+
+Answer-level first cut on 3 conversations / 150 QA (`qwen3.7-max`,
+`text-embedding-v3`, top-k 8, strict token-F1): overall **F1 0.252 / EM 0.093 /
+evidence-recall@8 0.358**. The key decomposition: **F1 = 0.572 when the
+evidence turn was retrieved into context vs 0.068 when missed (8.4× uplift)** —
+the answering works when the memory layer delivers; retrieval depth at k=8 is
+the tunable bottleneck. Full tables, protocol, and comparability caveats in
+[locomo.md](locomo.md).
+
 ## Notes
 
 - Correctness is **strict keyword matching on the generated answer** — a
