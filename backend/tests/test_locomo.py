@@ -90,3 +90,30 @@ async def test_runner_full_answers_offline(memos, tmp_path):
     assert "adversarial" in report["by_category"]
     # F1/EM keys exist and are bounded (offline fallback answers score low).
     assert 0.0 <= report["overall"]["f1"] <= 1.0
+
+
+@pytest.mark.asyncio
+async def test_checkpoint_resume_skips_api_calls(memos, tmp_path):
+    path = tmp_path / "mini.json"
+    path.write_text(json.dumps(FIXTURE), encoding="utf-8")
+    ckpt = str(tmp_path / "ck.json")
+
+    calls = {"chat": 0}
+    original_chat = memos.qwen.chat
+
+    async def counting_chat(messages, **kw):
+        calls["chat"] += 1
+        return await original_chat(messages, **kw)
+
+    memos.qwen.chat = counting_chat
+
+    first = await LoCoMoRunner(memos).run(str(path), checkpoint_path=ckpt)
+    chat_after_first = calls["chat"]
+    assert chat_after_first >= 1  # one answered QA (cat 5 skipped)
+
+    # Second run resumes: identical aggregates, zero new chat calls,
+    # and ingestion is reused from the persisted store.
+    second = await LoCoMoRunner(memos).run(str(path), checkpoint_path=ckpt)
+    assert calls["chat"] == chat_after_first
+    assert second["overall"]["n"] == first["overall"]["n"]
+    assert second["overall"]["f1"] == first["overall"]["f1"]

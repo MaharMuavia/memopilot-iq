@@ -133,11 +133,17 @@ class LoCoMoRunner:
         max_qa_per_conversation: Optional[int] = None,
         include_adversarial: bool = False,
         retrieval_only: bool = False,
+        checkpoint_path: Optional[str] = None,
     ) -> Dict[str, Any]:
+        """Run the benchmark. When ``checkpoint_path`` is given, per-QA results
+        and per-sample ingestion are persisted incrementally so an interrupted
+        run resumes without repeating API calls (the memory store must be kept
+        between runs, i.e. a stable DATABASE_URL)."""
         samples = load_locomo(path)
         if max_conversations:
             samples = samples[:max_conversations]
 
+        ck = self._load_checkpoint(checkpoint_path)
         agg = defaultdict(lambda: {"f1": 0.0, "em": 0.0, "ev": 0.0, "ev_n": 0, "n": 0})
         total_turns = 0
         t_start = time.perf_counter()
@@ -146,9 +152,24 @@ class LoCoMoRunner:
             sample_id = str(sample.get("sample_id", "unknown"))
             user = f"locomo-{sample_id}"
             project = "locomo"
-            await self.memos.store.clear_user(user, project)
 
-            total_turns += await self._ingest(sample["conversation"], user, project, mode)
+            # Ingestion (reused across resumes when the checkpoint marker
+            # matches the persisted store).
+            ingested_marker = ck["ingested"].get(sample_id, 0)
+            existing = 0
+            if checkpoint_path and ingested_marker:
+                existing = len(await self.memos.store.list(user, project, include_all=True))
+            if checkpoint_path and ingested_marker and existing >= ingested_marker:
+                total_turns += ingested_marker
+                logger.info("LoCoMo sample %s: reusing %d ingested turns.",
+                            sample_id, ingested_marker)
+            else:
+                await self.memos.store.clear_user(user, project)
+                n = await self._ingest(sample["conversation"], user, project, mode)
+                total_turns += n
+                if checkpoint_path:
+                    ck["ingested"][sample_id] = n
+                    self._save_checkpoint(checkpoint_path, ck)
 
             qa_items = [
                 q for q in sample.get("qa", [])
@@ -157,7 +178,22 @@ class LoCoMoRunner:
             if max_qa_per_conversation:
                 qa_items = qa_items[:max_qa_per_conversation]
 
-            for qa in qa_items:
+            for idx, qa in enumerate(qa_items):
+                key = f"{sample_id}::{idx}"
+                cached = (
+                    ck["answers"].get(key)
+                    if checkpoint_path and not retrieval_only else None
+                )
+                if cached is not None:
+                    bucket = agg[cached["category"]]
+                    bucket["f1"] += cached["f1"]
+                    bucket["em"] += cached["em"]
+                    if "ev" in cached:
+                        bucket["ev"] += cached["ev"]
+                        bucket["ev_n"] += 1
+                    bucket["n"] += 1
+                    continue
+
                 cat = CATEGORY_NAMES.get(qa.get("category"), f"category_{qa.get('category')}")
                 gold = qa.get("answer", qa.get("adversarial_answer", ""))
                 question = str(qa.get("question", ""))
@@ -169,21 +205,35 @@ class LoCoMoRunner:
                 # Evidence recall (model-independent; verbatim mode tags dia_ids).
                 evidence = set(qa.get("evidence") or [])
                 bucket = agg[cat]
+                entry: Dict[str, Any] = {"category": cat, "f1": 0.0, "em": 0.0}
                 if evidence and mode == "verbatim":
                     injected_dia = {t for m in used for t in m.tags}
-                    bucket["ev"] += float(bool(evidence & injected_dia))
+                    ev_hit = float(bool(evidence & injected_dia))
+                    bucket["ev"] += ev_hit
                     bucket["ev_n"] += 1
+                    entry["ev"] = ev_hit
 
                 if not retrieval_only:
                     answer = await self.memos.qwen.chat([
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": f"{_ANSWER_INSTRUCTION}\n\nQuestion: {question}"},
                     ])
-                    bucket["f1"] += token_f1(answer, str(gold))
-                    bucket["em"] += exact_match(answer, str(gold))
+                    entry["f1"] = token_f1(answer, str(gold))
+                    entry["em"] = exact_match(answer, str(gold))
+                    entry["question"] = question
+                    entry["gold"] = str(gold)
+                    entry["prediction"] = answer
+                    bucket["f1"] += entry["f1"]
+                    bucket["em"] += entry["em"]
                 bucket["n"] += 1
 
-            await self.memos.store.clear_user(user, project)
+                if checkpoint_path and not retrieval_only:
+                    ck["answers"][key] = entry
+                    self._save_checkpoint(checkpoint_path, ck)
+
+            # Keep the store when checkpointing so a resumed run can reuse it.
+            if not checkpoint_path:
+                await self.memos.store.clear_user(user, project)
             logger.info("LoCoMo sample %s done (%d QA graded).", sample_id, len(qa_items))
 
         by_category = {}
@@ -232,6 +282,30 @@ class LoCoMoRunner:
                     await self.memos.store.add(record)
                 count += 1
         return count
+
+    @staticmethod
+    def _load_checkpoint(path: Optional[str]) -> Dict[str, Any]:
+        if path:
+            try:
+                with open(path, "r", encoding="utf-8") as fh:
+                    ck = json.load(fh)
+                if isinstance(ck, dict) and "answers" in ck and "ingested" in ck:
+                    logger.info("Resuming from checkpoint %s (%d answers cached).",
+                                path, len(ck["answers"]))
+                    return ck
+            except FileNotFoundError:
+                pass
+            except (json.JSONDecodeError, OSError) as exc:
+                logger.warning("Ignoring unreadable checkpoint %s: %s", path, exc)
+        return {"ingested": {}, "answers": {}}
+
+    @staticmethod
+    def _save_checkpoint(path: str, ck: Dict[str, Any]) -> None:
+        tmp = path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(ck, fh)
+        import os
+        os.replace(tmp, path)
 
     @staticmethod
     def _finalize(b: Dict[str, float]) -> Dict[str, Any]:

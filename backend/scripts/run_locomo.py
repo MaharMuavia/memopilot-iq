@@ -40,6 +40,8 @@ def download(dest: str) -> None:
 async def main(args: argparse.Namespace) -> None:
     if args.top_k:
         os.environ["RETRIEVAL_TOP_K"] = str(args.top_k)
+    if args.model:
+        os.environ["QWEN_CHAT_MODEL"] = args.model
     os.environ.setdefault("DATABASE_URL", "sqlite:///./locomo_run.db")
 
     from app.config import get_settings
@@ -53,6 +55,11 @@ async def main(args: argparse.Namespace) -> None:
     print(f"qwen_configured={settings.qwen_configured} "
           f"model={settings.qwen_chat_model} top_k={settings.retrieval_top_k}")
 
+    checkpoint = None if args.retrieval_only else args.checkpoint
+    if checkpoint and args.fresh and os.path.exists(checkpoint):
+        os.remove(checkpoint)
+        print(f"removed stale checkpoint {checkpoint}")
+
     report = await LoCoMoRunner(memos).run(
         args.path,
         mode=args.mode,
@@ -60,6 +67,7 @@ async def main(args: argparse.Namespace) -> None:
         max_qa_per_conversation=args.max_qa,
         include_adversarial=args.include_adversarial,
         retrieval_only=args.retrieval_only,
+        checkpoint_path=checkpoint,
     )
     await memos.qwen.aclose()
 
@@ -89,6 +97,10 @@ if __name__ == "__main__":
     p.add_argument("--retrieval-only", action="store_true",
                    help="skip answer generation; report evidence recall only")
     p.add_argument("--top-k", type=int, default=None, help="override RETRIEVAL_TOP_K")
+    p.add_argument("--model", default=None, help="override QWEN_CHAT_MODEL for answering")
+    p.add_argument("--checkpoint", default="locomo_checkpoint.json",
+                   help="per-QA resume file for answer-level runs")
+    p.add_argument("--fresh", action="store_true", help="discard any existing checkpoint")
     p.add_argument("--out", default="locomo_report.json")
     args = p.parse_args()
 
