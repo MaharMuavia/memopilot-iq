@@ -83,8 +83,12 @@ within a $2{,}500$-token context budget, and the same gain holds when only the
 answer model is swapped to GPT-4o ($0.79$ versus $0.67$), evidence that the
 benefit comes from the memory layer rather than any single model. The layer
 recalls target facts at \textsc{recall@5} $=0.77$ and reduces injected context
-by roughly $98\%$ relative to replaying full history. We argue that
-\emph{interpretability and lifecycle management}, not raw capacity, are the
+by roughly $98\%$ relative to replaying full history. On the standard LoCoMo
+long-conversation benchmark, an ablation and an evidence-conditioned analysis
+isolate the load-bearing mechanisms: answer F1 is $8.4\times$ higher when the
+memory layer places the annotated evidence into context than when it does not,
+localizing quality to retrieval depth rather than the answer model. We argue
+that \emph{interpretability and lifecycle management}, not raw capacity, are the
 decisive properties for trustworthy long-term agent memory, and we release the
 full system, benchmark, and trace format to support reproducible study.
 \end{abstract}
@@ -192,10 +196,10 @@ long-context QA or temporal-graph expressiveness, it makes the \emph{selection
 policy itself} interpretable and the lifecycle auditable. Mem0's update/delete
 and Zep's temporal invalidation achieve supersession; \sysname{} differs in
 exposing supersession as an inspectable state transition with a per-answer trace
-and a guaranteed-inclusion rule for critical content. We regard a head-to-head
-evaluation against Mem0 and Zep on a shared long-conversation benchmark
-(e.g.~LoCoMo~\citep{maharana2024locomo}) as the most important next experiment
-(\S\ref{sec:limitations}).
+and a guaranteed-inclusion rule for critical content. We report a first cut on
+the shared LoCoMo benchmark~\citep{maharana2024locomo} in \S\ref{sec:locomo}; a
+full, identically-graded head-to-head against Mem0 and Zep remains the most
+important next experiment (\S\ref{sec:limitations}).
 
 \paragraph{Retrieval.}
 Dense retrieval~\citep{karpukhin2020dpr} and approximate nearest-neighbor
@@ -654,6 +658,61 @@ uniform weights              & 0.95 & 0.04          & 1.00 \\
 \end{tabular}
 \end{table}
 
+\subsection{A standard-benchmark first cut: LoCoMo}
+\label{sec:locomo}
+To situate the system on a shared, external benchmark we run a first cut on
+LoCoMo~\citep{maharana2024locomo}, the long-conversation memory dataset used by
+recent production systems. We ingest three conversations \emph{verbatim} (one
+memory per dialogue turn, $1{,}451$ turns total), answer all $150$
+non-adversarial questions with the standard retrieve\,$\to$\,score\,$\to$\,budget
+assembly (top-$k=8$ within the $2{,}500$-token budget) using
+\texttt{qwen3.7-max}, and grade with strict token-level F1 and exact match by
+category (Table~\ref{tab:locomo}). Overall F1 is $0.252$ and EM $0.093$;
+\emph{evidence recall@8}, the model-independent fraction of questions whose
+annotated evidence turn was actually injected into the context, is $0.358$
+(against a $k/|store|\!\approx\!0.02$ random baseline).
+
+\begin{table}[t]
+\centering
+\small
+\caption{LoCoMo first cut (3 conversations, $1{,}451$ verbatim turns, $150$
+questions; \texttt{qwen3.7-max}, top-$k=8$, strict token-F1). The lower block
+conditions F1 on whether the evidence turn was retrieved into context.}
+\label{tab:locomo}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Category} & \textbf{n} & \textbf{F1} & \textbf{EM} & \textbf{Ev.\ recall@8} \\
+\midrule
+Temporal    & 67  & 0.308 & 0.164 & 0.403 \\
+Open-domain & 13  & 0.331 & 0.077 & 0.364 \\
+Multi-hop   & 57  & 0.189 & 0.018 & 0.333 \\
+Single-hop  & 13  & 0.158 & 0.077 & 0.231 \\
+\textbf{Overall} & \textbf{150} & \textbf{0.252} & \textbf{0.093} & \textbf{0.358} \\
+\midrule
+\multicolumn{5}{@{}l}{\emph{Conditioned on evidence retrieval:}} \\
+Evidence retrieved & 53  & \textbf{0.572} & 0.245 & n/a \\
+Evidence missed    & 95  & 0.068 & 0.011 & n/a \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The most informative view is the conditional one. When the memory layer places
+the annotated evidence turn into the context, answer F1 is $0.572$; when it does
+not, F1 collapses to $0.068$, an \textbf{$8.4\times$} gap. This cleanly
+separates the two error sources: the answer model is competent \emph{given} the
+right memory, and the binding constraint at this configuration is retrieval
+\emph{depth}, $k=8$ memories drawn from $\sim\!480$ candidate turns under a
+tight token budget. Depth is a tunable dial (raise $k$ or the budget, or use a
+stronger embedding model), not a property of the governance mechanism, and the
+harness makes the trade-off directly measurable. We emphasize that these are
+deliberately conservative numbers, strict token-F1 rather than LLM-judged
+grading, short-phrase prompting, and verbatim per-turn ingestion with no
+summarization advantage, and are therefore \emph{not} directly comparable to the
+LLM-judged LoCoMo figures reported for Mem0~\citep{chhikara2025mem0} and
+Zep~\citep{rasmussen2025zep}. The apparatus for a fair head-to-head, the same
+answer model and grader for every system, is released with the paper; the
+runner is checkpointed so that full-dataset runs are interruption-safe.
+
 % ===========================================================================
 \section{Limitations and Future Work}
 \label{sec:limitations}
@@ -662,16 +721,17 @@ uniform weights              & 0.95 & 0.04          & 1.00 \\
 large-scale; its keyword-based correctness, while precise and reproducible, does
 not capture answer fluency or subtle reasoning. The cross-backbone study covers
 two frontier models (Qwen and GPT-4o); broadening it to more models and a
-larger, multi-session benchmark with human or model-graded answers, and a
-direct comparison against external memory systems
-(Mem0~\citep{chhikara2025mem0}, Zep~\citep{rasmussen2025zep},
-MemGPT~\citep{packer2023memgpt}, A-Mem~\citep{xu2025amem}) on a shared protocol
-such as LoCoMo~\citep{maharana2024locomo}, is the clearest next step. As a
-substrate for that comparison we release a LoCoMo adapter with the system:
-per-turn ingestion into the memory store, the standard token-F1 / exact-match
-grading by question category, and a model-independent \emph{evidence recall}
-metric that measures whether the annotated evidence turns are injected into
-the assembled context.
+larger, multi-session benchmark with human or model-graded answers. Our LoCoMo
+first cut (\S\ref{sec:locomo}) is a step in this direction but is deliberately
+conservative: strict token-F1 rather than LLM-judged grading, verbatim per-turn
+ingestion, and a shallow $k=8$ retrieval budget. The $8.4\times$
+evidence-conditioned gap shows retrieval depth, not answering, is the current
+bottleneck, so the clearest next steps are a top-$k$/budget sweep, an
+LLM-judged grading mode, and a full-dataset, identically-graded comparison
+against external systems (Mem0~\citep{chhikara2025mem0},
+Zep~\citep{rasmussen2025zep}, MemGPT~\citep{packer2023memgpt},
+A-Mem~\citep{xu2025amem}). The released adapter and its checkpointed runner make
+these runs reproducible and interruption-safe.
 
 \paragraph{Hand-set weights.} The scoring weights in Equation~\eqref{eq:score}
 are interpretable priors, not learned. Learning them, e.g. by optimizing
