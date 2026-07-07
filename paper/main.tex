@@ -83,11 +83,13 @@ within a $2{,}500$-token context budget, and the same gain holds when only the
 answer model is swapped to GPT-4o ($0.79$ versus $0.67$), evidence that the
 benefit comes from the memory layer rather than any single model. The layer
 recalls target facts at \textsc{recall@5} $=0.77$ and reduces injected context
-by roughly $98\%$ relative to replaying full history. On the standard LoCoMo
-long-conversation benchmark, an ablation and an evidence-conditioned analysis
-isolate the load-bearing mechanisms: answer F1 is $8.4\times$ higher when the
-memory layer places the annotated evidence into context than when it does not,
-localizing quality to retrieval depth rather than the answer model. We argue
+by roughly $98\%$ relative to replaying full history. A deterministic ablation
+isolates the load-bearing mechanism: removing lifecycle exclusion raises the
+outdated-memory leak rate ninefold with no recall benefit. On the standard
+LoCoMo long-conversation benchmark, an evidence-conditioned analysis shows
+answer F1 is $8.4\times$ higher when the memory layer places the annotated
+evidence into context than when it does not, localizing quality to retrieval
+depth rather than the answer model. We argue
 that \emph{interpretability and lifecycle management}, not raw capacity, are the
 decisive properties for trustworthy long-term agent memory, and we release the
 full system, benchmark, and trace format to support reproducible study.
@@ -150,10 +152,12 @@ models~\citep{bai2023qwen,yang2024qwen2} for the language and embedding calls.
   \item \textbf{Non-destructive forgetting.} An engine that expires, archives,
   and supersedes memories through auditable state transitions, never silently
   hard-deleting user data (\S\ref{sec:forgetting}).
-  \item \textbf{End-to-end transparency.} A Memory Trace that exposes the full
-  decision surface of every answer, and a reproducible benchmark that quantifies
-  recall, supersession, outdated-avoidance, accuracy delta, and token savings
-  against a no-memory baseline (\S\ref{sec:trace}--\S\ref{sec:eval}).
+  \item \textbf{End-to-end transparency and evaluation.} A Memory Trace that
+  exposes the full decision surface of every answer, together with a
+  reproducible benchmark against a no-memory baseline across two frontier
+  backbones, a deterministic ablation isolating the load-bearing mechanism, and
+  a checkpointed LoCoMo adapter with a model-independent evidence-recall metric
+  (\S\ref{sec:trace}--\S\ref{sec:locomo}).
 \end{enumerate}
 
 % ===========================================================================
@@ -266,9 +270,11 @@ sketches the request lifecycle.
 \paragraph{Dual mode for reproducibility.} A central design choice is that the
 entire system, including extraction, embeddings, retrieval, the benchmark, and
 the test suite, runs with \emph{no external dependencies} via a deterministic
-offline fallback for both embeddings and chat. This makes every experiment in
-this paper reproducible on a laptop and removes nondeterminism from the
-evaluation of the memory \emph{mechanism} itself. In cloud mode the same
+offline fallback for both embeddings and chat. This makes every
+mechanism-level experiment in this paper (the ablation and all retrieval
+diagnostics) exactly reproducible on a laptop with no credentials, and removes
+nondeterminism from the evaluation of the memory \emph{mechanism} itself; the
+live-model results are reproducible given an API key. In cloud mode the same
 interfaces are backed by Qwen chat/embedding endpoints and managed
 table/object storage; the active mode is reported on a health endpoint.
 
@@ -761,16 +767,26 @@ become invalid, and can explain every decision. On a reproducible 24-scenario
 benchmark it improves task accuracy over a no-memory baseline for two frontier
 backbones ($+0.25$ for \texttt{qwen3.7-max}, $+0.12$ for \texttt{gpt-4o}) while
 cutting injected context by roughly $98\%$, evidence that the benefit comes from
-the memory layer rather than any single model. We release the system, benchmark,
-and trace format to support reproducible research on trustworthy agent memory.
+the memory layer rather than any single model. An ablation shows the layer's
+trustworthiness rests on lifecycle governance (removing exclusion raises
+outdated-memory leaks ninefold), and an evidence-conditioned LoCoMo analysis
+($8.4\times$ F1 gap) localizes the remaining headroom to retrieval depth, a
+tunable parameter, rather than to the mechanism. We release the system, the
+benchmarks, and the trace format to support reproducible research on
+trustworthy agent memory.
 
 % ===========================================================================
 \section*{Reproducibility and Availability}
-The complete system (backend, frontend, the benchmark harness, and the test
+The complete system (backend, frontend, the benchmark harnesses, and the test
 suite) runs offline with no external credentials via a deterministic
-embedding/LLM fallback, making every reported result reproducible on commodity
-hardware. The scoring weights, scenario definitions, and trace schema are
-specified in \S\ref{sec:scoring}--\S\ref{sec:trace} and in the released code.
+embedding/LLM fallback. All mechanism-level results, the governance ablation
+(Table~\ref{tab:ablation}) and the retrieval diagnostics, are exactly
+reproducible on commodity hardware with no API key; the live-model results
+(Tables~\ref{tab:results}, \ref{tab:crossmodel}, and \ref{tab:locomo}) are
+reproducible given API access to the corresponding models, and the LoCoMo
+runner is checkpointed so long runs are interruption-safe. The scoring weights,
+scenario definitions, and trace schema are specified in
+\S\ref{sec:scoring}--\S\ref{sec:trace} and in the released code.
 
 \bibliographystyle{plainnat}
 \bibliography{references}

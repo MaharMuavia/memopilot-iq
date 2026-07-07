@@ -5,9 +5,10 @@ Submission-ready arXiv preprint (LaTeX) describing the MemoPilot IQ / MemoryOS s
 ## Files
 - `main.tex` — the paper source.
 - `references.bib` — bibliography.
-- `figure_architecture.tex` — the architecture diagram (native TikZ, vector).
-  Pulled in by `main.tex` via `\input{figure_architecture}`; no external image
-  needed.
+- `figure_architecture.tex` — Figure 1, the architecture diagram (native TikZ).
+- `figure_lifecycle.tex` — Figure 2, the memory lifecycle state machine (TikZ).
+  Both are pulled in by `main.tex` via `\input{...}`; no external images needed.
+  Upload all four files to Overleaf.
 
 ## Build
 
@@ -29,14 +30,14 @@ latexmk -pdf main.tex
 ```
 
 ## Before submitting to arXiv
-- **Architecture figure.** Done — Figure 1 is a native TikZ diagram in
-  `figure_architecture.tex` (vector, scales cleanly, matches the paper fonts).
-  No image export needed. Edit that file to tweak it.
+- **Figures.** Done — both figures are native TikZ (vector, scale cleanly,
+  match the paper fonts). Edit the `figure_*.tex` files to tweak them.
 - **Author/affiliation.** Update the `\author` / `\affil` lines as needed
-  (ORCID, institution).
-- **Numbers.** The results in Table 2 are the representative offline-backend
-  figures from the system's own benchmark harness (`/api/eval/run`). Re-run the
-  benchmark with a live Qwen key and update the table if you want live-model
-  numbers; keep the offline note for reproducibility.
-- **arXiv upload.** Upload `main.tex` + `references.bib` + the figure. arXiv runs
-  BibTeX automatically; no need to upload a `.bbl` (though you can).
+  (name spelling, ORCID, institution).
+- **Numbers.** All results are from live runs, verifiable from the released
+  harnesses: the 24-scenario benchmark (`POST /api/eval/run`), the governance
+  ablation (`POST /api/eval/ablation`, deterministic offline), and the LoCoMo
+  runner (`backend/scripts/run_locomo.py`, checkpointed).
+- **arXiv upload.** Upload `main.tex`, `references.bib`, and both
+  `figure_*.tex` files. arXiv runs BibTeX automatically; no need to upload a
+  `.bbl` (though you can).
