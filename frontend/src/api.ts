@@ -116,13 +116,32 @@ export interface EvalReport {
 }
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      headers: { "Content-Type": "application/json" },
+      ...init,
+    });
+  } catch {
+    // Network-level failure: backend not reachable.
+    throw new Error(
+      "Cannot reach the backend. Start it with `uvicorn app.main:app --port 8000` in backend/, then retry."
+    );
+  }
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`${res.status}: ${text}`);
+    // Prefer the structured JSON error the backend returns.
+    let detail = `Request failed (${res.status}).`;
+    try {
+      const body = await res.json();
+      if (body?.detail) {
+        detail =
+          typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
+      }
+      if (body?.request_id) detail += ` (ref: ${body.request_id})`;
+    } catch {
+      /* non-JSON body; keep the generic message */
+    }
+    throw new Error(detail);
   }
   return res.json() as Promise<T>;
 }

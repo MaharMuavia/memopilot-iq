@@ -7,10 +7,13 @@ scripted demo (set SEED_DEMO=1).
 from __future__ import annotations
 
 import os
+import traceback
+import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from .config import get_settings
 from .memory import MemoryOS
@@ -36,13 +39,27 @@ logger = get_logger("main")
 async def lifespan(app: FastAPI):
     settings = get_settings()
     memos = MemoryOS(settings)
-    await memos.init()
+    try:
+        await memos.init()
+    except Exception as exc:  # cloud store misconfig must not crash every request
+        logger.error("Memory store init failed (%s); falling back to local SQLite.", exc)
+        from .memory.store_sqlite import SQLiteMemoryStore
+
+        memos.store = SQLiteMemoryStore(settings.database_url)
+        memos.retriever.store = memos.store
+        memos.extractor.store = memos.store
+        memos.forgetting.store = memos.store
+        memos.reflection.store = memos.store
+        await memos.store.init()
     app.state.memos = memos
     app.state.oss = OSSClient(settings)
     app.state.last_eval_report = None
     app.state.last_traces = {}
     logger.info("MemoPilot IQ started in %s (store: %s, qwen: %s)",
                 memos.mode, memos.store.backend_name, settings.qwen_configured)
+    if not settings.qwen_configured:
+        logger.warning("QWEN_API_KEY not set: running in deterministic OFFLINE fallback. "
+                       "Answers are synthetic; add a key to backend/.env for live Qwen.")
 
     if os.getenv("SEED_DEMO", "0") == "1":
         await seed_demo(memos)
@@ -68,6 +85,25 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     install_platform(app)  # API-key auth, rate limiting, /metrics
+
+    @app.exception_handler(Exception)
+    async def unhandled_exception_handler(request: Request, exc: Exception):
+        """Never leak a raw 500. Log the full traceback with a request id and
+        return a clean, structured error the frontend can display."""
+        request_id = uuid.uuid4().hex[:12]
+        logger.error(
+            "Unhandled error [%s] on %s %s\n%s",
+            request_id, request.method, request.url.path,
+            "".join(traceback.format_exception(type(exc), exc, exc.__traceback__)),
+        )
+        return JSONResponse(
+            status_code=500,
+            content={
+                "detail": "Internal error. The team has been notified.",
+                "request_id": request_id,
+                "hint": "Check the backend console for the full traceback under this request_id.",
+            },
+        )
 
     app.include_router(health.router)
     app.include_router(chat.router)
