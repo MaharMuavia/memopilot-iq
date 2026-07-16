@@ -49,8 +49,8 @@ search blended with sparse tag/keyword overlap, after structured filtering by
 
 ## 4. Context budget manager (`memory/context_builder.py`)
 
-Token budget defaults to **2,500**. Inclusion order: critical/pinned (always,
-even over budget) → top-k semantic → drop the rest. The system prompt and the
+Token budget defaults to **2,500**. Inclusion order: critical/pinned first
+within the strict budget → top-k semantic → drop the rest. The system prompt and the
 current user message are always present and not counted against the memory
 budget. Every decision is recorded in the trace.
 
@@ -81,7 +81,7 @@ token cost, candidates considered, and retrieval latency.
 
 ## 8. Reflection / consolidation (`memory/reflection.py`)
 
-A self-improvement "sleep" pass the agent can run over its active memory set:
+A consolidation "sleep" pass the agent can run over its active memory set:
 
 - **Merge** near-duplicate memories of the same type (`SequenceMatcher ≥ 0.82`);
   the strongest survives, the rest are archived (non-destructive) and the
@@ -97,5 +97,6 @@ Exposed via `POST /api/reflect` and the Analytics tab. Feeds the Memory Graph
 ## 9. Evaluation runner (`eval/benchmark.py`)
 
 Runs `eval/scenarios.json` for both the memory agent and a no-memory baseline
-and aggregates accuracy, recall@5, outdated-avoidance, token savings, and
+and aggregates strict-keyword accuracy, recall in the assembled context,
+outdated-avoidance, historical-context token reduction, and
 latency. See [judging_mapping.md](judging_mapping.md).

@@ -34,6 +34,7 @@ def test_health(client):
     assert body["status"] == "ok"
     assert body["mode"] == "LOCAL_MODE"
     assert body["qwen_configured"] is False
+    assert body["qwen_provider_status"] == "offline"
 
 
 def test_chat_creates_and_uses_memory(client):
@@ -58,6 +59,8 @@ def test_chat_creates_and_uses_memory(client):
 
 
 def test_secret_is_redacted(client):
+    captured = {}
+    client.app.state.oss.put_snapshot = lambda _name, payload: captured.update(payload)
     r = client.post("/api/chat", json={
         "user_id": "t2", "project_id": "p", "session_id": "s1",
         "message": "My key is sk-abcdef0123456789abcdef0123456789 and I prefer FastAPI.",
@@ -66,6 +69,41 @@ def test_secret_is_redacted(client):
     # No stored memory should contain the raw secret.
     for m in body["memory_actions"]["created"]:
         assert "sk-abcdef0123456789" not in m["content"]
+    assert "sk-abcdef0123456789" not in captured["message"]
+    trace = client.app.state.last_traces["s1"]
+    assert "sk-abcdef0123456789" not in trace["query"]
+
+
+def test_manual_metadata_with_a_secret_is_rejected(client):
+    r = client.post("/api/memories", json={
+        "user_id": "t", "project_id": "p", "type": "preference",
+        "content": "Use FastAPI.",
+        "summary": "token=abcdef0123456789",
+    })
+    assert r.status_code == 400
+
+
+def test_editing_content_refreshes_its_embedding(client):
+    calls = []
+
+    async def fake_embed(text):
+        calls.append(text)
+        return [float(len(text))]
+
+    client.app.state.memos.qwen.embed = fake_embed
+    created = client.post("/api/memories", json={
+        "user_id": "t", "project_id": "p", "type": "preference",
+        "content": "Use FastAPI.",
+    })
+    assert created.status_code == 200
+    calls.clear()
+
+    updated = client.patch(
+        f"/api/memories/{created.json()['memory_id']}",
+        json={"content": "Use Next.js."},
+    )
+    assert updated.status_code == 200
+    assert calls == ["Use Next.js."]
 
 
 def test_eval_runs(client):

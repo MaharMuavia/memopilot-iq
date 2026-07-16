@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import os
 import time
+from hashlib import sha256
 from collections import defaultdict, deque
 from typing import Deque, Dict, Tuple
 
@@ -42,6 +43,11 @@ def _rate_limit() -> int:
         return max(1, int(os.getenv("RATE_LIMIT_PER_MINUTE", "120")))
     except ValueError:
         return 120
+
+
+def _key_namespace(api_key: str) -> str:
+    """Create a stable non-reversible user namespace for an API key."""
+    return f"key_{sha256(api_key.encode('utf-8')).hexdigest()[:24]}"
 
 
 class Metrics:
@@ -127,6 +133,9 @@ def install_platform(app: FastAPI) -> None:
                     status_code=401,
                     content={"detail": "Missing or invalid X-API-Key."},
                 )
+            request.state.auth_enabled = bool(keys)
+            if keys:
+                request.state.authenticated_user_id = _key_namespace(api_key)
             identity = api_key or (request.client.host if request.client else "anon")
             if not limiter.allow(identity, _rate_limit()):
                 metrics.rate_limited_total += 1

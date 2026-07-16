@@ -44,6 +44,27 @@ def test_api_key_required_when_configured(tmp_path, monkeypatch):
         assert c.get("/metrics").status_code == 200
 
 
+def test_api_key_owns_its_memory_namespace(tmp_path, monkeypatch):
+    headers_a = {"X-API-Key": "mk-alpha"}
+    headers_b = {"X-API-Key": "mk-beta"}
+    with _make_client(tmp_path, monkeypatch, MEMOPILOT_API_KEYS="mk-alpha,mk-beta") as c:
+        # A body-supplied user id cannot select another user's namespace once
+        # API-key authentication is enabled.
+        created = c.post("/api/memories", headers=headers_a, json={
+            "user_id": "victim", "project_id": "p", "type": "preference",
+            "content": "alpha private preference",
+        })
+        assert created.status_code == 200
+        memory_id = created.json()["memory_id"]
+        assert created.json()["user_id"] != "victim"
+
+        assert c.get("/api/memories", headers=headers_b).json()["total"] == 0
+        assert c.patch(f"/api/memories/{memory_id}", headers=headers_b,
+                       json={"pin": True}).status_code == 404
+        assert c.patch(f"/api/memories/{memory_id}", headers=headers_a,
+                       json={"pin": True}).status_code == 200
+
+
 # ---------------------------------------------------------- rate limiting
 def test_rate_limit_enforced(tmp_path, monkeypatch):
     with _make_client(tmp_path, monkeypatch, RATE_LIMIT_PER_MINUTE="5") as c:
@@ -116,3 +137,28 @@ def test_memory_history_trail(tmp_path, monkeypatch):
         missing = c.get("/api/memories/mem_nonexistent/history",
                         params={"user_id": "h", "project_id": "proj"})
         assert missing.status_code == 404
+
+
+def test_forget_all_erases_events_as_well_as_memories(tmp_path, monkeypatch):
+    with _make_client(tmp_path, monkeypatch) as c:
+        created = c.post("/api/memories", json={
+            "user_id": "erase", "project_id": "proj", "type": "preference",
+            "content": "erase this event too",
+        })
+        assert created.status_code == 200
+        assert c.get("/api/memories/timeline", params={
+            "user_id": "erase", "project_id": "proj",
+        }).json()["count"] == 1
+
+        response = c.post("/api/memories/forget-all", params={
+            "user_id": "erase", "project_id": "proj",
+        })
+        assert response.status_code == 200
+        assert response.json()["forgotten"] == 1
+        # The forget-all endpoint writes one deletion event after clearing the
+        # prior audit trail; it must not retain the erased memory content.
+        events = c.get("/api/memories/timeline", params={
+            "user_id": "erase", "project_id": "proj",
+        }).json()["events"]
+        assert len(events) == 1
+        assert "erase this event too" not in events[0]["content"]

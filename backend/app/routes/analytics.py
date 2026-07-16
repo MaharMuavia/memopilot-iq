@@ -11,6 +11,7 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, Request
 
 from ..models import MemoryStatus
+from ..utils.identity import effective_user_id
 
 router = APIRouter(prefix="/api", tags=["analytics"])
 
@@ -31,6 +32,7 @@ async def analytics(
     project_id: str | None = "qwen-memoryagent",
 ):
     memos = request.app.state.memos
+    user_id = effective_user_id(request, user_id)
     memories = await memos.store.list(user_id, project_id, include_all=True)
     events = await memos.store.list_events(user_id, project_id)
 
@@ -81,6 +83,7 @@ async def graph(
     project_id: str | None = "qwen-memoryagent",
 ):
     memos = request.app.state.memos
+    user_id = effective_user_id(request, user_id)
     memories = await memos.store.list(user_id, project_id, include_all=True)
     visible = [m for m in memories if m.status.value in _VISIBLE]
 

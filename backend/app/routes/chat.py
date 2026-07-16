@@ -12,7 +12,9 @@ from __future__ import annotations
 from fastapi import APIRouter, Request
 
 from ..models import ChatRequest, ChatResponse
+from ..utils.identity import effective_user_id
 from ..utils.logging import get_logger
+from ..utils.security import redact_secrets
 
 router = APIRouter(prefix="/api", tags=["chat"])
 logger = get_logger("chat")
@@ -22,10 +24,11 @@ logger = get_logger("chat")
 async def chat(req: ChatRequest, request: Request) -> ChatResponse:
     memos = request.app.state.memos
     oss = request.app.state.oss
+    user_id = effective_user_id(request, req.user_id)
 
     # 1 + 2: build budgeted context and answer.
     system_prompt, trace, used = await memos.build_context(
-        req.user_id, req.project_id, req.message
+        user_id, req.project_id, req.message
     )
     answer = await memos.qwen.chat(
         [
@@ -36,7 +39,7 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
 
     # 3: extract + persist new memories from this user message.
     actions = await memos.remember(
-        user_id=req.user_id,
+        user_id=user_id,
         project_id=req.project_id,
         session_id=req.session_id,
         message=req.message,
@@ -47,11 +50,11 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
         oss.put_snapshot(
             "turns",
             {
-                "user_id": req.user_id,
+                "user_id": user_id,
                 "project_id": req.project_id,
                 "session_id": req.session_id,
-                "message": req.message,
-                "answer": answer,
+                "message": redact_secrets(req.message),
+                "answer": redact_secrets(answer),
                 "used_memory_ids": [m.memory_id for m in used],
                 "memory_actions": actions.model_dump(),
             },
@@ -66,10 +69,13 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
         request.app.state.last_traces = traces
     traces[req.session_id] = {
         "session_id": req.session_id,
-        "user_id": req.user_id,
+        "user_id": user_id,
         "project_id": req.project_id,
-        "query": req.message,
-        "answer": answer,
+        # This is process-local diagnostic state, but it follows the same
+        # redaction rule as durable snapshots so a later persistence change
+        # cannot accidentally retain credentials.
+        "query": redact_secrets(req.message),
+        "answer": redact_secrets(answer),
         "trace": trace.model_dump(),
         "memory_actions": actions.model_dump(),
     }

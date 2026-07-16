@@ -18,6 +18,7 @@ async def health(request: Request) -> dict:
         "service": "MemoPilot IQ",
         "mode": memos.mode,
         "qwen_configured": settings.qwen_configured,
+        "qwen_provider_status": memos.qwen.provider_status,
         "qwen_model": settings.qwen_chat_model,
         "memory_store": memos.store.backend_name,
         "alibaba_configured": settings.alibaba_configured,

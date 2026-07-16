@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Request
 
+from ..utils.identity import effective_user_id
+
 router = APIRouter(prefix="/api", tags=["reflection"])
 
 
@@ -13,6 +15,7 @@ async def reflect(
     project_id: str | None = "qwen-memoryagent",
 ):
     memos = request.app.state.memos
+    user_id = effective_user_id(request, user_id)
     report = await memos.reflection.reflect(user_id, project_id)
 
     # Persist the reflection report (OSS in cloud mode, local snapshot otherwise).

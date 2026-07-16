@@ -13,9 +13,9 @@ Variants:
   * uniform weights        - equal positive weights, no penalties (untuned policy).
 
 Metrics (per variant, aggregated over scenarios):
-  * recall@5               - target memory present in the injected context.
+  * context recall         - target memory present in the assembled context.
   * leak rate              - a genuinely outdated memory injected (lower is better).
-  * critical inclusion     - critical memory injected when present (higher is better).
+  * critical inclusion     - critical memory injected when it fits the strict budget.
 """
 from __future__ import annotations
 
@@ -166,8 +166,8 @@ class AblationRunner:
         injected, tokens, count = [], 0, 0
         for m, _ in cands:
             cost = approx_tokens(m.content)
-            if is_priority(m):
-                injected.append(m)  # always included, even over budget
+            if is_priority(m) and tokens + cost <= budget:
+                injected.append(m)
                 tokens += cost
                 count += 1
             elif count < top_k and tokens + cost <= budget:

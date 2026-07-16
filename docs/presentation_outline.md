@@ -1,48 +1,63 @@
-# Presentation / PPT Outline — MemoPilot IQ
+# Presentation Outline — MemoPilot IQ
 
 **Track 1: MemoryAgent · Qwen Cloud Global AI Hackathon**
 
 ### Slide 1 — Title
-MemoPilot IQ — *A self-improving persistent-memory agent that remembers,
-forgets, and explains what matters.* Team / logo / track.
+
+MemoPilot IQ — a persistent-memory layer that remembers, retires stale facts,
+and explains its choices.
 
 ### Slide 2 — Problem
-AI assistants forget everything between sessions. Developers and students
-re-explain preferences, decisions and constraints constantly; assistants give
-outdated advice after a decision changes.
+
+Conversation history is not durable memory: it grows without governance and
+can replay decisions that a user later changed.
 
 ### Slide 3 — Solution
-A dedicated **memory intelligence layer (MemoryOS)** on top of Qwen Cloud:
-extract → classify → score → retrieve → budget → forget → explain.
+
+MemoryOS extracts typed records, scores and retrieves them, assembles a strict
+context budget, applies lifecycle rules, and exposes a Memory Trace.
 
 ### Slide 4 — Architecture
-Diagram: User → React frontend → FastAPI → MemoryOS → Qwen Cloud (chat +
-embeddings) + Alibaba Tablestore + OSS. (Use `assets/architecture.png`.)
 
-### Slide 5 — MemoryOS pipeline
-12 memory types, 6 states. Extraction redacts secrets, detects contradictions,
-sets expiries, merges duplicates. Timeline event for every change.
+User → React → FastAPI → MemoryOS → Qwen (chat, extraction, embeddings).
+Show `assets/architecture.png`; local mode uses SQLite, cloud mode targets
+Tablestore and OSS.
 
-### Slide 6 — Retrieval & scoring
-The weighted scoring formula; hybrid dense+sparse retrieval; critical/pinned
-always first; superseded/expired never injected.
+### Slide 5 — Memory lifecycle
 
-### Slide 7 — Forgetting engine
-Expire deadlines, archive stale low-value memories, supersede contradicted
-decisions — non-destructive, fully explained in the UI.
+Demonstrate active, pinned, superseded, expired, archived, and deleted states.
+Show a changed technical decision replacing a prior one.
 
-### Slide 8 — Demo scenario
-5-session script: create preferences → recall in architecture answer →
-supersede React+Vite with Next.js → outdated memory ignored.
+### Slide 6 — Retrieval and safety
 
-### Slide 9 — Evaluation results
-Memory agent ~0.9 vs baseline ~0.45 accuracy; recall@5 high; 0 outdated errors;
-~60% token savings; ~tens-of-ms retrieval. Live dashboard.
+Show hybrid retrieval, the interpretable scoring factors, the strict budget,
+secret-safe persistence, and the trace for included and skipped memories.
 
-### Slide 10 — Qwen + Alibaba Cloud proof
-Qwen for chat/extraction/embeddings; Tablestore + OSS persistence; deployed on
-ECS/Function Compute. `/health` shows the active mode.
+### Slide 7 — User control
 
-### Slide 11 — Impact & roadmap
-Drop-in memory layer for any assistant. Roadmap: multi-user auth, team memory
-sharing, FAISS/Chroma at scale, memory analytics, RAG over documents.
+Show edit, pin, archive, hard delete, export, and **Forget all**. Explain that
+Forget all removes the selected project's memories and prior timeline events.
+
+### Slide 8 — Live demo
+
+Run the documented multi-session scenario: save a preference, ask a follow-up,
+change a decision, then show the old decision being excluded.
+
+### Slide 9 — Evaluation
+
+Run the 24-scenario diagnostic on the build being shown. Display its generated
+report — strict answer checks, context recall, stale-memory checks,
+historical-context reduction, and latency. Do not display preset figures.
+
+### Slide 10 — Qwen and Alibaba Cloud proof
+
+Show Qwen usage in the live chat/extraction path. After deployment, show the
+actual Alibaba-mode `/health` response plus Tablestore and OSS console evidence.
+Until then, describe the Alibaba implementation as deployment-ready code, not
+as a completed cloud deployment.
+
+### Slide 11 — Limits and roadmap
+
+Local demo mode is open; an Internet-facing service requires TLS, real identity
+management, key rotation, and distributed rate limiting. Next: complete the
+Alibaba deployment, attach evidence, and rerun final model-backed evaluation.

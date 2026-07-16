@@ -40,7 +40,7 @@ export function Footer() {
         </nav>
       </div>
       <div className="border-t border-slate-200/70 py-4 text-center text-xs text-slate-400">
-        © {new Date().getFullYear()} MemoPilot IQ — A self-improving
+        © {new Date().getFullYear()} MemoPilot IQ — A self-curating
         persistent-memory agent.
       </div>
     </footer>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   api,
@@ -47,8 +47,10 @@ export default function DashboardPage() {
   const [healthLoaded, setHealthLoaded] = useState(false);
   const [last, setLast] = useState<ChatResponse | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const sessionId =
-    "session-" + new Date().toISOString().slice(11, 19).replace(/:/g, "");
+  // Keep a conversation session stable across state updates and rerenders.
+  const sessionId = useRef(
+    "session-" + new Date().toISOString().slice(11, 19).replace(/:/g, "")
+  ).current;
 
   useEffect(() => {
     api
@@ -183,27 +185,29 @@ function StatusBadges({
     return <span className="chip bg-rose-100 text-rose-700">backend offline</span>;
   }
   const cloud = health.memory_store.includes("alibaba");
+  const qwenOnline = health.qwen_provider_status === "online";
+  const qwenFallback = health.qwen_provider_status === "degraded_offline_fallback";
   return (
     <>
       <ModeBadge mode={health.mode} />
       <span
         className={`chip ${
-          health.qwen_configured
+          qwenOnline
             ? "bg-emerald-100 text-emerald-700"
             : "bg-slate-200 text-slate-600"
         }`}
         title={
-          health.qwen_configured
+          qwenOnline
             ? `Qwen online · ${health.qwen_model}`
             : "Qwen offline — deterministic local fallback"
         }
       >
         <span
           className={`h-1.5 w-1.5 rounded-full ${
-            health.qwen_configured ? "bg-emerald-500" : "bg-slate-400"
+            qwenOnline ? "bg-emerald-500" : "bg-slate-400"
           }`}
         />
-        {health.qwen_configured ? "Qwen Online" : "Qwen Offline"}
+        {qwenOnline ? "Qwen Online" : qwenFallback ? "Qwen Fallback" : "Qwen Offline"}
       </span>
       <span
         className={`chip ${cloud ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-700"}`}

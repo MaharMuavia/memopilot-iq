@@ -10,10 +10,11 @@ numpy>=1.26  # vectorized dense retrieval (optional at runtime, listed for scale
 pytest==8.3.4
 pytest-asyncio==0.25.2
 
-# --- Alibaba Cloud (only needed for ALIBABA_CLOUD_MODE) ---
-# Uncomment to enable cloud persistence + object storage:
-# tablestore==5.4.6
-# oss2==2.19.1
+# --- Alibaba Cloud ---
+# Kept in the standard install so ECS and Function Compute use the same
+# dependency set as local development when ALIBABA_CLOUD_MODE is enabled.
+tablestore==6.4.8
+oss2==2.19.1
 
 # --- Optional local vector backends (brute-force cosine is the default) ---
 # faiss-cpu==1.9.0

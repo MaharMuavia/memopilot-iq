@@ -2,7 +2,7 @@
   "name": "memopilot-iq",
   "version": "1.0.0",
   "private": true,
-  "description": "MemoPilot IQ — a self-improving persistent-memory agent (Qwen Cloud Global AI Hackathon, Track 1: MemoryAgent).",
+  "description": "MemoPilot IQ — a self-curating persistent-memory agent (Qwen Cloud Global AI Hackathon, Track 1: MemoryAgent).",
   "license": "MIT",
   "scripts": {
     "dev": "concurrently -n backend,frontend -c blue,green \"npm:dev:backend\" \"npm:dev:frontend\"",

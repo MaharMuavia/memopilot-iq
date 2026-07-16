@@ -59,6 +59,14 @@ for Persistent Large Language Model Agents}}
 \begin{document}
 \maketitle
 
+\begin{center}
+\fcolorbox{red!65!black}{red!5}{\parbox{0.93\linewidth}{\textbf{Draft status.}
+This is an archived preliminary research draft. Its empirical tables and
+numeric claims predate the final evaluator and strict-budget fixes, so they
+are not submission evidence and must not be quoted. Regenerate every result
+from the current harnesses before publication.}}
+\end{center}
+
 \begin{abstract}
 Large language model (LLM) assistants are stateless across sessions: they forget
 user preferences, project decisions, and constraints, and continue to give
@@ -70,8 +78,8 @@ raw transcripts; (ii)~ranks candidates with a single, fully interpretable
 linear scoring function that fuses semantic similarity with intrinsic signals
 (importance, recency, confidence, usage), contextual signals (project match,
 criticality), and explicit penalties (outdated, privacy, supersession);
-(iii)~assembles the prompt under a strict token budget that \emph{guarantees}
-inclusion of critical and pinned memories; (iv)~performs non-destructive
+(iii)~assembles the prompt under a strict token budget that prioritizes
+critical and pinned memories when they fit; (iv)~performs non-destructive
 forgetting through expiry, archival, and supersession state transitions; and
 (v)~emits a complete \emph{Memory Trace} that records, for every answer, which
 memories were injected or skipped, their component scores, the reason, and the

@@ -18,12 +18,14 @@ def _scored(content, project="p", critical=False, sim=0.5, importance=0.5):
     return mem, score_memory(mem, sim, "p")
 
 
-def test_critical_always_included_even_over_budget():
+def test_critical_memory_respects_strict_budget():
     builder = ContextBuilder(token_budget=1, top_k=3)  # tiny budget
     scored = [_scored("never commit api keys", critical=True, importance=0.95)]
     _, trace, used = builder.build("checklist", scored, "p", 1, 1.0)
-    assert len(used) == 1
-    assert trace.included[0].included is True
+    assert used == []
+    assert trace.tokens_used <= builder.token_budget
+    assert len(trace.skipped) == 1
+    assert "critical/pinned" in trace.skipped[0].reason.lower()
 
 
 def test_budget_skips_low_score_memories():

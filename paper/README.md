@@ -1,6 +1,9 @@
 # MemoPilot IQ — Research Paper
 
-Submission-ready arXiv preprint (LaTeX) describing the MemoPilot IQ / MemoryOS system.
+Archived preliminary LaTex draft describing MemoPilot IQ / MemoryOS. It is not
+submission-ready: its experimental tables predate the final evaluator and
+strict-budget fixes. Regenerate every reported metric and remove the visible
+draft notice in `main.tex` before sending it to arXiv, judges, or customers.
 
 ## Files
 - `main.tex` — the paper source.
@@ -34,10 +37,11 @@ latexmk -pdf main.tex
   match the paper fonts). Edit the `figure_*.tex` files to tweak them.
 - **Author/affiliation.** Update the `\author` / `\affil` lines as needed
   (name spelling, ORCID, institution).
-- **Numbers.** All results are from live runs, verifiable from the released
-  harnesses: the 24-scenario benchmark (`POST /api/eval/run`), the governance
-  ablation (`POST /api/eval/ablation`, deterministic offline), and the LoCoMo
-  runner (`backend/scripts/run_locomo.py`, checkpointed).
+- **Numbers.** Do not quote the existing values. Rerun the 24-scenario
+  benchmark (`POST /api/eval/run`), the governance ablation
+  (`POST /api/eval/ablation`), and the LoCoMo runner
+  (`backend/scripts/run_locomo.py`) against the finalized build, then retain
+  the raw reports alongside the revised tables.
 - **arXiv upload.** Upload `main.tex`, `references.bib`, and both
   `figure_*.tex` files. arXiv runs BibTeX automatically; no need to upload a
   `.bbl` (though you can).

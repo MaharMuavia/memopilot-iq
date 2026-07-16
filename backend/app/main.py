@@ -73,7 +73,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
         title="MemoPilot IQ",
-        description="A self-improving persistent-memory agent (Qwen Cloud, Track 1: MemoryAgent).",
+        description="A self-curating persistent-memory agent (Qwen Cloud, Track 1: MemoryAgent).",
         version="1.0.0",
         lifespan=lifespan,
     )

@@ -44,7 +44,8 @@ export function EvaluationDashboard() {
       {!report && !loading && (
         <p className="text-sm text-slate-400">
           Run the benchmark to compare the memory agent against a no-memory
-          baseline across 6 scenarios (recall, supersession, expiry, critical).
+          baseline across 24 diagnostic scenarios. Results are generated live
+          for the currently configured model and strict keyword evaluator.
         </p>
       )}
 
@@ -53,7 +54,7 @@ export function EvaluationDashboard() {
           <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3">
             <Metric label="Memory agent accuracy" value={pct(report.memory_agent_accuracy)} good />
             <Metric label="Baseline (no memory)" value={pct(report.baseline_no_memory_accuracy)} />
-            <Metric label="Recall@5" value={pct(report.memory_recall_at_5)} good />
+            <Metric label={`Recall in context (top ${report.retrieval_top_k})`} value={pct(report.memory_recall_at_context)} good />
             <Metric label="Token savings" value={`${report.token_savings_percent}%`} good />
             <Metric label="Outdated mem errors" value={`${report.outdated_memory_errors}`} good={report.outdated_memory_errors === 0} />
             <Metric label="Avg retrieval" value={`${report.avg_retrieval_latency_ms} ms`} />

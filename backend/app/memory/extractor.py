@@ -127,7 +127,7 @@ class MemoryExtractor:
         )
 
         for raw in new_memories:
-            content = redact_secrets(str(raw.get("content", "")).strip())
+            content = redact_secrets(str(raw.get("content", "")).strip())[:4000]
             if not content or contains_secret(content):
                 actions.redacted.append("Dropped a memory that still contained a secret.")
                 continue
@@ -225,6 +225,15 @@ class MemoryExtractor:
             privacy_level = PrivacyLevel.public
 
         is_critical = bool(raw.get("is_critical")) or mtype == MemoryType.critical
+        # Model output is untrusted. Clamp it before Pydantic validates the
+        # record so one malformed extraction cannot break the chat request or
+        # inflate a context window.
+        def bounded_float(value: Any, default: float) -> float:
+            try:
+                return min(1.0, max(0.0, float(value)))
+            except (TypeError, ValueError):
+                return default
+
         return MemoryRecord(
             user_id=user_id,
             project_id=project_id,
@@ -232,15 +241,17 @@ class MemoryExtractor:
             type=mtype,
             status=MemoryStatus.active,
             content=content,
-            summary=str(raw.get("summary") or content[:80]),
-            importance=float(raw.get("importance", 0.6)),
-            confidence=float(raw.get("confidence", 0.75)),
-            tags=[str(t) for t in (raw.get("tags") or [])][:8],
+            summary=redact_secrets(str(raw.get("summary") or content[:80]))[:500],
+            importance=bounded_float(raw.get("importance"), 0.6),
+            confidence=bounded_float(raw.get("confidence"), 0.75),
+            tags=[redact_secrets(str(t))[:64] for t in (raw.get("tags") or [])][:8],
             source_message_id=source_message_id,
             is_critical=is_critical,
             privacy_level=privacy_level,
             expires_at=expires_at,
-            reason=str(raw.get("reason") or "Extracted by Memory Editor."),
+            reason=redact_secrets(
+                str(raw.get("reason") or "Extracted by Memory Editor.")
+            )[:500],
         )
 
     def _parse_expiry(

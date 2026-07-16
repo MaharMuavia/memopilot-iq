@@ -1,12 +1,13 @@
 # Alibaba Cloud Deployment
 
-MemoPilot IQ uses Alibaba Cloud in three ways: **Qwen Cloud (DashScope)** for
-all AI calls, **Tablestore** for persistent memory, and **OSS** for raw logs,
-memory snapshots and evaluation reports. The backend is containerised and
-deploys to **ECS**, **Function Compute (FC3.0)**, or **Container Service for
-Kubernetes (ACK)**.
+MemoPilot IQ has Alibaba Cloud integration code for **Qwen Cloud (DashScope)**
+AI calls, **Tablestore** persistent memory, and **OSS** redacted turn
+snapshots and evaluation reports. The backend is containerised and can be
+deployed to **ECS**, **Function Compute (FC3.0)**, or **Container Service for
+Kubernetes (ACK)**. This repository does not yet claim a completed deployment;
+use the evidence checklist below after deploying.
 
-## Code that proves Alibaba Cloud integration
+## Alibaba Cloud integration in the codebase
 
 | Concern | File | What it does |
 |---|---|---|
@@ -78,5 +79,6 @@ acceptable proof):
 - `assets/proof_oss.png` — OSS bucket showing `memopilot/turns/*.json` snapshots.
 - `assets/proof_ecs_or_fc.png` — the running ECS instance / FC function URL.
 
-> The integration code paths are exercised automatically the moment cloud
-> credentials are set; no code changes are needed to switch modes.
+> The configuration selects cloud mode when credentials are supplied. Validate
+> the running health endpoint and the actual Tablestore/OSS writes before
+> representing the deployment as complete.

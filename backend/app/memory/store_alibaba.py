@@ -12,6 +12,7 @@ still works. See ``docs/deployment_alibaba.md``.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import Any, Dict, List, Optional
 
@@ -59,6 +60,9 @@ class AlibabaTablestoreMemoryStore(MemoryStore):
         return self._client
 
     async def init(self) -> None:
+        await asyncio.to_thread(self._init_sync)
+
+    def _init_sync(self) -> None:
         from tablestore import (  # type: ignore
             TableMeta,
             TableOptions,
@@ -96,29 +100,40 @@ class AlibabaTablestoreMemoryStore(MemoryStore):
         )
 
     async def add(self, memory: MemoryRecord) -> MemoryRecord:
-        self._put_row(_PRIMARY_TABLE, memory.memory_id, json.loads(memory.model_dump_json()))
+        await asyncio.to_thread(
+            self._put_row,
+            _PRIMARY_TABLE,
+            memory.memory_id,
+            json.loads(memory.model_dump_json()),
+        )
         return memory
 
     async def get(self, memory_id: str) -> Optional[MemoryRecord]:
         from tablestore import INF_MIN, INF_MAX  # type: ignore  # noqa: F401
 
-        client = self._ots()
-        _, row, _ = client.get_row(_PRIMARY_TABLE, [("pk", memory_id)], [], None, 1)
-        if not row:
-            return None
-        data = dict(row.attribute_columns).get("data")
+        def _get() -> Optional[str]:
+            client = self._ots()
+            _, row, _ = client.get_row(_PRIMARY_TABLE, [("pk", memory_id)], [], None, 1)
+            if not row:
+                return None
+            return dict(row.attribute_columns).get("data")
+
+        data = await asyncio.to_thread(_get)
         return MemoryRecord.model_validate_json(data) if data else None
 
     async def update(self, memory: MemoryRecord) -> MemoryRecord:
         return await self.add(memory)
 
     async def delete(self, memory_id: str) -> None:
+        await asyncio.to_thread(self._delete_row, _PRIMARY_TABLE, memory_id)
+
+    def _delete_row(self, table: str, pk_value: str) -> None:
         from tablestore import Row, Condition, RowExistenceExpectation  # type: ignore
 
         client = self._ots()
         client.delete_row(
-            _PRIMARY_TABLE,
-            Row([("pk", memory_id)]),
+            table,
+            Row([("pk", pk_value)]),
             Condition(RowExistenceExpectation.IGNORE),
         )
 
@@ -147,7 +162,7 @@ class AlibabaTablestoreMemoryStore(MemoryStore):
         statuses: Optional[List[str]] = None,
         include_all: bool = False,
     ) -> List[MemoryRecord]:
-        rows = self._scan(_PRIMARY_TABLE)
+        rows = await asyncio.to_thread(self._scan, _PRIMARY_TABLE)
         records = [MemoryRecord.model_validate(r) for r in rows if r.get("user_id") == user_id]
         if project_id is not None:
             records = [m for m in records if m.project_id in (project_id, None)]
@@ -160,12 +175,14 @@ class AlibabaTablestoreMemoryStore(MemoryStore):
     async def add_event(self, event: Dict[str, Any]) -> None:
         import uuid
 
-        self._put_row(_EVENTS_TABLE, f"evt_{uuid.uuid4().hex}", event)
+        event_id = f"evt_{uuid.uuid4().hex}"
+        payload = {**event, "event_id": event_id}
+        await asyncio.to_thread(self._put_row, _EVENTS_TABLE, event_id, payload)
 
     async def list_events(
         self, user_id: str, project_id: Optional[str] = None
     ) -> List[Dict[str, Any]]:
-        rows = self._scan(_EVENTS_TABLE)
+        rows = await asyncio.to_thread(self._scan, _EVENTS_TABLE)
         events = [e for e in rows if e.get("user_id") == user_id]
         if project_id is not None:
             events = [e for e in events if e.get("project_id") in (project_id, None)]
@@ -175,4 +192,9 @@ class AlibabaTablestoreMemoryStore(MemoryStore):
         records = await self.list(user_id, project_id, include_all=True)
         for m in records:
             await self.delete(m.memory_id)
+        events = await self.list_events(user_id, project_id)
+        for event in events:
+            event_id = event.get("event_id")
+            if event_id:
+                await asyncio.to_thread(self._delete_row, _EVENTS_TABLE, str(event_id))
         return len(records)

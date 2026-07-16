@@ -44,8 +44,8 @@ flowchart TD
    filters (`user_id`, `project_id`, status), critical/pinned prioritised
    (`memory/retriever.py`).
 4. **Score** — the MemoryOS scoring formula (`memory/scorer.py`).
-5. **Budget** — ContextBuilder injects within a 2,500-token budget, dropping
-   low-score memories and always keeping critical/pinned (`memory/context_builder.py`).
+5. **Budget** — ContextBuilder injects within a 2,500-token budget, prioritising
+   critical/pinned records only when they fit (`memory/context_builder.py`).
 6. **Answer** — Qwen chat with the budgeted system prompt.
 7. **Extract** — the Memory Editor extracts new structured memories, detects
    contradictions → supersession, redacts secrets (`memory/extractor.py`).

@@ -11,8 +11,9 @@ services:
     ports:
       - "8000:8000"
     environment:
-      APP_MODE: local
-      MEMORY_STORE: sqlite
+      # APP_MODE and MEMORY_STORE deliberately come from backend/.env when
+      # cloud mode is required. With no env file, Settings defaults to local
+      # SQLite mode and this path keeps Docker data persistent.
       DATABASE_URL: sqlite:////data/memopilot.db
       FRONTEND_ORIGIN: http://localhost:5173
     env_file:

@@ -76,6 +76,7 @@ export interface HealthInfo {
   service: string;
   mode: string;
   qwen_configured: boolean;
+  qwen_provider_status: "online" | "offline" | "degraded_offline_fallback";
   qwen_model: string;
   memory_store: string;
   alibaba_configured: boolean;
@@ -96,12 +97,14 @@ export interface TimelineEvent {
 export interface EvalReport {
   memory_agent_accuracy: number;
   baseline_no_memory_accuracy: number;
-  memory_recall_at_5: number;
+  memory_recall_at_context: number;
   outdated_memory_errors: number;
   outdated_memory_avoidance: number;
   preference_adherence: number;
   token_savings_percent: number;
   response_accuracy_delta: number;
+  retrieval_top_k: number;
+  evaluator: string;
   avg_retrieval_latency_ms: number;
   retrieval_latency_ms: number;
   scenarios: {

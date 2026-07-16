@@ -5,7 +5,8 @@ Runs the scenarios in ``scenarios.json`` twice:
   * baseline: answers with NO long-term memory (current message only).
 
 It measures preference adherence, cross-session recall, supersession success,
-expired-memory avoidance, critical recall, recall@5, token savings and latency,
+expired-memory avoidance, critical recall, recall in the assembled context,
+token savings and latency,
 then aggregates into the report consumed by the Evaluation Dashboard.
 """
 from __future__ import annotations
@@ -35,19 +36,17 @@ def _keywords_present(text: str, keywords: List[str]) -> bool:
 
 
 def answer_correct(answer: str, expected: List[str], forbidden: List[str]) -> bool:
-    """Grade a generated answer. Correct when all expected keywords appear and
-    no genuinely outdated keyword leaks. A forbidden keyword is only a failure
-    when no expected keyword is present (so "use Next.js instead of React"
-    still counts as correct), or when there are no expected keywords at all
-    (the expiry case, where any mention of the stale fact is a leak)."""
+    """Strict lexical grader used only for the diagnostic suite.
+
+    An answer that contains both expected and forbidden terms is ambiguous and
+    is not counted as correct. This deliberately underestimates performance,
+    but prevents an answer that recommends an outdated option from receiving a
+    false pass merely because it also mentions the preferred option.
+    """
     low = (answer or "").lower()
     has_expected = all(e.lower() in low for e in expected) if expected else True
-    if not has_expected:
-        return False
     has_forbidden = any(f.lower() in low for f in forbidden)
-    if has_forbidden and not expected:
-        return False
-    return True
+    return has_expected and not has_forbidden
 
 
 def _any_present(text: str, keywords: List[str]) -> bool:
@@ -124,8 +123,11 @@ class BenchmarkRunner:
             })
 
         n = len(scenarios)
+        # Compare only the variable historical context. The system prompt and
+        # current question are shared by both approaches and must not be
+        # inflated with an arbitrary constant.
         full_history_tokens = sum(
-            _approx_tokens(" ".join(sc["setup_messages"]) + sc["test_question"]) + 800
+            _approx_tokens(" ".join(sc["setup_messages"]))
             for sc in scenarios
         )
         token_savings_percent = (
@@ -152,7 +154,7 @@ class BenchmarkRunner:
         report = {
             "memory_agent_accuracy": primary["agent_accuracy"] if primary else 0.0,
             "baseline_no_memory_accuracy": primary["baseline_accuracy"] if primary else 0.0,
-            "memory_recall_at_5": round(recall_hits / recall_total, 2) if recall_total else 1.0,
+            "memory_recall_at_context": round(recall_hits / recall_total, 2) if recall_total else 1.0,
             "outdated_memory_errors": outdated_errors,
             "outdated_memory_avoidance": round(1 - outdated_errors / n, 2),
             "preference_adherence": primary["agent_accuracy"] if primary else 0.0,
@@ -161,6 +163,8 @@ class BenchmarkRunner:
             "avg_retrieval_latency_ms": round(sum(latencies) / len(latencies), 1) if latencies else 0.0,
             "retrieval_latency_ms": round(sum(latencies) / len(latencies), 1) if latencies else 0.0,
             "num_scenarios": n,
+            "retrieval_top_k": self.memos.settings.retrieval_top_k,
+            "evaluator": "strict-keyword-v1",
             "backbones": backbones,
             "scenarios": scenarios_out,
         }

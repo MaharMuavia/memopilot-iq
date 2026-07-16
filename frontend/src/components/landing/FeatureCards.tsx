@@ -23,7 +23,7 @@ const FEATURES = [
   {
     Icon: IconPin,
     title: "Critical Memory Pinning",
-    body: "Critical rules like ‘never commit API keys’ are always included, even under tight budgets.",
+    body: "Critical rules are considered first while a strict context budget prevents prompt bloat.",
   },
   {
     Icon: IconTarget,
@@ -55,7 +55,7 @@ export function FeatureCards() {
           A memory layer any agent can plug into
         </h2>
         <p className="mt-3 text-slate-600">
-          Six capabilities that turn a stateless chatbot into a self-improving
+          Six capabilities that turn a stateless chatbot into a self-curating
           assistant.
         </p>
       </div>

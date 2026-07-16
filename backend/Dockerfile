@@ -10,9 +10,7 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
-    # Cloud extras for ALIBABA_CLOUD_MODE
-    && pip install --no-cache-dir tablestore==5.4.6 oss2==2.19.1
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 

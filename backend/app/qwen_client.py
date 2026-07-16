@@ -33,10 +33,16 @@ class QwenClient:
     def __init__(self, settings: Optional[Settings] = None) -> None:
         self.settings = settings or get_settings()
         self._client: Optional[httpx.AsyncClient] = None
+        self._provider_status = "online" if self.settings.qwen_configured else "offline"
 
     @property
     def online(self) -> bool:
         return self.settings.qwen_configured
+
+    @property
+    def provider_status(self) -> str:
+        """Current provider state without pretending a failed live call succeeded."""
+        return self._provider_status
 
     async def _http(self) -> httpx.AsyncClient:
         if self._client is None:
@@ -73,9 +79,11 @@ class QwenClient:
             )
             resp.raise_for_status()
             data = resp.json()
+            self._provider_status = "online"
             return data["choices"][0]["message"]["content"].strip()
         except Exception as exc:  # pragma: no cover - network failure path
             logger.warning("Qwen chat failed (%s); using offline fallback", exc)
+            self._provider_status = "degraded_offline_fallback"
             return self._offline_chat(messages)
 
     async def extract_json(self, system_prompt: str, user_prompt: str) -> Dict[str, Any]:
@@ -98,9 +106,11 @@ class QwenClient:
             )
             resp.raise_for_status()
             content = resp.json()["choices"][0]["message"]["content"]
+            self._provider_status = "online"
             return _safe_json(content)
         except Exception as exc:  # pragma: no cover
             logger.warning("Qwen extract failed (%s); using offline fallback", exc)
+            self._provider_status = "degraded_offline_fallback"
             return self._offline_extract(user_prompt)
 
     # ------------------------------------------------------------------
@@ -116,9 +126,11 @@ class QwenClient:
                 json={"model": self.settings.qwen_embedding_model, "input": text},
             )
             resp.raise_for_status()
+            self._provider_status = "online"
             return resp.json()["data"][0]["embedding"]
         except Exception as exc:  # pragma: no cover
             logger.warning("Qwen embed failed (%s); using offline fallback", exc)
+            self._provider_status = "degraded_offline_fallback"
             return self._offline_embed(text)
 
     # ==================================================================

@@ -30,7 +30,14 @@ python scripts/run_locomo.py --max-conversations 3 --max-qa 50   # answer-level 
   at least one annotated evidence turn was actually injected into the context.
   This isolates the *memory layer* from the answer model and runs offline.
 
-## Results
+## Archived exploratory results
+
+The tables below are from an earlier exploratory run and are retained only as
+an example of the harness output. They are **not final submission evidence**:
+the current build's evaluator and context-budget behavior have changed. Rerun
+the commands above with the final deployed configuration, preserve the raw
+JSON/checkpoints, and replace this section before publishing or comparing with
+other systems.
 
 ### Answer level (live run: `qwen3.7-max` + `text-embedding-v3`)
 

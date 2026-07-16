@@ -12,7 +12,7 @@ from typing import Any, Dict, List
 
 from fastapi import APIRouter, Request
 
-from ..models import ChatRequest
+from ..utils.identity import effective_user_id
 
 router = APIRouter(prefix="/api/demo", tags=["demo"])
 
@@ -48,9 +48,10 @@ JUDGE_SCRIPT = [
 @router.post("/run")
 async def run_demo(request: Request) -> Dict[str, Any]:
     memos = request.app.state.memos
+    user_id = effective_user_id(request, DEMO_USER)
 
     # Start clean so the demo is reproducible.
-    await memos.store.clear_user(DEMO_USER, DEMO_PROJECT)
+    await memos.store.clear_user(user_id, DEMO_PROJECT)
 
     traces = getattr(request.app.state, "last_traces", None)
     if traces is None:
@@ -60,7 +61,7 @@ async def run_demo(request: Request) -> Dict[str, Any]:
     turns: List[Dict[str, Any]] = []
     for session_id, message, expectation in JUDGE_SCRIPT:
         system_prompt, trace, used = await memos.build_context(
-            DEMO_USER, DEMO_PROJECT, message
+            user_id, DEMO_PROJECT, message
         )
         answer = await memos.qwen.chat(
             [
@@ -69,14 +70,14 @@ async def run_demo(request: Request) -> Dict[str, Any]:
             ]
         )
         actions = await memos.remember(
-            user_id=DEMO_USER,
+            user_id=user_id,
             project_id=DEMO_PROJECT,
             session_id=session_id,
             message=message,
         )
         traces[session_id] = {
             "session_id": session_id,
-            "user_id": DEMO_USER,
+            "user_id": user_id,
             "project_id": DEMO_PROJECT,
             "query": message,
             "answer": answer,
@@ -111,10 +112,10 @@ async def run_demo(request: Request) -> Dict[str, Any]:
         )
 
     # Final state snapshot.
-    all_mems = await memos.store.list(DEMO_USER, DEMO_PROJECT, include_all=True)
+    all_mems = await memos.store.list(user_id, DEMO_PROJECT, include_all=True)
     summary = {
         "active": [m.content for m in all_mems if m.status.value in ("active", "pinned")],
         "superseded": [m.content for m in all_mems if m.status.value == "superseded"],
     }
 
-    return {"user_id": DEMO_USER, "project_id": DEMO_PROJECT, "turns": turns, "final_state": summary}
+    return {"user_id": user_id, "project_id": DEMO_PROJECT, "turns": turns, "final_state": summary}

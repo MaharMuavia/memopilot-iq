@@ -1,6 +1,6 @@
 # MemoPilot IQ
 
-> **A self-improving persistent-memory agent that remembers, forgets, and explains what matters.**
+> **A self-curating persistent-memory agent that remembers, forgets, and explains what matters.**
 
 **Qwen Cloud Global AI Hackathon — Track 1: MemoryAgent**
 
@@ -41,7 +41,7 @@ MemoPilot IQ autonomously accumulates experience across conversations. It
 remembers user preferences, project decisions, mistakes, goals, constraints and
 deadlines, and makes increasingly accurate decisions across multi-turn and
 cross-session interactions. It demonstrates sophisticated use of **Qwen Cloud**
-APIs, **Alibaba Cloud** persistence/deployment, a custom memory scoring engine,
+APIs, an **Alibaba Cloud** persistence/deployment adapter, a custom memory scoring engine,
 selective forgetting, a clean modular architecture, an evaluation benchmark, and
 a transparent UI.
 
@@ -61,13 +61,18 @@ frameworks). MemoPilot IQ fixes this with a persistent, self-curating memory
 layer that knows what to remember, what to forget, and can prove its reasoning.
 
 ## Key features
+> **Implementation note:** Memory priority never overrides the configured token
+> budget; the reflection feature consolidates memories but does not train model
+> weights; the diagnostic suite has 24 scenarios; and Alibaba deployment is
+> considered complete only after a live deployment has been evidenced.
+
 - 🧠 **Structured memory extraction** (12 types) via a Qwen "Memory Editor" — not raw chat logs.
 - 🎯 **Custom scoring formula** blending semantics, importance, recency, usage, project match, criticality and penalties.
 - 🔎 **Hybrid retrieval** — dense embeddings + sparse keyword/tag overlap + structured filters.
-- 📏 **Context budget manager** — strict 2,500-token budget; critical/pinned always included.
+- 📏 **Context budget manager** — strict 2,500-token budget; critical/pinned memories are prioritized.
 - ♻️ **Forgetting engine** — expire deadlines, archive stale memories, supersede contradicted decisions (non-destructive).
 - 🪞 **Memory Trace** — see exactly which memories were injected/skipped, their scores, reasons and token cost.
-- 📊 **Evaluation dashboard** — memory agent vs no-memory baseline across 6 scenarios.
+- 📊 **Evaluation dashboard** — a 24-scenario diagnostic against a no-memory baseline.
 - 🧠 **Reflection engine** — a self-improvement pass that merges duplicates, promotes frequently-used memories, and derives higher-level insights.
 - 🕸️ **Live Memory Graph** — interactive visualization of memories with supersession/related edges, critical rings, and insight nodes.
 - 📈 **Analytics dashboard** — memory growth, type/status distribution, forgetting rate, token savings.
@@ -245,7 +250,7 @@ and `RATE_LIMIT_PER_MINUTE` (default 120) for per-key/IP rate limiting.
 ## Testing
 ```bash
 cd backend
-python -m pytest          # 17 tests: scoring, forgetting/supersession, context budget, API + secret redaction
+python -m pytest
 ```
 Frontend type-check / build:
 ```bash
@@ -254,32 +259,25 @@ cd frontend && npm run build
 
 ## Demo script
 The under-3-minute walkthrough is in [docs/demo_script.md](docs/demo_script.md).
-The Chat tab has four starter buttons that replay the 5-session demo.
+The Chat tab has four starter buttons that replay the 4-session demo.
 
 ## Evaluation results
 Run **Evaluation → Run benchmark** in the UI, or `POST /api/eval/run`.
-**Live 24-scenario, multi-backbone run** (full breakdown in
-[docs/evaluation_results.md](docs/evaluation_results.md)):
-
-| Answer backbone | Memory agent | No-memory baseline | Delta |
-|---|---|---|---|
-| Qwen (`qwen3.7-max`, production) | **0.75** | 0.50 | **+0.25** |
-| OpenAI (`gpt-4o`, generalization) | **0.79** | 0.67 | **+0.12** |
-
-Memory-layer diagnostics: recall@5 **0.77**, outdated-memory avoidance **0.83**,
-token savings **≈98%**, retrieval latency **≈4 ms**. The same memory layer lifts
-accuracy for *both* frontier models — evidence the gain is the memory layer, not
-any single model. Correctness uses strict keyword matching, so these are
-conservative lower bounds.
+The report records the configured model, strict keyword evaluator, retrieval
+depth, context recall, stale-memory leaks, historical-context token reduction,
+and latency for that run. Results depend on the selected model and are not
+hard-coded in the landing page. See
+[docs/evaluation_results.md](docs/evaluation_results.md) for the protocol and
+reporting checklist.
 
 ## Judging criteria mapping
 See [docs/judging_mapping.md](docs/judging_mapping.md) for the full rubric and
 rule-compliance checklist.
 
 ## Screenshots
-Add captures of the **landing page** (`/`), the Chat + Trace, Timeline,
-Evaluation dashboard, and the `/health` mode badge to `assets/` and link them
-here before submission.
+Before submission, add captures of the **landing page** (`/`), Chat + Trace,
+Timeline, Evaluation dashboard, and a real Alibaba `/health` response to
+`assets/`. Do not add cloud-proof captures until the deployment is live.
 
 ## License
 [MIT](LICENSE).

@@ -202,13 +202,18 @@ class SQLiteMemoryStore(MemoryStore):
             try:
                 if project_id is not None:
                     cur = conn.execute(
-                        "DELETE FROM memories WHERE user_id=? AND project_id=?",
+                        "DELETE FROM memories WHERE user_id=? AND (project_id=? OR project_id IS NULL)",
+                        (user_id, project_id),
+                    )
+                    conn.execute(
+                        "DELETE FROM events WHERE user_id=? AND (project_id=? OR project_id IS NULL)",
                         (user_id, project_id),
                     )
                 else:
                     cur = conn.execute(
                         "DELETE FROM memories WHERE user_id=?", (user_id,)
                     )
+                    conn.execute("DELETE FROM events WHERE user_id=?", (user_id,))
                 conn.commit()
                 return cur.rowcount
             finally:

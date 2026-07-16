@@ -1,29 +1,45 @@
 # Security & Privacy
 
 ## Secret handling
-- **No secrets in the repo.** `.env` is git-ignored; `.env.example` holds empty
-  placeholders only. API keys are read from the environment at runtime.
-- **Secrets never enter memory.** Every message is passed through
-  `redact_secrets()` (`app/utils/security.py`) before extraction, and any
-  extracted memory that still matches a secret pattern is dropped. Patterns
-  cover OpenAI/DashScope `sk-` keys, AWS/Alibaba access keys, GitHub tokens,
-  bearer tokens, JWTs, private-key blocks, and `key=...`/`password=...` assigns.
-- **Manual creation guarded.** `POST /api/memories` and `PATCH` reject
-  secret-like content with HTTP 400.
-- **Secret-scan test.** `tests/test_api_chat.py::test_secret_is_redacted`
-  asserts a pasted fake key is never stored.
 
-## Privacy controls
-- Per-memory `privacy_level` (`public` / `private` / `sensitive`) with scoring
-  penalties (−0.25 weight) so sensitive memories are de-prioritised.
-- Per-user + per-project filtering on every read (`store.list`), so users only
-  see their own memories.
-- **User data rights:** "Forget this memory" (DELETE), "Forget all" (clears the
-  project), "Export memories as JSON". Forgetting is non-destructive by default
-  (status transitions) unless the user explicitly hard-deletes.
+- `.env` is git-ignored and examples contain only blank placeholders. Never
+  paste a working credential into chat, screenshots, a Docker command, or a
+  public repository.
+- Messages are redacted before memory extraction. Secret-like extracted
+  memories are dropped, while manual creation and edits reject them with HTTP
+  400.
+- Turn snapshots redact the user message and answer before writing to local
+  snapshots or Alibaba OSS. This protects persistence; it does not turn a chat
+  box into a credential vault, so users must not submit real secrets to an LLM.
+- Tests cover both memory storage and snapshot redaction.
 
-## Recommended hardening before production
-- Put the API behind authentication (the demo uses a fixed `demo-user`).
-- Enable TLS at the SLB/Nginx layer.
-- Scope Alibaba RAM AccessKeys to only OTS + the specific OSS bucket.
-- Add a pre-commit secret scanner (e.g. `gitleaks`) in CI.
+## Namespaces and access
+
+- Local demo mode is deliberately open and uses the caller-provided `user_id`.
+  It must not be exposed as a multi-user service.
+- When `MEMOPILOT_API_KEYS` is configured, every valid API key is mapped to a
+  non-reversible server-side memory namespace. Request `user_id` values cannot
+  select another key's memories, and trace/update/delete operations enforce the
+  same namespace.
+- API keys are a small deployment safeguard, not full user authentication.
+  Internet-facing production deployments still need TLS, an identity provider,
+  key rotation, and a gateway-backed distributed rate limiter.
+
+## User data controls
+
+- Soft delete preserves an audit record; hard delete removes the memory row.
+  Use **Forget all** when the user also wants the prior timeline erased.
+- **Forget all** removes both memory records and their previous timeline events
+  for the selected project, then creates a content-free deletion receipt.
+- Export returns the current memory records for the active namespace. Add an
+  authenticated, audited data-erasure workflow before handling regulated data.
+
+## Deployment checklist
+
+1. Rotate any API key accidentally shown in a terminal, build log, recording,
+   or chat transcript.
+2. Store Qwen and Alibaba credentials in an Alibaba secret manager or encrypted
+   service environment—not in image layers or source-controlled files.
+3. Scope RAM permissions to the required Tablestore instance and OSS bucket.
+4. Add `gitleaks` (or equivalent) to CI and verify that no `.env` file is
+   tracked before publishing.

@@ -1,11 +1,11 @@
 import { Link } from "react-router-dom";
 
-const METRICS = [
-  { label: "Memory Recall@5", value: "88%", tone: "text-emerald-600" },
-  { label: "Outdated Memory Avoidance", value: "96%", tone: "text-emerald-600" },
-  { label: "Token Savings", value: "60%", tone: "text-brand-600" },
-  { label: "Preference Adherence", value: "91%", tone: "text-emerald-600" },
-  { label: "Retrieval Latency", value: "120ms", tone: "text-slate-700" },
+const CAPABILITIES = [
+  { label: "Cross-session recall", value: "Retrieved" },
+  { label: "Outdated-memory checks", value: "Tracked" },
+  { label: "Context budgeting", value: "Measured" },
+  { label: "Lifecycle events", value: "Audited" },
+  { label: "Benchmark protocol", value: "Reproducible" },
 ];
 
 export function EvaluationPreview() {
@@ -17,15 +17,16 @@ export function EvaluationPreview() {
             Measured, not just claimed
           </h2>
           <p className="mt-3 text-slate-600">
-            A built-in benchmark compares the memory agent against a no-memory
-            baseline. Representative results:
+            A built-in 24-scenario diagnostic compares the memory agent against
+            a no-memory baseline. Run it in the app to generate results for the
+            currently configured model.
           </p>
         </div>
 
         <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
-          {METRICS.map((m) => (
+          {CAPABILITIES.map((m) => (
             <div key={m.label} className="glass p-5 text-center">
-              <div className={`text-3xl font-extrabold ${m.tone}`}>{m.value}</div>
+              <div className="text-lg font-extrabold text-brand-600">{m.value}</div>
               <div className="mt-1.5 text-xs font-medium text-slate-500">{m.label}</div>
             </div>
           ))}
