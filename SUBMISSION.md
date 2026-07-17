@@ -15,9 +15,8 @@ This page maps every submission requirement to its artifact in this repository.
 | 7 | Track identification | ✅ | **Track 1: MemoryAgent** |
 | 8 | ~3 min demo video (public) | ⏳ you record | script: [docs/demo_script.md](docs/demo_script.md) |
 | 9 | Alibaba deployment proof recording | ⏳ you record | guide: [docs/deployment_alibaba.md](docs/deployment_alibaba.md) |
-| 10 | (Optional) Blog / social post | ⏳ you publish | draft: [docs/blog_post.md](docs/blog_post.md) |
-| 11 | Public working website/demo URL | ⏳ required before submission | [release gate](docs/submission_readiness.md) |
-| 12 | Presentation deck | Ready locally; replace pending cloud evidence before submitting | [editable deck](assets/memopilot-iq-hackathon-deck.pptx) · [11-slide outline](docs/presentation_outline.md) |
+| 10 | Public working website/demo URL | ⏳ required before submission | [release gate](docs/submission_readiness.md) |
+| 11 | Presentation deck | Ready locally; replace pending cloud evidence before submitting | [editable deck](assets/memopilot-iq-hackathon-deck.pptx) · [11-slide outline](docs/presentation_outline.md) |
 
 The exact go/no-go checklist and critical path are maintained in
 [docs/submission_readiness.md](docs/submission_readiness.md).

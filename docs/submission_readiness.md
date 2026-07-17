@@ -35,7 +35,7 @@ and [Devpost official rules](https://qwencloud-hackathon.devpost.com/rules).
 | Final model-backed benchmark | **Blocking** | Run on the deployed commit and download the JSON report |
 | Public demo video | **Blocking** | Under 3:00, English or English subtitles, no copyrighted music |
 | Presentation deck | **Blocking** | Export the 11-slide outline to PPT/PDF and verify every link |
-| Devpost submission | **Blocking** | Add track, description, repository, working URL, video, deck, and optional blog |
+| Devpost submission | **Blocking** | Add track, description, repository, working URL, video, and deck |
 
 “Blocking” means the artifact requires the final cloud environment or the
 entrant's account. It must not be represented as completed before evidence is
