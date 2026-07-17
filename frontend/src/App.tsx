@@ -4,7 +4,12 @@ import DashboardPage from "./pages/DashboardPage";
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <Routes>
         {/* Landing page is the entry point. */}
         <Route path="/" element={<LandingPage />} />
