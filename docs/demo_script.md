@@ -1,5 +1,9 @@
 # Demo Video Script (under 3 minutes)
 
+> Use **Run Judge Demo** for the deterministic memory-lifecycle replay. Use
+> the Chat starter prompts for a live Qwen answer; separating the two keeps a
+> provider delay from interrupting the lifecycle proof.
+
 > Record this only against the final public Alibaba Cloud deployment. The
 > official Devpost rules say the video should be under three minutes, even
 > though the event landing page lists a five-minute maximum.
@@ -13,8 +17,8 @@
 | 0:00–0:15 | App header, mode badge | "AI assistants forget everything between sessions. MemoPilot IQ is a persistent-memory agent — it remembers, forgets, and explains what matters." |
 | 0:15–0:35 | Chat tab, send starter #1 | "I tell it my preferences: FastAPI, React + Vite, Alibaba Cloud, light UI, never commit API keys. Watch the memory badges — it created structured memories and tagged the API-key rule as **critical**." |
 | 0:35–1:05 | Send "Design the backend architecture." + Trace panel | "Next session I ask for an architecture. The **Memory Trace** shows exactly which memories were retrieved, their scores, and that critical constraints are prioritized within a strict 2,500-token budget." |
-| 1:05–1:35 | Send starter #3 (Next.js) | "I change my mind: use Next.js instead of React + Vite. The agent **supersedes** the old memory — see the ↻ badge and the Timeline event." |
-| 1:35–2:05 | Send starter #4 + Trace | "Now I ask what stack to use. It recommends Next.js and the Trace shows the old React + Vite memory marked **superseded and ignored** — no outdated advice." |
+| 1:05–1:35 | Send starter #3 (planned migration) | "For the next iteration after this submission, I plan to migrate to Next.js. The agent **supersedes** the earlier frontend preference — see the ↻ badge and the Timeline event." |
+| 1:35–2:05 | Send starter #4 + Trace | "Now I ask what this submitted build uses today and what is planned next. It identifies React + Vite as the current implementation and Next.js as the planned migration. The Trace shows why a preference does not rewrite a verified implementation fact." |
 | 2:05–2:30 | Evaluation tab → Run benchmark | "The Evaluation Dashboard runs a 24-scenario diagnostic against a no-memory baseline. It reports the final build's strict evaluator, context recall, stale-memory checks, historical-context token reduction, and latency." |
 | 2:30–2:50 | Public `/health` + safe cloud proof | "This submitted build uses Qwen Cloud for chat, extraction and embeddings, with Alibaba Cloud Tablestore and OSS for persistence. The health endpoint confirms the live configuration." |
 | 2:50–3:00 | Header | "MemoPilot IQ — a memory layer any AI assistant can plug into. Thanks for watching." |

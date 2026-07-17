@@ -125,6 +125,7 @@ class MemoryExtractor:
         explicit_contradiction = any(
             re.search(cue, safe_message.lower()) for cue in _CONTRADICTION_CUES
         )
+        pending_records: List[MemoryRecord] = []
 
         for raw in new_memories:
             content = redact_secrets(str(raw.get("content", "")).strip())[:4000]
@@ -159,12 +160,23 @@ class MemoryExtractor:
                 actions.superseded.append({"memory_id": old.memory_id, "superseded_by": record.memory_id})
                 await self._event(actions, user_id, project_id, "superseded", old, old.reason)
 
-            # 6. Embedding + persist.
-            record.embedding = await self.qwen.embed(record.content)
+            # Keep provider embedding calls batched. This avoids a separate
+            # network round trip for every extracted fact in one user turn.
+            pending_records.append(record)
+            actions.created.append({"memory_id": record.memory_id, "type": record.type.value, "content": record.content})
+
+        # 6. Embed and persist accepted new records together. ``embed_many``
+        # supplies a same-size deterministic fallback when the provider fails.
+        embeddings = await self.qwen.embed_many(
+            [record.content for record in pending_records]
+        )
+        for record, embedding in zip(pending_records, embeddings):
+            record.embedding = embedding
             await self.store.add(record)
             existing.append(record)
-            actions.created.append({"memory_id": record.memory_id, "type": record.type.value, "content": record.content})
-            await self._event(actions, user_id, project_id, "created", record, record.reason)
+            await self._event(
+                actions, user_id, project_id, "created", record, record.reason
+            )
 
         # Honor the model's structured supersede/archive updates (complements
         # the heuristic contradiction detection above; the LLM is good at

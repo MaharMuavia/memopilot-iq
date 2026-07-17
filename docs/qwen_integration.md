@@ -39,7 +39,7 @@ implementation:
 - **embed** → a deterministic hashing embedding (bag-of-words → fixed dim).
 
 This means a judge can clone and run the project with zero credentials and still
-see every MemoryOS behaviour; adding a real key simply upgrades answer quality.
+see every MemoPilot memory-layer behaviour; adding a real key simply upgrades answer quality.
 
 ## Strict JSON handling
 

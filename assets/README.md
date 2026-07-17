@@ -1,11 +1,15 @@
 # Assets
 
 - `architecture.mmd` — Mermaid source for the system architecture diagram.
-- `architecture.svg` — Rendered architecture diagram (vector, viewable on GitHub).
-- `architecture.png` *(optional)* — Raster export. Generate with:
+- `architecture.svg` — Canonical rendered architecture diagram (vector, viewable on GitHub).
+- `architecture.png` *(legacy optional raster export)* — Regenerate only when a
+  platform requires PNG:
   ```bash
   npx -y @mermaid-js/mermaid-cli -i architecture.mmd -o architecture.png
   ```
+- `memopilot-iq-hackathon-deck.pptx` — Editable 11-slide submission deck.
+  Regenerate it with `python tools/build_submission_deck.py` after changing the
+  presentation outline or verified deployment evidence.
 
 ## Screenshots to add before submission
 Capture these from the running app (`npm run dev`) and drop them here:

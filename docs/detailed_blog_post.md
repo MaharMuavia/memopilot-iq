@@ -25,7 +25,7 @@ explains every memory it uses or skips.
 
 This article is the engineering story behind the project: the failure modes I
 designed for, how Qwen Cloud fits into the architecture, what I learned while
-building MemoryOS, and how I am testing claims that are easy to make but much
+building its memory-governance layer, and how I am testing claims that are easy to make but much
 harder to prove.
 
 ## The real problem: memory can make an agent confidently wrong
@@ -36,7 +36,7 @@ Imagine that I tell a project assistant:
 
 A week later, in another session, I make a new decision:
 
-> We are switching to Next.js.
+> After this submission, we plan to migrate to Next.js.
 
 A basic vector database can retrieve both statements because both are
 semantically relevant to a question about the frontend stack. If the older
@@ -85,7 +85,7 @@ The replacement stays active:
   "memory_id": "mem_nextjs",
   "type": "decision",
   "status": "active",
-  "content": "Use Next.js for the frontend",
+  "content": "After this submission, migrate the frontend to Next.js",
   "supersedes": "mem_react_vite"
 }
 ```
@@ -100,7 +100,7 @@ That distinction became one of the core ideas in the project:
 
 ## Architecture: three focused roles for Qwen Cloud
 
-![MemoPilot IQ architecture showing the React frontend, FastAPI backend, MemoryOS, Qwen Cloud, Tablestore, OSS, and Alibaba deployment targets](https://raw.githubusercontent.com/MaharMuavia/memopilot-iq/main/assets/architecture.png)
+![MemoPilot IQ architecture showing the React + Vite frontend, FastAPI backend, MemoPilot memory layer, Qwen Cloud, Tablestore, OSS, and Alibaba deployment targets](https://raw.githubusercontent.com/MaharMuavia/memopilot-iq/main/assets/architecture.svg)
 
 MemoPilot IQ separates the language model from the memory-governance logic.
 When cloud credentials are configured, Qwen Cloud serves three focused roles:
@@ -117,7 +117,7 @@ The rest is application logic I can test independently:
 - a React and Vite interface for chat, traces, memory controls, timeline,
   analytics, evaluation, and a live memory graph;
 - a FastAPI service that owns orchestration and API boundaries;
-- MemoryOS components for extraction, scoring, retrieval, context assembly,
+- MemoPilot memory-layer components for extraction, scoring, retrieval, context assembly,
   forgetting, reflection, and trace generation;
 - SQLite and in-process vectors for local development;
 - Alibaba Cloud Tablestore and OSS adapters for cloud persistence and redacted
@@ -183,9 +183,10 @@ The trace shows:
 - approximate token cost and remaining budget;
 - the active runtime and provider mode.
 
-In the React-to-Next.js scenario, the user can see the active Next.js decision
-in the included set and the older React + Vite decision marked as superseded in
-the timeline. The interface turns a hidden retrieval decision into something a
+In the planned React-to-Next.js migration scenario, the user can see the planned
+Next.js decision in the included set and the older frontend preference marked as
+superseded in the timeline. The answer still identifies React + Vite as the
+current submitted implementation. The interface turns a hidden retrieval decision into something a
 person can inspect.
 
 ## Forgetting should be a feature, not a failure
@@ -280,7 +281,7 @@ The project is open source under the MIT License:
 **Repository:** [github.com/MaharMuavia/memopilot-iq](https://github.com/MaharMuavia/memopilot-iq)
 
 The README includes local setup, architecture, API documentation, testing, the
-MemoryOS scoring model, and the judge-demo flow.
+memory-governance scoring model, and the judge-demo flow.
 
 I would especially value feedback on one question:
 

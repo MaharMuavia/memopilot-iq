@@ -51,7 +51,7 @@ def test_system_prompt_separates_current_implementation_from_plans():
     prompt, _, _ = builder.build(
         "What stack is implemented?",
         [],
-        "p",
+        "qwen-memoryagent",
         candidates_considered=0,
         retrieval_latency_ms=0.0,
     )
@@ -63,3 +63,16 @@ def test_system_prompt_separates_current_implementation_from_plans():
     assert "Milvus, Qdrant, and AnalyticDB are not part" in prompt
     assert "MemoPilot memory layer" in prompt
     assert "do not claim a public Alibaba deployment is live" in prompt
+
+
+def test_system_prompt_keeps_product_grounding_out_of_generic_projects():
+    builder = ContextBuilder(token_budget=2500, top_k=8)
+    prompt, _, _ = builder.build(
+        "What frontend stack should I use?",
+        [],
+        "eval-supersede-frontend",
+        candidates_considered=0,
+        retrieval_latency_ms=0.0,
+    )
+
+    assert "VERIFIED MEMOPILOT IQ IMPLEMENTATION FACTS" not in prompt

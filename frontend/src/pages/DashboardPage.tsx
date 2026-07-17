@@ -109,7 +109,7 @@ export default function DashboardPage() {
       </header>
 
       <div className="mx-auto max-w-6xl px-4 py-6">
-        {/* Judge demo — the headline proof of MemoryOS */}
+        {/* Judge demo — the headline proof of the memory-governance layer */}
         <JudgeDemoPanel onComplete={() => setRefreshKey((k) => k + 1)} />
 
         {/* Tabs */}

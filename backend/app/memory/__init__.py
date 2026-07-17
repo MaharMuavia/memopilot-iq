@@ -74,12 +74,18 @@ class MemoryOS:
         )
 
     async def build_context(
-        self, user_id: str, project_id: Optional[str], message: str
+        self,
+        user_id: str,
+        project_id: Optional[str],
+        message: str,
+        *,
+        query_embedding: Optional[List[float]] = None,
     ) -> Tuple[str, MemoryTrace, List[MemoryRecord]]:
         """Retrieve + score + budget into a system prompt and trace."""
         # Expire/archive before retrieval so stale memories never leak in.
         await self.forgetting.sweep(user_id, project_id)
-        query_embedding = await self.qwen.embed(message)
+        if query_embedding is None:
+            query_embedding = await self.qwen.embed(message)
         scored, considered, latency = await self.retriever.retrieve(
             user_id, project_id, message, query_embedding,
             top_k=self.settings.retrieval_top_k,

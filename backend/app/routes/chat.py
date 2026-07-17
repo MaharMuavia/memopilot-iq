@@ -33,19 +33,21 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
     system_prompt, trace, used = await memos.build_context(
         user_id, req.project_id, req.message
     )
-    answer = await memos.qwen.chat(
-        [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": req.message},
-        ]
-    )
-
-    # 3: extract + persist new memories from this user message.
-    actions = await memos.remember(
-        user_id=user_id,
-        project_id=req.project_id,
-        session_id=req.session_id,
-        message=req.message,
+    # The answer and memory extraction are independent after context is built;
+    # running them together avoids serial provider latency on normal chat.
+    answer, actions = await asyncio.gather(
+        memos.qwen.chat(
+            [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": req.message},
+            ]
+        ),
+        memos.remember(
+            user_id=user_id,
+            project_id=req.project_id,
+            session_id=req.session_id,
+            message=req.message,
+        ),
     )
 
     # 4: snapshot the turn (OSS in cloud mode, local file otherwise).

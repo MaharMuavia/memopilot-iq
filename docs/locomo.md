@@ -21,7 +21,7 @@ python scripts/run_locomo.py --max-conversations 3 --max-qa 50   # answer-level 
 - **Ingestion:** `verbatim` mode stores one memory per dialogue turn (speaker +
   session date + text + image caption), tagged with its `dia_id`; `extract`
   mode runs the full Memory Editor pipeline instead.
-- **Answering:** standard MemoryOS retrieve → score → budget assembly
+- **Answering:** standard MemoPilot memory-layer retrieve → score → budget assembly
   (top-k 8, 2,500-token budget), then a short-phrase answer from the LLM.
 - **Grading:** SQuAD-style normalized token-F1 and exact match, per category.
   Category 5 (adversarial) is skipped by default, matching Mem0's public

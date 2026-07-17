@@ -1,7 +1,7 @@
-# MemoryOS Algorithm
+# Memory-Governance Algorithm
 
-MemoryOS is the custom memory operating layer. It has nine cooperating
-components plus user controls.
+The MemoPilot memory-governance layer has nine cooperating components plus user
+controls.
 
 ## 1. Memory types & states
 

@@ -20,14 +20,14 @@ MemoPilot IQ is an auditable memory layer for AI agents. It structures conversat
 
 Here is the demo that shaped the product:
 
-1. I tell the agent: “Use React + Vite for this project.”
-2. In a later session, I change the decision to Next.js.
-3. MemoPilot IQ keeps the history but marks React + Vite as superseded.
-4. On the next question, only Next.js enters the model context—and the Memory Trace shows why the old choice was excluded.
+1. The submitted project uses React + Vite today.
+2. In a later session, I record a planned Next.js migration for the next iteration.
+3. MemoPilot IQ keeps the preference history but marks the older frontend preference as superseded.
+4. On the next question, it distinguishes the current React + Vite implementation from the planned Next.js migration—and the Memory Trace shows why.
 
 The goal is not perfect recall. It is safe, bounded, reversible recall.
 
-Under the hood, I built a custom MemoryOS pipeline:
+Under the hood, I built a custom memory-governance pipeline:
 
 • 12 typed categories instead of raw chat logs
 • hybrid retrieval across embeddings, keywords, tags, and structured filters
@@ -62,15 +62,15 @@ Open-source repository: https://github.com/MaharMuavia/memopilot-iq
 
 Attach two or three images in this order:
 
-1. A clean MemoPilot IQ Memory Trace screenshot showing the active Next.js
-   decision and the superseded React + Vite decision.
+1. A clean MemoPilot IQ Memory Trace screenshot showing the planned Next.js
+   migration and the superseded frontend preference.
 2. [`../assets/architecture.png`](../assets/architecture.png).
 3. A timeline or graph screenshot showing the supersession edge.
 
 Suggested alt text for the architecture image:
 
 > MemoPilot IQ architecture: a React interface calls a FastAPI service whose
-> MemoryOS layer extracts, scores, retrieves, and governs memories using Qwen
+> MemoPilot memory layer extracts, scores, retrieves, and governs memories using Qwen
 > Cloud, with SQLite locally or Alibaba Cloud Tablestore and OSS in cloud mode.
 
 ## Before publishing

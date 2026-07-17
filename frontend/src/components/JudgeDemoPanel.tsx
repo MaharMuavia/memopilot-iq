@@ -32,11 +32,14 @@ export function JudgeDemoPanel({ onComplete }: { onComplete?: () => void }) {
           </span>
           <div>
             <h3 className="text-sm font-bold text-slate-800">
-              Run the 90-second Judge Demo
+              Run the 90-second Memory Lifecycle Demo
             </h3>
             <p className="text-xs text-slate-500">
               Replays 4 sessions: memory creation → cross-session recall →
               supersession → critical recall, with full trace accounting.
+            </p>
+            <p className="mt-1 text-[11px] text-slate-500">
+              This replay is deterministic; use Chat for a live Qwen response.
             </p>
           </div>
         </div>
@@ -66,6 +69,12 @@ export function JudgeDemoPanel({ onComplete }: { onComplete?: () => void }) {
                 <span className="text-sm text-slate-700">“{t.message}”</span>
               </div>
               <p className="mt-1.5 text-[11px] italic text-slate-400">{t.expectation}</p>
+              {t.answer && (
+                <p className="mt-2 rounded-lg border border-brand-100 bg-brand-50/60 px-2.5 py-2 text-xs text-slate-700">
+                  <span className="font-semibold text-brand-700">Lifecycle result: </span>
+                  {t.answer}
+                </p>
+              )}
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {t.actions.created > 0 && (
                   <span className="chip bg-emerald-100 text-emerald-700">

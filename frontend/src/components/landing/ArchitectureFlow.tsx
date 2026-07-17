@@ -7,7 +7,7 @@ const FLOW = [
   { label: "User", Icon: IconUser, tone: "slate" },
   { label: "React Frontend", Icon: IconMonitor, tone: "blue" },
   { label: "FastAPI Backend", Icon: IconServer, tone: "blue" },
-  { label: "MemoryOS", Icon: IconCpu, tone: "indigo" },
+  { label: "MemoPilot Memory Layer", Icon: IconCpu, tone: "indigo" },
   { label: "Qwen Cloud", Icon: IconCloud, tone: "orange" },
   { label: "Alibaba Memory Store / OSS", Icon: IconDatabase, tone: "amber" },
   { label: "Memory Trace Dashboard", Icon: IconTrace, tone: "cyan" },
@@ -31,7 +31,7 @@ export function ArchitectureFlow() {
             How a request flows
           </h2>
           <p className="mt-3 text-slate-600">
-            Every message passes through the MemoryOS layer before and after the
+            Every message passes through the MemoPilot memory layer before and after the
             model call.
           </p>
         </div>

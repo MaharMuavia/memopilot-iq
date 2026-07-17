@@ -38,8 +38,8 @@ interface Turn {
 const STARTERS = [
   "I prefer FastAPI backend, React + Vite, Alibaba Cloud, light UI, and short answers. Never commit API keys.",
   "Design the backend architecture.",
-  "Actually, I changed my mind. Use Next.js instead of React + Vite.",
-  "What stack should I use now and what should I show judges?",
+  "For the next iteration after this submission, migrate the frontend to Next.js instead of React + Vite.",
+  "What frontend does this submitted build use today, and what is planned after submission?",
 ];
 
 export function ChatPanel({

@@ -14,13 +14,13 @@ can replay decisions that a user later changed.
 
 ### Slide 3 — Solution
 
-MemoryOS extracts typed records, scores and retrieves them, assembles a strict
+The MemoPilot memory-governance layer extracts typed records, scores and retrieves them, assembles a strict
 context budget, applies lifecycle rules, and exposes a Memory Trace.
 
 ### Slide 4 — Architecture
 
-User → React → FastAPI → MemoryOS → Qwen (chat, extraction, embeddings).
-Show `assets/architecture.png`; local mode uses SQLite, cloud mode targets
+User → React + Vite → FastAPI → MemoPilot memory layer → Qwen (chat, extraction, embeddings).
+Show `assets/architecture.svg`; local mode uses SQLite, cloud mode targets
 Tablestore and OSS.
 
 ### Slide 5 — Memory lifecycle

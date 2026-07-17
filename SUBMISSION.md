@@ -10,14 +10,14 @@ This page maps every submission requirement to its artifact in this repository.
 | 2 | Open-source LICENSE (detectable in About) | ✅ MIT | [LICENSE](LICENSE) |
 | 3 | All source + setup/test instructions | ✅ | [README.md](README.md) |
 | 4 | Alibaba Cloud deployment proof | ⏳ required before submission | see [§ Alibaba Cloud Proof](#alibaba-cloud-proof) |
-| 5 | Architecture diagram | ✅ | [assets/architecture.png](assets/architecture.png) · [docs/architecture.md](docs/architecture.md) |
+| 5 | Architecture diagram | ✅ | [assets/architecture.svg](assets/architecture.svg) · [docs/architecture.md](docs/architecture.md) |
 | 6 | Text description of features | ✅ | see [§ Project Description](#project-description) |
 | 7 | Track identification | ✅ | **Track 1: MemoryAgent** |
 | 8 | ~3 min demo video (public) | ⏳ you record | script: [docs/demo_script.md](docs/demo_script.md) |
 | 9 | Alibaba deployment proof recording | ⏳ you record | guide: [docs/deployment_alibaba.md](docs/deployment_alibaba.md) |
 | 10 | (Optional) Blog / social post | ⏳ you publish | draft: [docs/blog_post.md](docs/blog_post.md) |
 | 11 | Public working website/demo URL | ⏳ required before submission | [release gate](docs/submission_readiness.md) |
-| 12 | Presentation deck | ⏳ you export | [11-slide outline](docs/presentation_outline.md) |
+| 12 | Presentation deck | Ready locally; replace pending cloud evidence before submitting | [editable deck](assets/memopilot-iq-hackathon-deck.pptx) · [11-slide outline](docs/presentation_outline.md) |
 
 The exact go/no-go checklist and critical path are maintained in
 [docs/submission_readiness.md](docs/submission_readiness.md).
@@ -26,7 +26,7 @@ The exact go/no-go checklist and critical path are maintained in
 
 ## Project Description
 
-**MemoPilot IQ** is a **MemoryOS platform** for AI agents — not a chatbot with
+**MemoPilot IQ** is an auditable **memory-governance layer** for AI agents — not a chatbot with
 chat history. It autonomously extracts structured memories from conversation,
 scores them with a transparent formula, retrieves only the most relevant ones
 inside a strict token budget, forgets/supersedes outdated information, and
@@ -36,8 +36,9 @@ explains every memory decision via a per-answer **Memory Trace**.
 budget manager, intelligent forgetting, contradiction/supersession, critical
 memory prioritization, a consolidation **Reflection** pass, a **Live Memory Graph**,
 an **Analytics** dashboard, an **Evaluation** benchmark vs. a no-memory
-baseline, and secret-safe storage. Dual runtime: `LOCAL_MODE` (SQLite + local
-vectors, runs with no keys) and `ALIBABA_CLOUD_MODE` (Tablestore + OSS).
+baseline, and secret-safe storage. The current implementation uses React + Vite
+and FastAPI. Dual runtime: `LOCAL_MODE` (SQLite + local vectors, runs with no
+keys) and `ALIBABA_CLOUD_MODE` (Tablestore + OSS).
 
 **Evaluation:** the built-in 24-scenario diagnostic runs the configured model
 against a no-memory baseline and reports strict-keyword accuracy, context recall,
@@ -89,3 +90,10 @@ cd frontend && npm install && npm run dev      # http://localhost:5173
 
 Runs with **no credentials** (offline Qwen fallback). Add `QWEN_API_KEY` to
 `backend/.env` for live Qwen. Tests: `cd backend && python -m pytest`.
+
+## Before clicking Submit
+
+Use [docs/submission_readiness.md](docs/submission_readiness.md) as the release
+gate. In particular, replace every pending placeholder with verified evidence
+from the final Alibaba Cloud deployment: public URL, `/health` output,
+Tablestore/OSS screenshots, benchmark JSON, public video, and final deck links.

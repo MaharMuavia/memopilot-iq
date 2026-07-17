@@ -132,6 +132,33 @@ def test_judge_demo_does_not_clear_default_project(client):
     assert any(m["content"] == "Keep this real project memory." for m in remaining["memories"])
 
 
+def test_judge_demo_marks_the_migration_as_a_future_plan(client):
+    demo = client.post("/api/demo/run")
+    assert demo.status_code == 200
+    turns = demo.json()["turns"]
+    assert turns[2]["actions"]["superseded"] >= 1
+    final_turn = turns[-1]
+    assert final_turn["actions"]["superseded"] == 0
+    assert "current React + Vite implementation" in final_turn["expectation"]
+
+
+def test_judge_demo_never_calls_a_model_provider(client):
+    async def fail_if_called(*_args, **_kwargs):
+        raise AssertionError("The deterministic judge demo must not call Qwen.")
+
+    client.app.state.memos.qwen.chat = fail_if_called
+    client.app.state.memos.qwen.extract_json = fail_if_called
+    client.app.state.memos.qwen.embed = fail_if_called
+    client.app.state.memos.qwen.embed_many = fail_if_called
+    demo = client.post("/api/demo/run")
+
+    assert demo.status_code == 200
+    turns = demo.json()["turns"]
+    assert turns[2]["actions"]["superseded"] == 1
+    assert "React 18 with Vite today" in turns[-1]["answer"]
+    assert "planned migration" in turns[-1]["answer"]
+
+
 def test_manual_metadata_with_a_secret_is_rejected(client):
     r = client.post("/api/memories", json={
         "user_id": "t", "project_id": "p", "type": "preference",

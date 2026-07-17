@@ -50,8 +50,8 @@ Official publishing references:
    The current LinkedIn draft has enough space for a normal DEV article URL,
    but confirm the final text remains below LinkedIn's 3,000-character limit.
 3. Attach media in this order:
-   - Memory Trace screenshot showing Next.js included and React + Vite
-     superseded;
+   - Memory Trace screenshot showing a planned Next.js migration and the
+     superseded frontend preference;
    - the architecture diagram;
    - timeline or graph view showing the supersession relationship.
 4. Set visibility to **Anyone** and publish.

@@ -1,8 +1,8 @@
 # Architecture — MemoPilot IQ
 
-MemoPilot IQ separates a thin chat surface from a dedicated **memory
-intelligence layer (MemoryOS)**. The frontend never talks to memory storage
-directly; every decision flows through MemoryOS, which is the only component
+MemoPilot IQ separates a thin chat surface from a dedicated **MemoPilot memory
+layer**. The frontend never talks to memory storage directly; every decision
+flows through that layer, which is the only component
 that talks to Qwen Cloud and to the persistent store.
 
 ```mermaid
@@ -10,7 +10,7 @@ flowchart TD
     U[User] --> FE[React + Vite + Tailwind Frontend]
     FE -->|REST /api| BE[FastAPI Backend]
 
-    subgraph MOS[MemoryOS — Memory Intelligence Layer]
+    subgraph MOS[MemoPilot Memory-Governance Layer]
         EX[Memory Extractor]
         CL[Memory Classifier]
         SC[Memory Scorer]
@@ -43,7 +43,7 @@ flowchart TD
 3. **Hybrid retrieve** — dense cosine + sparse keyword overlap + structured
    filters (`user_id`, `project_id`, status), critical/pinned prioritised
    (`memory/retriever.py`).
-4. **Score** — the MemoryOS scoring formula (`memory/scorer.py`).
+4. **Score** — the memory-governance scoring formula (`memory/scorer.py`).
 5. **Budget** — ContextBuilder injects within a 2,500-token budget, prioritising
    critical/pinned records only when they fit (`memory/context_builder.py`).
 6. **Answer** — Qwen chat with the budgeted system prompt.

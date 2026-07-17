@@ -8,8 +8,8 @@
 Governance.](https://dev.to/muhammad_muavia/ai-agents-dont-need-more-memory-they-need-memory-governance-15ej)
 
 MemoPilot IQ is a persistent-memory AI agent. Unlike a normal chatbot that only
-sees recent chat history, it has a dedicated **memory intelligence layer
-(MemoryOS)** that extracts structured memories from conversations, stores them
+sees recent chat history, it has a dedicated **MemoPilot memory-governance
+layer** that extracts structured memories from conversations, stores them
 persistently, retrieves only the most relevant ones inside a strict token
 budget, updates and supersedes outdated memories, expires temporary ones, and
 shows a transparent **Memory Trace** explaining why each memory was used,
@@ -24,7 +24,7 @@ ignored, updated, or forgotten.
 4. [Architecture](#architecture)
 5. [How Qwen Cloud API is used](#how-qwen-cloud-api-is-used)
 6. [How Alibaba Cloud is used](#how-alibaba-cloud-is-used)
-7. [MemoryOS algorithm](#memoryos-algorithm)
+7. [Memory-governance algorithm](#memory-governance-algorithm)
 8. [Forgetting engine](#forgetting-engine)
 9. [Setup & local run](#setup--local-run)
 10. [Environment variables](#environment-variables)
@@ -38,6 +38,7 @@ ignored, updated, or forgotten.
 18. [License](#license)
 
 Submission release gate: [docs/submission_readiness.md](docs/submission_readiness.md).
+Submission package: [SUBMISSION.md](SUBMISSION.md) · [editable presentation deck](assets/memopilot-iq-hackathon-deck.pptx) · [Alibaba deployment handoff](docs/alibaba_deployment_handoff.md).
 
 ---
 
@@ -88,7 +89,7 @@ layer that knows what to remember, what to forget, and can prove its reasoning.
   Prometheus `/metrics`, paginated + filtered memory API, per-memory audit
   history, and a two-stage rerank that bounds expensive hybrid scoring after
   tenant-scoped candidates are loaded.
-- 🐍 **Python SDK** — embed MemoryOS in any agent in a few lines
+- 🐍 **Python SDK** — embed the MemoPilot memory layer in any agent in a few lines
   ([sdk/python](sdk/python/README.md)).
 - 🔬 **LoCoMo harness** — evaluate on the standard long-conversation memory
   benchmark used by Mem0/Zep, with F1/EM grading and a model-independent
@@ -99,15 +100,15 @@ See [docs/architecture.md](docs/architecture.md) for the full Mermaid diagram an
 request lifecycle. Rendered diagram: [assets/architecture.svg](assets/architecture.svg)
 (Mermaid source: [assets/architecture.mmd](assets/architecture.mmd)).
 
-![Architecture](assets/architecture.png)
+![Architecture](assets/architecture.svg)
 
 ```
-User → React + Vite frontend → FastAPI backend → MemoryOS
-   MemoryOS → Qwen Cloud chat API
-   MemoryOS → Qwen embedding API
-   MemoryOS → Alibaba Tablestore (or SQLite locally)
-   MemoryOS → Alibaba OSS (logs / snapshots / eval reports)
-   MemoryOS → Context Builder → Qwen Cloud → Response + Trace
+User → React + Vite frontend → FastAPI backend → MemoPilot memory layer
+   MemoPilot memory layer → Qwen Cloud chat API
+   MemoPilot memory layer → Qwen embedding API
+   MemoPilot memory layer → Alibaba Tablestore (or SQLite locally)
+   MemoPilot memory layer → Alibaba OSS (logs / snapshots / eval reports)
+   MemoPilot memory layer → Context Builder → Qwen Cloud → Response + Trace
 ```
 
 ## How Qwen Cloud API is used
@@ -130,7 +131,7 @@ Full guide & proof checklist: [docs/deployment_alibaba.md](docs/deployment_aliba
 The final cloud, benchmark, video, deck, and public-link gates are tracked in
 [docs/submission_readiness.md](docs/submission_readiness.md).
 
-## MemoryOS algorithm
+## Memory-governance algorithm
 Full detail (scoring weights, retrieval, extraction, states/types) in
 [docs/memory_algorithm.md](docs/memory_algorithm.md). The scoring formula:
 

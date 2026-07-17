@@ -125,22 +125,40 @@ class QwenClient:
     # Embeddings
     # ------------------------------------------------------------------
     async def embed(self, text: str) -> List[float]:
+        return (await self.embed_many([text]))[0]
+
+    async def embed_many(self, texts: List[str]) -> List[List[float]]:
+        """Embed a small batch, falling back deterministically as a whole."""
+        if not texts:
+            return []
         if not self.online:
-            return self._offline_embed(text)
+            return [self._offline_embed(text) for text in texts]
         try:
             client = await self._http()
             resp = await client.post(
                 "/embeddings",
-                json={"model": self.settings.qwen_embedding_model, "input": text},
+                json={"model": self.settings.qwen_embedding_model, "input": texts},
             )
             resp.raise_for_status()
             self._provider_status = "online"
-            return resp.json()["data"][0]["embedding"]
+            items = sorted(resp.json()["data"], key=lambda item: item.get("index", 0))
+            embeddings = [item["embedding"] for item in items]
+            if len(embeddings) != len(texts):
+                raise ValueError("Qwen embedding response count did not match request")
+            return embeddings
         except Exception as exc:  # pragma: no cover
             logger.warning("Qwen embed failed (%s); using offline fallback", exc)
             self._fallback_count += 1
             self._provider_status = "degraded_offline_fallback"
-            return self._offline_embed(text)
+            return [self._offline_embed(text) for text in texts]
+
+    def deterministic_embed(self, text: str) -> List[float]:
+        """Build an offline embedding without making a provider request.
+
+        This is intentionally public for reproducible lifecycle demos and
+        local evaluation fixtures. Normal chat continues to use :meth:`embed`.
+        """
+        return self._offline_embed(text)
 
     # ==================================================================
     # Offline deterministic fallbacks (no network, no API key)

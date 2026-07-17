@@ -19,7 +19,7 @@ const PROBLEMS = [
   },
 ];
 
-const MEMORYOS = [
+const MEMORY_CAPABILITIES = [
   { title: "Memory Extraction", body: "Turns messages into structured, typed memory records." },
   { title: "Hybrid Retrieval", body: "Dense embeddings + keyword/tag search + structured filters." },
   { title: "Context Budget Manager", body: "Fits only the most relevant memories into a token budget." },
@@ -60,7 +60,7 @@ export function ProblemSolution() {
         <div className="mx-auto max-w-6xl px-4 py-16">
           <div className="mx-auto mb-10 max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight text-slate-900">
-              MemoryOS for smarter agents.
+              Memory governance for smarter agents.
             </h2>
             <p className="mt-3 text-slate-600">
               A dedicated memory intelligence layer that decides what to keep,
@@ -68,7 +68,7 @@ export function ProblemSolution() {
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {MEMORYOS.map((m, i) => (
+            {MEMORY_CAPABILITIES.map((m, i) => (
               <Reveal key={m.title} delay={(i % 3) * 0.07}>
                 <div className="glass card-hover flex h-full gap-3 p-5">
                   <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-600 text-sm font-semibold text-white">

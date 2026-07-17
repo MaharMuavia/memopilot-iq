@@ -53,6 +53,14 @@ PROJECT_GROUNDING = (
     "--- END VERIFIED IMPLEMENTATION FACTS ---"
 )
 
+# The grounding block describes MemoPilot IQ itself. It must not be injected
+# into generic customer projects or evaluator scenarios, where it could replace
+# a user's valid decision with this repository's implementation details.
+MEMOPILOT_PROJECT_IDS = frozenset({
+    "qwen-memoryagent",
+    "qwen-memoryagent-judge-demo",
+})
+
 
 class ContextBuilder:
     def __init__(self, token_budget: int = 2500, top_k: int = 8) -> None:
@@ -135,9 +143,14 @@ class ContextBuilder:
         )
 
         memory_block = "\n".join(selected_lines) if selected_lines else "(no relevant memories)"
+        grounding_block = (
+            f"{PROJECT_GROUNDING}\n\n"
+            if project_id in MEMOPILOT_PROJECT_IDS
+            else ""
+        )
         system_prompt = (
             f"{SYSTEM_PROMPT}\n\n"
-            f"{PROJECT_GROUNDING}\n\n"
+            f"{grounding_block}"
             f"--- ACTIVE LONG-TERM MEMORY (user project: {project_id}) ---\n"
             f"{memory_block}\n"
             f"--- END MEMORY ---"

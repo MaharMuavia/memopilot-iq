@@ -39,7 +39,7 @@ export function Hero() {
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link to="/app" className="btn-primary px-5 py-2.5 text-base">
-            Launch MemoryOS →
+            Launch MemoPilot IQ →
           </Link>
           <Link to="/app" className="btn-ghost px-5 py-2.5 text-base">
             Try Judge Demo

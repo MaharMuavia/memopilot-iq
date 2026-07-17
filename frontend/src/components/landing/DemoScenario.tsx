@@ -5,8 +5,8 @@ const STEPS = [
   { n: 2, title: "Agent stores memories", body: "Structured records created — preferences, project, and a critical rule." },
   { n: 3, title: "User asks later", body: "“Design the backend architecture.” — a new session entirely." },
   { n: 4, title: "Agent recalls memories", body: "Relevant preferences are retrieved within budget; the critical rule is pinned." },
-  { n: 5, title: "User changes preference", body: "“Actually, use Next.js instead of React + Vite.”" },
-  { n: 6, title: "Agent supersedes", body: "The old React + Vite memory is superseded and never used again." },
+  { n: 5, title: "User plans the next iteration", body: "“After this submission, migrate to Next.js instead of React + Vite.”" },
+  { n: 6, title: "Agent explains the lifecycle", body: "The earlier frontend preference is superseded, while the answer still identifies React + Vite as the submitted build." },
 ];
 
 export function DemoScenario() {
