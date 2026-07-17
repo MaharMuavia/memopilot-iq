@@ -39,14 +39,22 @@ class SQLiteMemoryStore(MemoryStore):
         return "sqlite+local-vectors"
 
     def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self._path)
+        # SQLite is the default local/demo backend and can receive overlapping
+        # writes from chat, reflection, and evaluation requests.  A generous
+        # busy timeout avoids transient "database is locked" failures while
+        # the async write lock serializes mutations within this process.
+        conn = sqlite3.connect(self._path, timeout=30)
         conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA busy_timeout = 30000")
         return conn
 
     async def init(self) -> None:
         def _create() -> None:
             conn = self._connect()
             try:
+                # WAL lets readers continue while a write transaction commits,
+                # which keeps the dashboard responsive during evaluations.
+                conn.execute("PRAGMA journal_mode = WAL")
                 conn.execute(
                     """
                     CREATE TABLE IF NOT EXISTS memories (
@@ -69,6 +77,9 @@ class SQLiteMemoryStore(MemoryStore):
                 )
                 conn.execute(
                     "CREATE INDEX IF NOT EXISTS idx_mem_user ON memories(user_id, project_id)"
+                )
+                conn.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_event_user ON events(user_id, project_id, id)"
                 )
                 conn.commit()
             finally:
@@ -174,7 +185,8 @@ class SQLiteMemoryStore(MemoryStore):
             finally:
                 conn.close()
 
-        await asyncio.to_thread(_add)
+        async with self._lock:
+            await asyncio.to_thread(_add)
 
     async def list_events(
         self, user_id: str, project_id: Optional[str] = None
@@ -182,19 +194,24 @@ class SQLiteMemoryStore(MemoryStore):
         def _list() -> List[str]:
             conn = self._connect()
             try:
-                rows = conn.execute(
-                    "SELECT data FROM events WHERE user_id=? ORDER BY id DESC LIMIT 200",
-                    (user_id,),
-                ).fetchall()
+                if project_id is not None:
+                    rows = conn.execute(
+                        "SELECT data FROM events "
+                        "WHERE user_id=? AND (project_id=? OR project_id IS NULL) "
+                        "ORDER BY id DESC",
+                        (user_id, project_id),
+                    ).fetchall()
+                else:
+                    rows = conn.execute(
+                        "SELECT data FROM events WHERE user_id=? ORDER BY id DESC",
+                        (user_id,),
+                    ).fetchall()
                 return [r["data"] for r in rows]
             finally:
                 conn.close()
 
         raw = await asyncio.to_thread(_list)
-        events = [json.loads(d) for d in raw]
-        if project_id is not None:
-            events = [e for e in events if e.get("project_id") in (project_id, None)]
-        return events
+        return [json.loads(d) for d in raw]
 
     async def clear_user(self, user_id: str, project_id: Optional[str] = None) -> int:
         def _clear() -> int:

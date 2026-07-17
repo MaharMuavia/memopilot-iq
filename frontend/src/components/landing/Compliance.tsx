@@ -20,8 +20,9 @@ export function Compliance() {
               Built for Qwen Cloud Track 1: MemoryAgent
             </h2>
             <p className="mt-3 text-slate-600">
-              Every track requirement is implemented and verifiable in the
-              running app and repository.
+              The core MemoryAgent requirements are implemented and verifiable
+              in the app and repository. Final live-cloud evidence is tracked
+              explicitly in the submission release gate.
             </p>
           </div>
           <ul className="grid gap-3 sm:grid-cols-2">

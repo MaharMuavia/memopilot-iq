@@ -34,6 +34,8 @@ ignored, updated, or forgotten.
 17. [Screenshots](#screenshots)
 18. [License](#license)
 
+Submission release gate: [docs/submission_readiness.md](docs/submission_readiness.md).
+
 ---
 
 ## Executive summary
@@ -81,7 +83,8 @@ layer that knows what to remember, what to forget, and can prove its reasoning.
 - ✅ **CI + Docker** — GitHub Actions (tests + build) and one-command `docker compose up`.
 - 🏭 **Production platform** — optional API-key auth, per-key rate limiting,
   Prometheus `/metrics`, paginated + filtered memory API, per-memory audit
-  history, and a two-stage rerank that keeps retrieval fast at 10⁵ memories.
+  history, and a two-stage rerank that bounds expensive hybrid scoring after
+  tenant-scoped candidates are loaded.
 - 🐍 **Python SDK** — embed MemoryOS in any agent in a few lines
   ([sdk/python](sdk/python/README.md)).
 - 🔬 **LoCoMo harness** — evaluate on the standard long-conversation memory
@@ -121,6 +124,8 @@ whole app, tests and benchmark working end-to-end.
 - **OSS** — raw turn logs, memory snapshots, eval reports ([`oss_client.py`](backend/app/storage/oss_client.py)).
 - **Deployment** — Docker image + `serverless.yaml` for ECS / Function Compute / ACK.
 Full guide & proof checklist: [docs/deployment_alibaba.md](docs/deployment_alibaba.md).
+The final cloud, benchmark, video, deck, and public-link gates are tracked in
+[docs/submission_readiness.md](docs/submission_readiness.md).
 
 ## MemoryOS algorithm
 Full detail (scoring weights, retrieval, extraction, states/types) in
@@ -208,7 +213,10 @@ Copy [`.env.example`](.env.example) to `backend/.env` and fill in real values
 | `ALIBABA_TABLESTORE_ENDPOINT/INSTANCE` | Tablestore memory store |
 | `MEMORY_STORE` | `sqlite` or `alibaba` |
 | `DATABASE_URL` | SQLite path for local mode |
-| `FRONTEND_ORIGIN` | CORS origin for the frontend |
+| `FRONTEND_ORIGIN` | Frontend CORS origin, comma-separated origins, or `*` for a public demo |
+| `MEMORY_TOKEN_BUDGET` / `RETRIEVAL_TOP_K` | Context budget and retrieval depth |
+| `EVAL_MAX_CONCURRENCY` | Concurrent model calls during evaluation (default 4, maximum 8) |
+| `MEMOPILOT_API_KEYS` / `RATE_LIMIT_PER_MINUTE` | Optional API auth and rate limit |
 
 ## Alibaba deployment
 See [docs/deployment_alibaba.md](docs/deployment_alibaba.md) for ECS (Docker),
@@ -235,17 +243,17 @@ Interactive OpenAPI docs at `http://localhost:8000/docs`.
 | POST | `/api/eval/run` | Run the benchmark |
 | POST | `/api/eval/ablation` | Run the governance ablation study |
 | GET | `/api/eval/report` | Latest evaluation report |
+| POST | `/api/demo/run` | Run the scripted 4-session judge demo |
+| GET | `/api/trace/{session_id}` | Latest Memory Trace for a session |
+| POST | `/api/reflect` | Run the reflection / consolidation pass |
+| GET | `/api/analytics` | Aggregate memory analytics |
+| GET | `/api/graph` | Memory graph nodes + edges |
 
 **Production hardening** (all optional, zero-friction locally): set
 `MEMOPILOT_API_KEYS=key1,key2` to require an `X-API-Key` header on `/api/*`,
 and `RATE_LIMIT_PER_MINUTE` (default 120) for per-key/IP rate limiting.
 `GET /api/memories` supports `type`, `status`, `q` (text search), `limit`,
 `offset`. See [sdk/python](sdk/python/README.md) for the embeddable client.
-| POST | `/api/demo/run` | Run the scripted 4-session judge demo |
-| GET | `/api/trace/{session_id}` | Latest Memory Trace for a session |
-| POST | `/api/reflect` | Run the reflection / consolidation pass |
-| GET | `/api/analytics` | Aggregate memory analytics |
-| GET | `/api/graph` | Memory graph nodes + edges |
 
 ## Testing
 ```bash

@@ -31,73 +31,100 @@ LOCAL_MODE = "LOCAL_MODE"
 ALIBABA_CLOUD_MODE = "ALIBABA_CLOUD_MODE"
 
 
+def _env_or_default(name: str, default: str) -> str:
+    """Treat a missing *or blank* environment variable as the default.
+
+    This matters for ``.env.example``: users commonly copy it and fill only
+    ``QWEN_API_KEY``. Blank URL/model placeholders must not replace working
+    DashScope defaults with empty strings.
+    """
+    value = os.getenv(name)
+    return value.strip() if value and value.strip() else default
+
+
+def _optional_env(name: str) -> Optional[str]:
+    """Return a trimmed optional value; whitespace-only means unconfigured."""
+    value = os.getenv(name)
+    return value.strip() if value and value.strip() else None
+
+
+def _positive_env_int(name: str, default: int) -> int:
+    """Read a positive integer without letting a bad deployment env crash boot."""
+    value = os.getenv(name)
+    try:
+        parsed = int(value.strip()) if value and value.strip() else default
+    except ValueError:
+        return default
+    return parsed if parsed > 0 else default
+
+
 class Settings(BaseModel):
     """Strongly-typed view over the environment."""
 
     # NOTE: defaults use ``default_factory`` so environment variables are read
     # at instantiation time (not import time). This lets tests/process managers
     # override env vars and construct a fresh Settings() that reflects them.
-    app_mode: str = Field(default_factory=lambda: os.getenv("APP_MODE", "local"))
+    app_mode: str = Field(default_factory=lambda: _env_or_default("APP_MODE", "local"))
 
     # --- Qwen Cloud ---
     qwen_api_key: Optional[str] = Field(
-        default_factory=lambda: os.getenv("QWEN_API_KEY") or None
+        default_factory=lambda: _optional_env("QWEN_API_KEY")
     )
     qwen_base_url: str = Field(
-        default_factory=lambda: os.getenv(
+        default_factory=lambda: _env_or_default(
             "QWEN_BASE_URL",
             "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
         )
     )
     qwen_chat_model: str = Field(
-        default_factory=lambda: os.getenv("QWEN_CHAT_MODEL", "qwen-plus")
+        default_factory=lambda: _env_or_default("QWEN_CHAT_MODEL", "qwen-plus")
     )
     qwen_embedding_model: str = Field(
-        default_factory=lambda: os.getenv("QWEN_EMBEDDING_MODEL", "text-embedding-v3")
+        default_factory=lambda: _env_or_default("QWEN_EMBEDDING_MODEL", "text-embedding-v3")
     )
 
     # --- Alibaba Cloud ---
     alibaba_access_key_id: Optional[str] = Field(
-        default_factory=lambda: os.getenv("ALIBABA_ACCESS_KEY_ID") or None
+        default_factory=lambda: _optional_env("ALIBABA_ACCESS_KEY_ID")
     )
     alibaba_access_key_secret: Optional[str] = Field(
-        default_factory=lambda: os.getenv("ALIBABA_ACCESS_KEY_SECRET") or None
+        default_factory=lambda: _optional_env("ALIBABA_ACCESS_KEY_SECRET")
     )
     alibaba_region: Optional[str] = Field(
-        default_factory=lambda: os.getenv("ALIBABA_REGION") or None
+        default_factory=lambda: _optional_env("ALIBABA_REGION")
     )
     alibaba_oss_bucket: Optional[str] = Field(
-        default_factory=lambda: os.getenv("ALIBABA_OSS_BUCKET") or None
+        default_factory=lambda: _optional_env("ALIBABA_OSS_BUCKET")
     )
     alibaba_oss_endpoint: Optional[str] = Field(
-        default_factory=lambda: os.getenv("ALIBABA_OSS_ENDPOINT") or None
+        default_factory=lambda: _optional_env("ALIBABA_OSS_ENDPOINT")
     )
     alibaba_tablestore_endpoint: Optional[str] = Field(
-        default_factory=lambda: os.getenv("ALIBABA_TABLESTORE_ENDPOINT") or None
+        default_factory=lambda: _optional_env("ALIBABA_TABLESTORE_ENDPOINT")
     )
     alibaba_tablestore_instance: Optional[str] = Field(
-        default_factory=lambda: os.getenv("ALIBABA_TABLESTORE_INSTANCE") or None
+        default_factory=lambda: _optional_env("ALIBABA_TABLESTORE_INSTANCE")
     )
 
     # --- Storage ---
     memory_store: str = Field(
-        default_factory=lambda: os.getenv("MEMORY_STORE", "sqlite")
+        default_factory=lambda: _env_or_default("MEMORY_STORE", "sqlite")
     )
     database_url: str = Field(
-        default_factory=lambda: os.getenv("DATABASE_URL", "sqlite:///./memopilot.db")
+        default_factory=lambda: _env_or_default("DATABASE_URL", "sqlite:///./memopilot.db")
     )
 
     # --- Web ---
     frontend_origin: str = Field(
-        default_factory=lambda: os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
+        default_factory=lambda: _env_or_default("FRONTEND_ORIGIN", "http://localhost:5173")
     )
 
     # --- Context budget ---
     memory_token_budget: int = Field(
-        default_factory=lambda: int(os.getenv("MEMORY_TOKEN_BUDGET", "2500"))
+        default_factory=lambda: _positive_env_int("MEMORY_TOKEN_BUDGET", 2500)
     )
     retrieval_top_k: int = Field(
-        default_factory=lambda: int(os.getenv("RETRIEVAL_TOP_K", "8"))
+        default_factory=lambda: _positive_env_int("RETRIEVAL_TOP_K", 8)
     )
 
     @property

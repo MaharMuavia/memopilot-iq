@@ -19,3 +19,13 @@ def require_owned(memory, user_id: str):
     if memory is None or memory.user_id != user_id:
         raise HTTPException(status_code=404, detail="Memory not found.")
     return memory
+
+
+def trace_key(user_id: str, session_id: str) -> str:
+    """Namespace process-local traces by tenant as well as session.
+
+    Session identifiers are client supplied and are not globally unique. A
+    composite key prevents two tenants using ``session-001`` from overwriting
+    each other's diagnostic trace.
+    """
+    return f"{user_id}\x1f{session_id}"

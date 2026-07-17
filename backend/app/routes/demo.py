@@ -12,12 +12,15 @@ from typing import Any, Dict, List
 
 from fastapi import APIRouter, Request
 
-from ..utils.identity import effective_user_id
+from ..utils.identity import effective_user_id, trace_key
 
 router = APIRouter(prefix="/api/demo", tags=["demo"])
 
 DEMO_USER = "demo-user"
-DEMO_PROJECT = "qwen-memoryagent"
+# Keep the destructive reset required for a reproducible demo away from the
+# normal dashboard project. Running the judge demo must never erase real user
+# memories from ``qwen-memoryagent``.
+DEMO_PROJECT = "qwen-memoryagent-judge-demo"
 
 JUDGE_SCRIPT = [
     (
@@ -75,7 +78,7 @@ async def run_demo(request: Request) -> Dict[str, Any]:
             session_id=session_id,
             message=message,
         )
-        traces[session_id] = {
+        traces[trace_key(user_id, session_id)] = {
             "session_id": session_id,
             "user_id": user_id,
             "project_id": DEMO_PROJECT,

@@ -33,6 +33,20 @@ def test_open_mode_when_no_keys_configured(tmp_path, monkeypatch):
         assert c.get("/api/memories").status_code == 200
 
 
+def test_wildcard_cors_is_valid_for_public_demo(tmp_path, monkeypatch):
+    with _make_client(tmp_path, monkeypatch, FRONTEND_ORIGIN="*") as c:
+        response = c.options(
+            "/api/memories",
+            headers={
+                "Origin": "https://public-demo.example",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        assert response.status_code == 200
+        assert response.headers["access-control-allow-origin"] == "*"
+        assert "access-control-allow-credentials" not in response.headers
+
+
 def test_api_key_required_when_configured(tmp_path, monkeypatch):
     with _make_client(tmp_path, monkeypatch, MEMOPILOT_API_KEYS="mk-alpha, mk-beta") as c:
         assert c.get("/api/memories").status_code == 401

@@ -13,7 +13,7 @@ from __future__ import annotations
 import uuid
 from typing import List, Optional, Tuple
 
-from ..config import ALIBABA_CLOUD_MODE, Settings, get_settings
+from ..config import ALIBABA_CLOUD_MODE, LOCAL_MODE, Settings, get_settings
 from ..models import MemoryActions, MemoryRecord, MemoryTrace
 from ..qwen_client import QwenClient
 from ..utils.logging import get_logger
@@ -64,7 +64,14 @@ class MemoryOS:
 
     @property
     def mode(self) -> str:
-        return self.settings.resolved_mode()
+        # Report the backend that actually initialized, not merely the desired
+        # configuration. If Tablestore fails and lifespan falls back to SQLite,
+        # /health must not present that fallback as ALIBABA_CLOUD_MODE.
+        return (
+            ALIBABA_CLOUD_MODE
+            if self.store.backend_name == "alibaba-tablestore"
+            else LOCAL_MODE
+        )
 
     async def build_context(
         self, user_id: str, project_id: Optional[str], message: str

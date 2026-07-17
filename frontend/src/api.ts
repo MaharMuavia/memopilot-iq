@@ -95,6 +95,11 @@ export interface TimelineEvent {
 }
 
 export interface EvalReport {
+  generated_at: string;
+  duration_seconds: number;
+  primary_backbone: string;
+  provider_status: string;
+  provider_fallbacks: number;
   memory_agent_accuracy: number;
   baseline_no_memory_accuracy: number;
   memory_recall_at_context: number;
@@ -104,6 +109,9 @@ export interface EvalReport {
   token_savings_percent: number;
   response_accuracy_delta: number;
   retrieval_top_k: number;
+  memory_token_budget: number;
+  chat_model: string;
+  embedding_model: string;
   evaluator: string;
   avg_retrieval_latency_ms: number;
   retrieval_latency_ms: number;

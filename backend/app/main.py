@@ -77,10 +77,25 @@ def create_app() -> FastAPI:
         version="1.0.0",
         lifespan=lifespan,
     )
+    configured_origins = [
+        origin.strip()
+        for origin in settings.frontend_origin.split(",")
+        if origin.strip()
+    ]
+    if "*" in configured_origins:
+        allowed_origins = ["*"]
+    else:
+        allowed_origins = list(dict.fromkeys([
+            *configured_origins,
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ]))
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[settings.frontend_origin, "http://localhost:5173", "http://127.0.0.1:5173"],
-        allow_credentials=True,
+        allow_origins=allowed_origins,
+        # Authentication uses an explicit X-API-Key header, not cookies.
+        # Keeping credentials disabled makes FRONTEND_ORIGIN=* standards-safe.
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )

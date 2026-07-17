@@ -31,13 +31,40 @@ export function EvaluationDashboard() {
     }
   }
 
+  function downloadReport() {
+    if (!report) return;
+    const blob = new Blob([JSON.stringify(report, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `memopilot-eval-${report.generated_at.slice(0, 10)}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="glass p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-slate-700">Evaluation Dashboard</h2>
-        <button className="btn-primary" onClick={run} disabled={loading}>
-          {loading ? "Running…" : "Run benchmark"}
-        </button>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-700">Evaluation Dashboard</h2>
+          {report && (
+            <p className="mt-0.5 text-xs text-slate-400">
+              {report.primary_backbone} · {report.evaluator} · {report.duration_seconds}s
+            </p>
+          )}
+        </div>
+        <div className="flex gap-2">
+          {report && (
+            <button className="btn-ghost" onClick={downloadReport}>
+              Download JSON
+            </button>
+          )}
+          <button className="btn-primary" onClick={run} disabled={loading}>
+            {loading ? "Running…" : "Run benchmark"}
+          </button>
+        </div>
       </div>
 
       {error && <p className="text-xs text-rose-600">{error}</p>}
@@ -59,6 +86,14 @@ export function EvaluationDashboard() {
             <Metric label="Outdated mem errors" value={`${report.outdated_memory_errors}`} good={report.outdated_memory_errors === 0} />
             <Metric label="Avg retrieval" value={`${report.avg_retrieval_latency_ms} ms`} />
           </div>
+
+          {report.provider_status !== "online" && (
+            <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              This run used provider status <strong>{report.provider_status}</strong>.
+              {report.provider_fallbacks > 0 && ` ${report.provider_fallbacks} provider calls fell back.`}
+              Use an online Qwen run as final submission evidence.
+            </p>
+          )}
 
           <ComparisonBar
             agent={report.memory_agent_accuracy}

@@ -8,17 +8,21 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
 
-from ..utils.identity import effective_user_id
+from ..utils.identity import effective_user_id, trace_key
 
 router = APIRouter(prefix="/api", tags=["trace"])
 
 
 @router.get("/trace/{session_id}")
-async def get_trace(session_id: str, request: Request):
+async def get_trace(
+    session_id: str,
+    request: Request,
+    user_id: str = "demo-user",
+):
     traces = getattr(request.app.state, "last_traces", {}) or {}
-    record = traces.get(session_id)
-    user_id = effective_user_id(request, "")
-    if record is None or (user_id and record.get("user_id") != user_id):
+    user_id = effective_user_id(request, user_id)
+    record = traces.get(trace_key(user_id, session_id))
+    if record is None:
         raise HTTPException(
             status_code=404,
             detail=f"No trace for session '{session_id}' yet. Send a chat message first.",

@@ -1,6 +1,8 @@
 """Evaluation endpoints: run the benchmark and fetch the latest report."""
 from __future__ import annotations
 
+import asyncio
+
 from fastapi import APIRouter, HTTPException, Request
 
 from ..eval.ablation import AblationRunner
@@ -18,7 +20,9 @@ async def run_eval(request: Request):
 
     # Persist the report (OSS in cloud mode, local snapshot otherwise).
     try:
-        request.app.state.oss.put_snapshot("eval-reports", report)
+        await asyncio.to_thread(
+            request.app.state.oss.put_snapshot, "eval-reports", report
+        )
     except Exception:  # pragma: no cover
         pass
     return report
@@ -30,7 +34,9 @@ async def run_ablation(request: Request):
     memos = request.app.state.memos
     report = await AblationRunner(memos).run()
     try:
-        request.app.state.oss.put_snapshot("ablation-reports", report)
+        await asyncio.to_thread(
+            request.app.state.oss.put_snapshot, "ablation-reports", report
+        )
     except Exception:  # pragma: no cover
         pass
     return report

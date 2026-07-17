@@ -11,10 +11,12 @@ then aggregates into the report consumed by the Evaluation Dashboard.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import time
 import uuid
+from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 from ..memory import MemoryOS
@@ -72,6 +74,8 @@ class BenchmarkRunner:
                 await self.memos.store.update(m)
 
     async def run(self) -> Dict[str, Any]:
+        run_started = time.perf_counter()
+        fallbacks_before = self.memos.qwen.fallback_count
         data = load_scenarios()
         scenarios = data["scenarios"]
         eval_user = f"eval-{uuid.uuid4().hex[:8]}"
@@ -151,7 +155,18 @@ class BenchmarkRunner:
             for c in contexts
         ]
 
+        provider_fallbacks = self.memos.qwen.fallback_count - fallbacks_before
+        provider_status = (
+            "degraded_offline_fallback"
+            if provider_fallbacks
+            else self.memos.qwen.provider_status
+        )
         report = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "duration_seconds": round(time.perf_counter() - run_started, 2),
+            "primary_backbone": primary["label"] if primary else "unavailable",
+            "provider_status": provider_status,
+            "provider_fallbacks": provider_fallbacks,
             "memory_agent_accuracy": primary["agent_accuracy"] if primary else 0.0,
             "baseline_no_memory_accuracy": primary["baseline_accuracy"] if primary else 0.0,
             "memory_recall_at_context": round(recall_hits / recall_total, 2) if recall_total else 1.0,
@@ -164,6 +179,9 @@ class BenchmarkRunner:
             "retrieval_latency_ms": round(sum(latencies) / len(latencies), 1) if latencies else 0.0,
             "num_scenarios": n,
             "retrieval_top_k": self.memos.settings.retrieval_top_k,
+            "memory_token_budget": self.memos.settings.memory_token_budget,
+            "chat_model": self.memos.settings.qwen_chat_model,
+            "embedding_model": self.memos.settings.qwen_embedding_model,
             "evaluator": "strict-keyword-v1",
             "backbones": backbones,
             "scenarios": scenarios_out,
@@ -199,19 +217,42 @@ class BenchmarkRunner:
                 "chat": (lambda prov: (lambda m: backbone_chat(prov, m)))(p),
             })
 
+        # Model calls dominate benchmark time. Run a small bounded batch so the
+        # 24-scenario judge flow completes within normal proxy timeouts without
+        # flooding provider rate limits.
+        try:
+            configured_concurrency = int(os.getenv("EVAL_MAX_CONCURRENCY", "4"))
+        except ValueError:
+            configured_concurrency = 4
+        max_concurrency = max(1, min(configured_concurrency, 8))
+        semaphore = asyncio.Semaphore(max_concurrency)
+
+        async def limited_chat(chat, messages):
+            async with semaphore:
+                return await chat(messages)
+
         results: List[Dict[str, Any]] = []
         for b in runners:
             agent_c = base_c = ok = skipped = 0
             per: List[Dict[str, Any]] = []
-            for c in contexts:
-                agent = await b["chat"]([
+
+            async def evaluate(c):
+                agent_messages = [
                     {"role": "system", "content": c["system_prompt"]},
                     {"role": "user", "content": c["question"]},
-                ])
-                base = await b["chat"]([
+                ]
+                baseline_messages = [
                     {"role": "system", "content": _BASE_SYSTEM},
                     {"role": "user", "content": c["question"]},
-                ])
+                ]
+                agent, base = await asyncio.gather(
+                    limited_chat(b["chat"], agent_messages),
+                    limited_chat(b["chat"], baseline_messages),
+                )
+                return c, agent, base
+
+            evaluated = await asyncio.gather(*(evaluate(c) for c in contexts))
+            for c, agent, base in evaluated:
                 if agent is None or base is None:
                     skipped += 1  # provider hiccup on this item; skip, keep going
                     continue

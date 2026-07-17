@@ -9,15 +9,18 @@ Flow for each request:
 """
 from __future__ import annotations
 
+import asyncio
+
 from fastapi import APIRouter, Request
 
 from ..models import ChatRequest, ChatResponse
-from ..utils.identity import effective_user_id
+from ..utils.identity import effective_user_id, trace_key
 from ..utils.logging import get_logger
 from ..utils.security import redact_secrets
 
 router = APIRouter(prefix="/api", tags=["chat"])
 logger = get_logger("chat")
+_TRACE_CACHE_MAX_ENTRIES = 500
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -47,7 +50,8 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
 
     # 4: snapshot the turn (OSS in cloud mode, local file otherwise).
     try:
-        oss.put_snapshot(
+        await asyncio.to_thread(
+            oss.put_snapshot,
             "turns",
             {
                 "user_id": user_id,
@@ -67,7 +71,7 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
     if traces is None:
         traces = {}
         request.app.state.last_traces = traces
-    traces[req.session_id] = {
+    traces[trace_key(user_id, req.session_id)] = {
         "session_id": req.session_id,
         "user_id": user_id,
         "project_id": req.project_id,
@@ -79,6 +83,8 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
         "trace": trace.model_dump(),
         "memory_actions": actions.model_dump(),
     }
+    while len(traces) > _TRACE_CACHE_MAX_ENTRIES:
+        traces.pop(next(iter(traces)))
 
     return ChatResponse(
         answer=answer,

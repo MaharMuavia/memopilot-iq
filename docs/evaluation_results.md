@@ -17,6 +17,10 @@ the Evaluation dashboard.
   excluded from both sides.
 - Retrieval latency, model label, evaluator version, scenario count, and
   retrieval depth.
+- UTC generation time, end-to-end duration, provider status and fallback count,
+  chat/embedding model names, token budget, and bounded-concurrency
+  configuration. The UI can download the complete JSON report for the
+  submission evidence bundle.
 
 ## Reproducibility rules
 

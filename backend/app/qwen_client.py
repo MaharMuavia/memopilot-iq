@@ -34,6 +34,7 @@ class QwenClient:
         self.settings = settings or get_settings()
         self._client: Optional[httpx.AsyncClient] = None
         self._provider_status = "online" if self.settings.qwen_configured else "offline"
+        self._fallback_count = 0
 
     @property
     def online(self) -> bool:
@@ -43,6 +44,11 @@ class QwenClient:
     def provider_status(self) -> str:
         """Current provider state without pretending a failed live call succeeded."""
         return self._provider_status
+
+    @property
+    def fallback_count(self) -> int:
+        """Number of configured-provider calls that required offline fallback."""
+        return self._fallback_count
 
     async def _http(self) -> httpx.AsyncClient:
         if self._client is None:
@@ -83,6 +89,7 @@ class QwenClient:
             return data["choices"][0]["message"]["content"].strip()
         except Exception as exc:  # pragma: no cover - network failure path
             logger.warning("Qwen chat failed (%s); using offline fallback", exc)
+            self._fallback_count += 1
             self._provider_status = "degraded_offline_fallback"
             return self._offline_chat(messages)
 
@@ -110,6 +117,7 @@ class QwenClient:
             return _safe_json(content)
         except Exception as exc:  # pragma: no cover
             logger.warning("Qwen extract failed (%s); using offline fallback", exc)
+            self._fallback_count += 1
             self._provider_status = "degraded_offline_fallback"
             return self._offline_extract(user_prompt)
 
@@ -130,6 +138,7 @@ class QwenClient:
             return resp.json()["data"][0]["embedding"]
         except Exception as exc:  # pragma: no cover
             logger.warning("Qwen embed failed (%s); using offline fallback", exc)
+            self._fallback_count += 1
             self._provider_status = "degraded_offline_fallback"
             return self._offline_embed(text)
 

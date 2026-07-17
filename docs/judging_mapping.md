@@ -12,6 +12,9 @@
 - ✅ Track 1: MemoryAgent
 - ✅ Uses Qwen Cloud API (chat, extraction, embeddings)
 - ⏳ Alibaba Cloud deployment evidence — capture after the final ECS/FC deployment
+- ⏳ Public working-project URL — keep available through the judging period
+- ⏳ Final Qwen-backed benchmark JSON from the submitted cloud build
+- ⏳ Public under-3-minute demo video and exported presentation deck
 - ✅ Public/open-source, **MIT** `LICENSE`
 - ✅ README install + testing instructions
 - ✅ `.env.example` with empty placeholders only; `.env` git-ignored
@@ -22,3 +25,6 @@
 - ✅ English throughout
 - ✅ Original implementation; OSS libs used only as building blocks
 - ✅ Local demo and tests run without cloud credentials via a deterministic fallback
+
+See [submission_readiness.md](submission_readiness.md) for the final release
+gate. Pending evidence must not be described as complete in judge-facing copy.

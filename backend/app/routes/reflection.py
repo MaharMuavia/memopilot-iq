@@ -1,6 +1,8 @@
 """Reflection endpoint — runs the memory consolidation / self-improvement pass."""
 from __future__ import annotations
 
+import asyncio
+
 from fastapi import APIRouter, Request
 
 from ..utils.identity import effective_user_id
@@ -20,7 +22,9 @@ async def reflect(
 
     # Persist the reflection report (OSS in cloud mode, local snapshot otherwise).
     try:
-        request.app.state.oss.put_snapshot("reflection", report)
+        await asyncio.to_thread(
+            request.app.state.oss.put_snapshot, "reflection", report
+        )
     except Exception:  # pragma: no cover
         pass
     return report

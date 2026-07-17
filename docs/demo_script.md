@@ -1,5 +1,9 @@
 # Demo Video Script (under 3 minutes)
 
+> Record this only against the final public Alibaba Cloud deployment. The
+> official Devpost rules say the video should be under three minutes, even
+> though the event landing page lists a five-minute maximum.
+
 > Seed first so the store is demo-ready: `cd backend && SEED_DEMO=1 uvicorn app.main:app --port 8000`
 > (Windows PowerShell: `$env:SEED_DEMO=1; uvicorn app.main:app --port 8000`).
 > Or just run the four Chat starter buttons live in order.
@@ -12,7 +16,7 @@
 | 1:05–1:35 | Send starter #3 (Next.js) | "I change my mind: use Next.js instead of React + Vite. The agent **supersedes** the old memory — see the ↻ badge and the Timeline event." |
 | 1:35–2:05 | Send starter #4 + Trace | "Now I ask what stack to use. It recommends Next.js and the Trace shows the old React + Vite memory marked **superseded and ignored** — no outdated advice." |
 | 2:05–2:30 | Evaluation tab → Run benchmark | "The Evaluation Dashboard runs a 24-scenario diagnostic against a no-memory baseline. It reports the final build's strict evaluator, context recall, stale-memory checks, historical-context token reduction, and latency." |
-| 2:30–2:50 | /health + deployment doc / consoles | "Everything runs on Qwen Cloud for chat, extraction and embeddings, with Alibaba Cloud Tablestore + OSS for persistence — health endpoint confirms the mode." |
+| 2:30–2:50 | Public `/health` + safe cloud proof | "This submitted build uses Qwen Cloud for chat, extraction and embeddings, with Alibaba Cloud Tablestore and OSS for persistence. The health endpoint confirms the live configuration." |
 | 2:50–3:00 | Header | "MemoPilot IQ — a memory layer any AI assistant can plug into. Thanks for watching." |
 
 ## Talking points if asked
