@@ -175,3 +175,4 @@ def test_eval_runs(client):
     assert report["provider_fallbacks"] == 0
     assert report["duration_seconds"] >= 0
     assert report["memory_token_budget"] == 2500
+    assert report["outdated_memory_errors"] == 0

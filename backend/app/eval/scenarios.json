@@ -28,7 +28,7 @@
     {
       "id": "pref_light_ui",
       "title": "Preference recall: UI theme",
-      "setup_messages": ["I prefer a clean light UI, never dark mode."],
+      "setup_messages": ["I prefer a clean light UI."],
       "test_question": "What theme should the dashboard use?",
       "expected_answer_keywords": ["light"],
       "must_not_use_keywords": ["dark"]
