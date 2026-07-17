@@ -4,6 +4,9 @@
 
 **Qwen Cloud Global AI Hackathon — Track 1: MemoryAgent**
 
+📖 **Build story:** [AI Agents Don’t Need More Memory. They Need Memory
+Governance.](https://dev.to/muhammad_muavia/ai-agents-dont-need-more-memory-they-need-memory-governance-15ej)
+
 MemoPilot IQ is a persistent-memory AI agent. Unlike a normal chatbot that only
 sees recent chat history, it has a dedicated **memory intelligence layer
 (MemoryOS)** that extracts structured memories from conversations, stores them
