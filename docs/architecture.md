@@ -68,5 +68,5 @@ SDKs/credentials are missing.
 To regenerate a PNG from the Mermaid source:
 
 ```bash
-npx -y @mermaid-js/mermaid-cli -i assets/architecture.mmd -o assets/architecture.png
+npx -y @mermaid-js/mermaid-cli -i assets/architecture.mmd -o assets/architecture.svg
 ```
