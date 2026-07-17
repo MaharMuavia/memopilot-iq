@@ -1,6 +1,32 @@
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { api, type ChatResponse, type MemoryRecord } from "../api";
 import { TypeBadge } from "./StatusBadge";
+
+const ASSISTANT_MARKDOWN_ELEMENTS = [
+  "p",
+  "strong",
+  "em",
+  "ul",
+  "ol",
+  "li",
+  "a",
+  "code",
+  "pre",
+  "blockquote",
+  "h1",
+  "h2",
+  "h3",
+  "hr",
+  "br",
+  "table",
+  "thead",
+  "tbody",
+  "tr",
+  "th",
+  "td",
+] as const;
 
 interface Turn {
   role: "user" | "assistant";
@@ -88,7 +114,19 @@ export function ChatPanel({
                   : "bg-white text-slate-700 border border-slate-200"
               }`}
             >
-              {t.text}
+              {t.role === "assistant" ? (
+                <div className="chat-markdown">
+                  <ReactMarkdown
+                    allowedElements={ASSISTANT_MARKDOWN_ELEMENTS}
+                    remarkPlugins={[remarkGfm]}
+                    skipHtml
+                  >
+                    {t.text}
+                  </ReactMarkdown>
+                </div>
+              ) : (
+                t.text
+              )}
             </div>
             {t.role === "assistant" && t.used && t.used.length > 0 && (
               <div className="mt-1.5 flex flex-wrap gap-1">

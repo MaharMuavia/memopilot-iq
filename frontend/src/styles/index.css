@@ -124,6 +124,75 @@ body {
   animation: shimmer 1.4s infinite linear;
 }
 
+/* Safe Markdown rendered inside assistant chat bubbles. */
+.chat-markdown {
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+.chat-markdown > * + * {
+  margin-top: 0.55rem;
+}
+.chat-markdown h1,
+.chat-markdown h2,
+.chat-markdown h3 {
+  color: #0f172a;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.chat-markdown h1 { font-size: 1rem; }
+.chat-markdown h2 { font-size: 0.95rem; }
+.chat-markdown h3 { font-size: 0.9rem; }
+.chat-markdown ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.chat-markdown ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+.chat-markdown li + li {
+  margin-top: 0.25rem;
+}
+.chat-markdown a {
+  color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.chat-markdown code {
+  border-radius: 0.3rem;
+  background: #f1f5f9;
+  padding: 0.08rem 0.3rem;
+  font-size: 0.85em;
+}
+.chat-markdown pre {
+  overflow-x: auto;
+  border-radius: 0.6rem;
+  background: #0f172a;
+  padding: 0.7rem;
+  color: #e2e8f0;
+}
+.chat-markdown pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+.chat-markdown blockquote {
+  border-left: 3px solid #93c5fd;
+  padding-left: 0.75rem;
+  color: #475569;
+}
+.chat-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85em;
+}
+.chat-markdown th,
+.chat-markdown td {
+  border: 1px solid #cbd5e1;
+  padding: 0.35rem 0.45rem;
+  text-align: left;
+}
+
 /* Respect users who prefer less motion. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

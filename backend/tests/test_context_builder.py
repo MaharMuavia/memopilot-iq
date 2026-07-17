@@ -44,3 +44,22 @@ def test_trace_records_included_and_skipped():
     _, trace, _ = builder.build("q", scored, "p", 5, 1.0)
     assert len(trace.included) == 2
     assert len(trace.skipped) == 3
+
+
+def test_system_prompt_separates_current_implementation_from_plans():
+    builder = ContextBuilder(token_budget=2500, top_k=8)
+    prompt, _, _ = builder.build(
+        "What stack is implemented?",
+        [],
+        "p",
+        candidates_considered=0,
+        retrieval_latency_ms=0.0,
+    )
+
+    assert "current frontend is React 18 with Vite" in prompt
+    assert "Next.js can be a requested future migration" in prompt
+    assert "Local mode uses SQLite and local vector retrieval" in prompt
+    assert "Alibaba Tablestore and OSS" in prompt
+    assert "Milvus, Qdrant, and AnalyticDB are not part" in prompt
+    assert "MemoPilot memory layer" in prompt
+    assert "do not claim a public Alibaba deployment is live" in prompt
