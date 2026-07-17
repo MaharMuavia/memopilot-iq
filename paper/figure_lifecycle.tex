@@ -48,7 +48,7 @@ new memory is born \texttt{active} (or \texttt{pinned} on user request). It is
 deadline passes, or \texttt{archived} when stale and unused; only an explicit
 user action \texttt{deletes} it. Crucially, the \texttt{superseded},
 \texttt{expired}, and \texttt{archived} states are excluded from retrieval yet
-retained on the timeline, so the agent never reasons from invalid memory while
-the history stays complete and reversible.}
+retained on the timeline. This keeps inactive records out of normal answer
+context while preserving their history for inspection.}
 \label{fig:lifecycle}
 \end{figure}

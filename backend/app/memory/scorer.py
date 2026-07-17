@@ -1,6 +1,6 @@
 """Memory scoring engine.
 
-Implements the MemoryOS scoring formula. The final score combines semantic
+Implements the MemoPilot ranking formula. The final score combines semantic
 similarity with intrinsic memory signals (importance, recency, confidence,
 usage), contextual signals (project match, critical bonus) and penalties
 (outdated, privacy, superseded).
@@ -39,13 +39,15 @@ WEIGHTS = {
 }
 
 
-def compute_recency(updated_at: datetime, half_life_days: float = 14.0) -> float:
-    """Exponential recency decay in [0, 1]; 1.0 == just now."""
+def compute_recency(updated_at: datetime, time_constant_days: float = 14.0) -> float:
+    """Exponential recency decay using the configured time constant."""
+    if time_constant_days <= 0:
+        raise ValueError("time_constant_days must be greater than zero")
     now = datetime.now(timezone.utc)
     if updated_at.tzinfo is None:
         updated_at = updated_at.replace(tzinfo=timezone.utc)
     age_days = max(0.0, (now - updated_at).total_seconds() / 86400.0)
-    return math.exp(-age_days / half_life_days)
+    return math.exp(-age_days / time_constant_days)
 
 
 def usage_to_score(usage_count: int) -> float:

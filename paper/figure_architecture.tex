@@ -1,5 +1,5 @@
 % ---------------------------------------------------------------------------
-% MemoPilot IQ / MemoryOS architecture figure (TikZ) — compact wide layout.
+% MemoPilot IQ memory-layer architecture figure (TikZ) - compact wide layout.
 % Requires in the preamble:
 %   \usepackage{tikz,graphicx}
 %   \usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc}
@@ -65,26 +65,27 @@
 \draw[dedge] (forget.east) -- (store.west);
 \draw[dedge] (store.east) -- (oss.west);
 
-% ---- MemoryOS grouping box ----
+% ---- MemoPilot memory-layer grouping box ----
 \begin{scope}[on background layer]
   \node[draw=blue!45!black, line width=0.9pt, rounded corners=4pt,
         fill=blue!2, inner sep=4mm,
         fit=(extract)(assemble)(forget)(oss)(store)] (osbox) {};
   \node[anchor=south west, font=\small\bfseries, text=blue!45!black]
-        at (osbox.north west) {MemoryOS};
+        at (osbox.north west) {MemoPilot memory layer};
 \end{scope}
 
 \end{tikzpicture}%
 }
-\caption{Architecture and request lifecycle of \osname{}. A user message is
+\caption{Architecture and request lifecycle of the MemoPilot memory layer. A user message is
 converted into \emph{typed} memories (Extract), embedded and retrieved with a
 hybrid dense/sparse signal under structured filters (Retrieve), ranked by the
 interpretable linear score of Eq.~\ref{eq:score} (Score), and packed into the
-prompt under a token budget that always injects critical/pinned memories
-(Assemble). The Qwen LLM produces the answer and a complete \emph{Memory Trace}.
+prompt under a hard token budget that considers critical/pinned memories first
+(Assemble). The configured answer model produces the answer and a complete
+\emph{Memory Trace}.
 A periodic forgetting sweep expires, archives, and supersedes records through
 auditable state transitions; memories and logs persist in the memory/event store
-and object store. The same pipeline runs offline (SQLite, deterministic
-fallback) and in the cloud (Alibaba Tablestore and OSS, Qwen).}
+and object store. Local mode uses SQLite and deterministic provider fallbacks;
+cloud adapters target Qwen, Alibaba Tablestore, and OSS.}
 \label{fig:arch}
 \end{figure}

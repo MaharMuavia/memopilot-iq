@@ -1,0 +1,37 @@
+{
+  "variants": [
+    {
+      "variant": "Full policy",
+      "context_recall": 0.95,
+      "leak_rate": 0.0,
+      "critical_inclusion": 1.0
+    },
+    {
+      "variant": "No priority ordering",
+      "context_recall": 0.95,
+      "leak_rate": 0.0,
+      "critical_inclusion": 1.0
+    },
+    {
+      "variant": "No lifecycle exclusion",
+      "context_recall": 1.0,
+      "leak_rate": 0.33,
+      "critical_inclusion": 1.0
+    },
+    {
+      "variant": "Similarity-only weights",
+      "context_recall": 0.95,
+      "leak_rate": 0.0,
+      "critical_inclusion": 1.0
+    },
+    {
+      "variant": "Uniform positive weights",
+      "context_recall": 0.95,
+      "leak_rate": 0.0,
+      "critical_inclusion": 1.0
+    }
+  ],
+  "num_scenarios": 24,
+  "retrieval_top_k": 8,
+  "memory_token_budget": 2500
+}

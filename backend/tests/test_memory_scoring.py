@@ -1,7 +1,10 @@
 """Tests for the memory scoring engine."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import math
+from datetime import datetime, timedelta, timezone
+
+import pytest
 
 from app.memory.scorer import WEIGHTS, score_memory, compute_recency, usage_to_score
 from app.models import MemoryRecord, MemoryStatus, MemoryType, PrivacyLevel
@@ -56,7 +59,16 @@ def test_sensitive_privacy_penalised():
 def test_recency_decays():
     now = datetime.now(timezone.utc)
     fresh = compute_recency(now)
+    one_time_constant_old = compute_recency(
+        now - timedelta(days=14), time_constant_days=14
+    )
     assert 0.99 <= fresh <= 1.0
+    assert math.isclose(one_time_constant_old, math.exp(-1), rel_tol=1e-4)
+
+
+def test_recency_rejects_non_positive_time_constant():
+    with pytest.raises(ValueError, match="greater than zero"):
+        compute_recency(datetime.now(timezone.utc), time_constant_days=0)
 
 
 def test_usage_score_monotonic():

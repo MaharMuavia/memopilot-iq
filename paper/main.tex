@@ -1,9 +1,5 @@
 \documentclass[11pt]{article}
 
-% ---------------------------------------------------------------------------
-% Packages
-% ---------------------------------------------------------------------------
-\usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage[margin=1in]{geometry}
@@ -12,792 +8,468 @@
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{xcolor}
-\usepackage{listings}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc}
 \usepackage{enumitem}
 \usepackage{microtype}
 \usepackage{caption}
-\usepackage{subcaption}
 \usepackage[numbers,sort&compress]{natbib}
 \usepackage{authblk}
 \usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
 
-% ---------------------------------------------------------------------------
-% Listing style
-% ---------------------------------------------------------------------------
-\definecolor{codebg}{rgb}{0.97,0.97,0.97}
-\lstset{
-  basicstyle=\ttfamily\footnotesize,
-  backgroundcolor=\color{codebg},
-  breaklines=true,
-  frame=single,
-  framesep=4pt,
-  rulecolor=\color{gray!40},
-  showstringspaces=false,
-  columns=fullflexible,
+\newcommand{\sysname}{MemoPilot~IQ}
+\newcommand{\layername}{MemoPilot memory layer}
+
+\hypersetup{
+  pdftitle={MemoPilot IQ: Auditable Lifecycle Governance for Persistent Agent Memory},
+  pdfauthor={Mahar Muavia, Muhammad Imran Shah, Tayyaba Shehzad},
+  pdfsubject={Persistent memory governance for language-model agents},
+  pdfkeywords={agent memory, lifecycle governance, retrieval, auditability}
 }
 
-\newcommand{\sysname}{MemoPilot~IQ}
-\newcommand{\osname}{MemoryOS}
-\newcommand{\cmark}{\textcolor{green!55!black}{\checkmark}}
-\newcommand{\xmark}{\textcolor{red!65!black}{\ensuremath{\times}}}
-\newcommand{\pmark}{\textcolor{orange!75!black}{$\circ$}}
-
-\title{\textbf{\sysname{}: A Transparent, Budget-Aware Memory Layer\\
-for Persistent Large Language Model Agents}}
+\title{\textbf{\sysname{}: Auditable Lifecycle Governance\\
+for Persistent Agent Memory}}
 
 \author[1]{Mahar Muavia\thanks{Corresponding author: \texttt{contact@inventacore.org}}}
-\author[1,*]{Muhammad Imran Shah}
-\author[1,*]{Tayyaba Shehzad}
+\author[1]{Muhammad Imran Shah}
+\author[1]{Tayyaba Shehzad}
 \affil[1]{InventaCore AI \quad \url{https://inventacore.org}}
-\affil[*]{These authors contributed equally.}
+\date{Technical report, July 2026}
 
-\date{\today}
-
-% ---------------------------------------------------------------------------
 \begin{document}
 \maketitle
 
-\begin{center}
-\fcolorbox{red!65!black}{red!5}{\parbox{0.93\linewidth}{\textbf{Draft status.}
-This is an archived preliminary research draft. Its empirical tables and
-numeric claims predate the final evaluator and strict-budget fixes, so they
-are not submission evidence and must not be quoted. Regenerate every result
-from the current harnesses before publication.}}
-\end{center}
-
 \begin{abstract}
-Large language model (LLM) assistants are stateless across sessions: they forget
-user preferences, project decisions, and constraints, and continue to give
-\emph{outdated} advice after a decision has changed. We present \sysname{}, a
-persistent-memory agent organized around \osname{}, a self-contained memory
-intelligence layer that sits between the conversation and the LLM. \osname{}
-(i)~extracts \emph{typed, structured} memories from dialogue rather than storing
-raw transcripts; (ii)~ranks candidates with a single, fully interpretable
-linear scoring function that fuses semantic similarity with intrinsic signals
-(importance, recency, confidence, usage), contextual signals (project match,
-criticality), and explicit penalties (outdated, privacy, supersession);
-(iii)~assembles the prompt under a strict token budget that prioritizes
-critical and pinned memories when they fit; (iv)~performs non-destructive
-forgetting through expiry, archival, and supersession state transitions; and
-(v)~emits a complete \emph{Memory Trace} that records, for every answer, which
-memories were injected or skipped, their component scores, the reason, and the
-token cost. We formalize the scoring and budgeting procedures and describe a
-reproducible benchmark harness that contrasts the memory-augmented agent against
-a no-memory baseline across 24 diagnostic scenarios spanning six capability
-categories: preference recall, cross-session recall, contradiction/supersession,
-expired-deadline avoidance, critical-instruction retention, and multi-fact
-composition. With a live \textsc{Qwen} backend (\texttt{qwen3.7-max}) the memory
-agent reaches a task accuracy of $0.75$ versus $0.50$ for the no-memory baseline
-within a $2{,}500$-token context budget, and the same gain holds when only the
-answer model is swapped to GPT-4o ($0.79$ versus $0.67$), evidence that the
-benefit comes from the memory layer rather than any single model. The layer
-recalls target facts at \textsc{recall@5} $=0.77$ and reduces injected context
-by roughly $98\%$ relative to replaying full history. A deterministic ablation
-isolates the load-bearing mechanism: removing lifecycle exclusion raises the
-outdated-memory leak rate ninefold with no recall benefit. On the standard
-LoCoMo long-conversation benchmark, an evidence-conditioned analysis shows
-answer F1 is $8.4\times$ higher when the memory layer places the annotated
-evidence into context than when it does not, localizing quality to retrieval
-depth rather than the answer model. We argue
-that \emph{interpretability and lifecycle management}, not raw capacity, are the
-decisive properties for trustworthy long-term agent memory, and we release the
-full system, benchmark, and trace format to support reproducible study.
+Persistent assistants need more than a store of old messages. They need rules
+for deciding which information is current, which information has expired, and
+which records may enter a limited model context. We describe \sysname{}, an
+open-source assistant whose memory layer represents conversation-derived facts
+as typed records with explicit lifecycle states. Retrieval combines dense and
+lexical signals with a transparent ranking function. A context builder then
+selects records under a hard 2,500-token memory budget and a default top-eight
+relevance window, and a per-answer trace records every inclusion and exclusion
+decision. Inactive records are excluded from normal retrieval while lifecycle
+decisions remain auditable. In a deterministic 24-scenario diagnostic, the
+current implementation places the required memory in context for 21 of 22
+eligible scenarios, injects no stale record across 24 scenarios, and uses 31\%
+fewer estimated historical-context tokens than replaying the setup messages.
+Removing lifecycle exclusion increases the stale-injection rate from 0.00 to
+0.33; changing the ranking weights or priority ordering does not change the
+measured outcomes on this suite. The latter result limits, rather than
+strengthens, the claim: the diagnostic validates lifecycle handling but is too
+small to establish that the hand-set ranking weights are optimal. We release
+the implementation, scenarios, trace format, and raw evaluation artifacts.
 \end{abstract}
 
-% ===========================================================================
 \section{Introduction}
 \label{sec:intro}
 
-Transformer-based LLMs condition only on the tokens inside their context
-window~\citep{vaswani2017attention,brown2020gpt3}. In a multi-session assistant
-this produces a structural failure mode: once a conversation ends, everything
-the user established is gone, including their stack preferences, the decisions
-made for a project, hard constraints, deadlines, and past mistakes. Users are
-forced to re-explain context at the start of every session, and, worse, the
-assistant keeps repeating advice that a \emph{later} decision has already
-overturned. A user who first chose React and later switched to Next.js will
-keep receiving React advice, because the model has no notion that one statement
-\emph{supersedes} the other.
+A language-model assistant can appear stateful while a conversation is open,
+but continuity usually depends on replaying messages inside a finite context
+window. Across sessions, a developer must restate project choices, constraints,
+deadlines, and preferences. Simply retaining every message creates a different
+failure: old decisions remain available after they have been replaced.
 
-Two families of remedies dominate practice. The first simply enlarges the
-context window and replays long histories; but attention degrades over long
-inputs~\citep{liu2024lostmiddle}, cost scales with length, and stale facts are
-replayed alongside fresh ones with no mechanism to distinguish them. The second
-is retrieval-augmented generation (RAG)~\citep{lewis2020rag}, which fetches
-relevant passages from a vector store~\citep{karpukhin2020dpr,johnson2019faiss}.
-RAG addresses \emph{capacity} but not \emph{lifecycle}: a vector store has no
-opinion on whether a retrieved memory is still valid, whether it must always be
-honored, or whether it should have been forgotten. It also typically offers no
-account of \emph{why} a particular memory entered the prompt, an obstacle to
-trust and debugging.
+Consider a project that begins with React and Vite and later moves to Next.js.
+Both statements are relevant to a query about the frontend. A similarity search
+can retrieve either one, even though only the later decision is valid. The
+problem is therefore not just storage or nearest-neighbor search. The system
+must represent the relationship between the two statements and prevent the old
+one from entering the answer context.
 
-We take the position that the hard problems of agent memory are not capacity
-problems but \emph{governance} problems: deciding what is worth remembering,
-what must never be dropped, what has become invalid, and being able to
-\emph{explain} every such decision. \sysname{} operationalizes this view through
-\osname{}, a modular memory layer with five cooperating components (structured
-extraction, interpretable scoring, hybrid retrieval, budget-aware assembly, and
-non-destructive forgetting) unified by a transparent trace. The system runs in
-two interchangeable modes: a fully offline local mode (SQLite with in-process
-vectors and a deterministic embedding/LLM fallback) for reproducible evaluation,
-and a cloud mode backed by managed object and table storage with Qwen
-models~\citep{bai2023qwen,yang2024qwen2} for the language and embedding calls.
+This report treats persistent memory as a governance problem with four parts:
 
-\paragraph{Contributions.}
-\begin{enumerate}[leftmargin=1.4em,itemsep=2pt]
-  \item \textbf{A typed memory schema and lifecycle.} A single record type with
-  12 semantic categories, 6 lifecycle states, and three privacy levels that
-  makes governance decisions first-class data rather than prompt heuristics
-  (\S\ref{sec:schema}).
-  \item \textbf{An interpretable scoring function.} A transparent linear model
-  that fuses semantic, intrinsic, contextual, and penalty signals, with
-  exponential recency decay and diminishing-returns usage scoring, so that every
-  ranking decision decomposes into named, inspectable terms (\S\ref{sec:scoring}).
-  \item \textbf{Budget-aware assembly with guaranteed criticality.} A context
-  builder that fills a strict token budget by score while \emph{always}
-  injecting critical/pinned memories, even when over budget, separating
-  ``always honor'' instructions from ``recall if relevant'' ones
-  (\S\ref{sec:budget}).
-  \item \textbf{Non-destructive forgetting.} An engine that expires, archives,
-  and supersedes memories through auditable state transitions, never silently
-  hard-deleting user data (\S\ref{sec:forgetting}).
-  \item \textbf{End-to-end transparency and evaluation.} A Memory Trace that
-  exposes the full decision surface of every answer, together with a
-  reproducible benchmark against a no-memory baseline across two frontier
-  backbones, a deterministic ablation isolating the load-bearing mechanism, and
-  a checkpointed LoCoMo adapter with a model-independent evidence-recall metric
-  (\S\ref{sec:trace}--\S\ref{sec:locomo}).
+\begin{enumerate}[leftmargin=1.5em,itemsep=2pt]
+  \item represent retained information as typed, inspectable records rather
+  than an undifferentiated transcript;
+  \item model expiry, archival, supersession, and deletion as explicit state
+  transitions;
+  \item assemble a small context under a hard budget while preserving a record
+  of what was considered; and
+  \item keep users able to inspect, edit, export, and erase memory.
 \end{enumerate}
 
-% ===========================================================================
-\section{Related Work}
+\sysname{} implements these choices in a provider-independent memory layer. In
+online mode, Qwen supplies structured extraction, embeddings, and answer
+generation. In deterministic offline mode, test doubles exercise the same
+storage, lifecycle, retrieval, budgeting, and trace paths without credentials.
+The evaluation in this report is intentionally limited to the latter mechanism
+path. It does not present the offline answer generator as model evidence.
+
+The contributions are practical rather than claims of state of the art:
+
+\begin{itemize}[leftmargin=1.5em,itemsep=2pt]
+  \item a typed memory record and auditable lifecycle with directed
+  supersession links;
+  \item hybrid retrieval, named ranking components, and strict context
+  budgeting with a per-answer decision trace;
+  \item explicit boundaries for untrusted stored text, secret redaction, and
+  user memory controls; and
+  \item a versioned diagnostic and ablation whose raw counts are generated from
+  the same code shipped with the report.
+\end{itemize}
+
+\section{Related Work and Naming}
 \label{sec:related}
 
-\paragraph{Memory for LLM agents.}
-Interest in equipping LLM agents with long-term memory has grown rapidly; recent
-surveys catalogue the design space~\citep{wang2024memoryos}. \emph{Generative
-Agents}~\citep{park2023generative} introduced a memory stream scored by a
-weighted sum of recency, importance, and relevance, with periodic reflection
-that synthesizes higher-level observations. \osname{}'s scoring function is in
-the same spirit but extends the signal set with confidence, usage, project
-match, and, critically, a set of explicit \emph{penalties} for outdated,
-private, and superseded content, turning lifecycle state into a ranking signal.
-MemGPT~\citep{packer2023memgpt} frames the LLM as an operating system that pages
-information between a fixed context window and external storage; \sysname{}
-shares the budget-management goal but emphasizes an interpretable, typed scoring
-policy and a guaranteed-inclusion rule for critical content rather than learned
-paging. MemoryBank~\citep{zhong2024memorybank} applies an
-Ebbinghaus-style~\citep{ebbinghaus1885memory} forgetting curve to memory
-strength; we instead make forgetting a discrete, auditable \emph{state machine}
-(expire/archive/supersede) so that every transition is explainable and
-reversible. A-Mem~\citep{xu2025amem} builds dynamically linked memory networks;
-our Memory Graph provides a comparable relational view (supersession and
-related-to edges) but is derived from explicit lifecycle metadata.
+Long-term memory for agents spans unstructured streams, hierarchical memory,
+structured records, and temporal or graph-based stores; recent surveys provide
+broader taxonomies~\citep{zhang2024survey,luo2026survey}. Generative Agents
+rank a memory stream using relevance, recency, and importance and periodically
+derive reflections~\citep{park2023generative}. MemGPT treats context management
+as paging between limited in-context memory and external storage
+~\citep{packer2023memgpt}. MemoryBank applies time-dependent memory strength
+~\citep{zhong2024memorybank}, while A-Mem organizes linked notes that evolve as
+new information arrives~\citep{xu2025amem}.
 
-\paragraph{Production memory frameworks.}
-A second, fast-moving line of work targets deployable memory layers.
-Mem0~\citep{chhikara2025mem0} extracts facts and maintains them with
-LLM-issued add/update/delete operations over a vector (and optional graph)
-store, and reports strong long-conversation question-answering with low latency.
-Zep~\citep{rasmussen2025zep} builds a \emph{temporal} knowledge graph
-(Graphiti) with bi-temporal validity, invalidating facts as they are
-contradicted over time. Letta~\citep{letta2024}, the productionized successor of
-MemGPT, exposes self-editing memory blocks, and LangMem~\citep{langmem2025}
-offers semantic/episodic/procedural memory tools for agent frameworks. Relative
-to these, \sysname{} contributes orthogonally: rather than maximizing
-long-context QA or temporal-graph expressiveness, it makes the \emph{selection
-policy itself} interpretable and the lifecycle auditable. Mem0's update/delete
-and Zep's temporal invalidation achieve supersession; \sysname{} differs in
-exposing supersession as an inspectable state transition with a per-answer trace
-and a guaranteed-inclusion rule for critical content. We report a first cut on
-the shared LoCoMo benchmark~\citep{maharana2024locomo} in \S\ref{sec:locomo}; a
-full, identically-graded head-to-head against Mem0 and Zep remains the most
-important next experiment (\S\ref{sec:limitations}).
+Production-oriented systems also perform memory extraction and update. Mem0
+maintains selected facts in vector and optional graph stores
+~\citep{chhikara2025mem0}. Zep represents changing information in a temporal
+knowledge graph~\citep{rasmussen2025zep}. Empirical work shows why update and
+deletion policy matters: replaying a similar but poor prior experience can
+propagate errors into future behavior~\citep{xiong2026memory}. Preference-aware
+updates address a related problem in long-running conversations
+~\citep{sun2026preference}.
 
-\paragraph{Retrieval.}
-Dense retrieval~\citep{karpukhin2020dpr} and approximate nearest-neighbor
-indexes~\citep{johnson2019faiss} underpin most RAG systems~\citep{lewis2020rag}.
-Sparse lexical scoring such as BM25~\citep{robertson2009bm25} remains a strong
-complement, particularly for rare tokens and exact identifiers. \osname{} uses a
-lightweight hybrid of dense cosine similarity and sparse keyword/tag overlap,
-which is robust precisely on the short, entity-heavy memories typical of
-developer assistants (framework names, deployment targets, file paths).
+Two published systems use operating-system language for memory management.
+MemoryOS uses hierarchical short-, mid-, and long-term stores
+~\citep{kang2025memoryos}; MemOS proposes a broader resource abstraction across
+plaintext, activation, and parameter memory~\citep{li2025memos}. The repository
+for \sysname{} historically called its internal package ``MemoryOS.'' To avoid
+confusing that implementation label with prior work, this report uses the term
+\emph{MemoPilot memory layer} and makes no claim to the MemoryOS name.
 
-\paragraph{Reasoning and self-improvement.}
-Our reflection pass, which merges duplicates, promotes frequently used
-memories, and derives higher-level insights, is related to
-Reflexion~\citep{shinn2023reflexion} and to chain-of-thought / ReAct style
-prompting~\citep{wei2022cot,yao2023react}, but operates over the persistent
-memory store rather than over a single episode's trajectory.
+LoCoMo provides a shared benchmark for long-conversation memory and includes
+questions that require temporal, multi-hop, and open-domain reasoning
+~\citep{maharana2024locomo}. Later work shows that factual string matching does
+not cover implicit constraints or cognitive memory~\citep{li2026locomoplus}.
+For that reason, the internal diagnostic reported here is treated as a narrow
+engineering test. A complete, identically graded external comparison remains
+future work.
 
-\paragraph{Positioning.} Relative to prior systems, \sysname{}'s distinguishing
-commitment is \emph{transparency by construction}: scoring is a named linear
-combination, inclusion decisions carry human-readable reasons, forgetting is a
-visible state machine, and a complete per-answer trace is a first-class API
-object. This makes the memory layer auditable and debuggable, which we argue is
-a precondition for deployment in settings where wrong but confident recall is
-costly. Table~\ref{tab:comparison} contrasts these governance properties across
-representative memory systems.
+\section{System Boundary and Threat Model}
+\label{sec:threat}
 
-\begin{table}[t]
-\centering
-\small
-\caption{Governance properties across representative LLM memory systems, by
-primary design emphasis. \cmark~present, \pmark~partial, \xmark~not a focus.
-\emph{Typed}: typed/structured records (vs.\ a raw stream); \emph{Interp.}:
-inspectable scoring; \emph{Crit.}: guaranteed inclusion of critical items;
-\emph{Audit.\ forget}: forgetting as an auditable state machine; \emph{Trace}:
-per-answer inclusion/skip explanation.}
-\label{tab:comparison}
-\begin{tabular}{@{}lccccc@{}}
-\toprule
-\textbf{System} & \textbf{Typed} & \textbf{Interp.} & \textbf{Crit.}
-  & \textbf{Audit.} & \textbf{Trace} \\
-\midrule
-Generative Agents~\citep{park2023generative} & \xmark & \pmark & \xmark & \xmark & \xmark \\
-MemGPT / Letta~\citep{packer2023memgpt,letta2024} & \pmark & \xmark & \xmark & \xmark & \xmark \\
-MemoryBank~\citep{zhong2024memorybank}       & \xmark & \pmark & \xmark & \pmark & \xmark \\
-A-Mem~\citep{xu2025amem}                     & \pmark & \xmark & \xmark & \xmark & \xmark \\
-Mem0~\citep{chhikara2025mem0}                & \cmark & \xmark & \xmark & \pmark & \xmark \\
-Zep~\citep{rasmussen2025zep}                 & \cmark & \pmark & \xmark & \cmark & \pmark \\
-\textbf{\sysname{}} (ours)                   & \cmark & \cmark & \cmark & \cmark & \cmark \\
-\bottomrule
-\end{tabular}
-\end{table}
+The memory layer receives a user identifier, an optional project identifier, a
+session identifier, and a message. It returns stored-memory actions and, when
+answering, a bounded context plus a trace. Storage queries are scoped by user
+and project. API-key middleware and rate limiting protect deployed endpoints,
+but the memory layer itself does not establish user identity; a deployment must
+bind those identifiers to authenticated principals.
 
-% ===========================================================================
-\section{System Overview}
-\label{sec:overview}
+Stored text is treated as untrusted data. The system prompt instructs the answer
+model not to follow tool requests, safety overrides, or secret-exfiltration
+instructions found in memory. Pattern-based detectors redact common API keys,
+tokens, passwords, private-key blocks, and credential assignments before
+persistence. This reduces accidental retention but is not a data-loss
+prevention system and cannot detect every secret format.
 
-\sysname{} is a client/server application. A React/Vite frontend issues chat
-and management requests to a FastAPI backend; all memory logic is encapsulated
-in the \osname{} module so it can be embedded in other agents. Figure~\ref{fig:arch}
-sketches the request lifecycle.
+Privacy labels are ranking metadata, not access control. A sensitive record
+receives a score penalty, but authorization must still be enforced by the
+application and storage layer. The evaluation does not establish resistance to
+prompt injection, tenant-isolation attacks, or extraction of memorized text.
+
+\section{Architecture}
+\label{sec:architecture}
+
+\sysname{} is a client/server application. A React/Vite frontend calls a
+FastAPI backend. The memory layer owns extraction, persistence, retrieval,
+ranking, lifecycle transitions, context assembly, and trace generation.
+Figure~\ref{fig:arch} shows the request path.
 
 \input{figure_architecture}
 
-\paragraph{Dual mode for reproducibility.} A central design choice is that the
-entire system, including extraction, embeddings, retrieval, the benchmark, and
-the test suite, runs with \emph{no external dependencies} via a deterministic
-offline fallback for both embeddings and chat. This makes every
-mechanism-level experiment in this paper (the ablation and all retrieval
-diagnostics) exactly reproducible on a laptop with no credentials, and removes
-nondeterminism from the evaluation of the memory \emph{mechanism} itself; the
-live-model results are reproducible given an API key. In cloud mode the same
-interfaces are backed by Qwen chat/embedding endpoints and managed
-table/object storage; the active mode is reported on a health endpoint.
+The interfaces have two implementations. Local mode stores metadata and
+embedding vectors in SQLite and uses deterministic extraction, embedding, and
+answer fallbacks. Cloud mode connects the same interfaces to Qwen-compatible
+chat and embedding endpoints, Alibaba Cloud Tablestore, and object storage. The
+active provider and store are exposed by the health endpoint. Cloud adapters
+are implemented, but this report does not claim a completed public deployment
+or report cloud-model results.
 
-% ===========================================================================
-\section{Memory Schema and Lifecycle}
+\section{Memory Representation and Lifecycle}
 \label{sec:schema}
 
-The atomic unit is a \texttt{MemoryRecord}. Beyond content and an embedding
-vector, each record carries the governance metadata that the rest of the system
-reasons over (Table~\ref{tab:fields}).
+The atomic unit is a \texttt{MemoryRecord}. Table~\ref{tab:fields} lists the
+fields that affect governance.
 
-\begin{table}[t]
+\begin{table}[tbp]
 \centering
 \small
-\caption{Selected fields of a \texttt{MemoryRecord}. Governance metadata
-(type, status, importance, confidence, privacy, supersession links) is
-first-class and drives scoring, retrieval, and forgetting.}
+\caption{Selected fields of a \texttt{MemoryRecord}.}
 \label{tab:fields}
-\begin{tabular}{@{}lp{0.62\linewidth}@{}}
+\begin{tabular}{@{}lp{0.66\linewidth}@{}}
 \toprule
 \textbf{Field} & \textbf{Role} \\
 \midrule
-\texttt{type} & One of 12 semantic categories (preference, project, decision,
-mistake, constraint, deadline, learning\_goal, task, critical, temporary,
-outdated, deleted\_by\_user). \\
-\texttt{status} & Lifecycle state: active, pinned, archived, expired,
-superseded, deleted. \\
-\texttt{importance} & Intrinsic salience in $[0,1]$. \\
-\texttt{confidence} & Extraction confidence in $[0,1]$. \\
-\texttt{usage\_count} & Times the memory has been injected into context. \\
-\texttt{recency} & Derived from \texttt{updated\_at} via exponential decay. \\
-\texttt{privacy\_level} & public / private / sensitive. \\
-\texttt{is\_critical} & ``Always honor'' flag (e.g. security constraints). \\
-\texttt{supersedes / superseded\_by} & Directed links encoding decision
-revisions. \\
-\texttt{expires\_at} & Optional deadline for temporary memories. \\
+\texttt{type} & One of 12 categories: preference, project, decision, mistake,
+constraint, deadline, learning goal, task, critical, temporary, outdated, or
+deleted by user. \\
+\texttt{status} & Active, pinned, archived, expired, superseded, or deleted. \\
+\texttt{importance}, \texttt{confidence} & Bounded extraction metadata in
+$[0,1]$. \\
+\texttt{privacy\_level} & Public, private, or sensitive ranking metadata. \\
+\texttt{expires\_at} & Optional expiry for temporary or dated records. \\
+\texttt{supersedes}, \texttt{superseded\_by} & Directed links between an old
+record and its replacement. \\
+\texttt{usage\_count}, timestamps & Signals used for ranking and audit. \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\paragraph{Structured extraction.} Rather than storing raw turns, a
-``Memory Editor'' prompt asks the LLM to return JSON describing
-\texttt{new\_memories}, \texttt{updates}, and \texttt{forget} actions, each typed
-and scored for importance and confidence. Secrets (API keys, tokens) are
-redacted before storage. This converts free-form dialogue into a normalized,
-queryable store and is what allows downstream scoring and forgetting to operate
-on semantics rather than text spans.
+\paragraph{Extraction.}
+When a model provider is configured, a JSON-only ``Memory Editor'' proposes new
+records, updates, and forget actions. Model output is not trusted: types and
+privacy values are parsed against enums, importance and confidence are clamped,
+content and tags have length limits, and secret redaction runs again before a
+record is written. Offline mode uses a deterministic extractor for tests.
 
-\paragraph{Lifecycle as a state machine.} A memory is born \texttt{active} (or
-\texttt{pinned} if the user pins it). It may be \texttt{superseded} by a later,
-contradicting decision; \texttt{expired} when its deadline passes;
-\texttt{archived} when stale and unused; or \texttt{deleted} only on explicit
-user request (Figure~\ref{fig:lifecycle}). Crucially, retrieval excludes
-\{superseded, expired, deleted, archived\} from normal context while preserving
-them on a timeline, so the agent never acts on invalid information yet the
-history remains auditable.
+\paragraph{Supersession.}
+The extractor compares a new record with active records in the same user and
+project scope. Topic-specific replacement rules and structured model actions
+can mark an older record \texttt{superseded} and link it to the replacement.
+The old record remains visible in the timeline but normal retrieval excludes
+it. This preserves the sequence of decisions without allowing the older choice
+to compete in answer context.
+
+\paragraph{Expiry and archival.}
+A sweep runs before retrieval. A record whose \texttt{expires\_at} has passed
+becomes \texttt{expired}. An active, non-critical record is archived when it is
+unused, older than 30 days, and has importance below 0.35. Deletion is a
+separate user action. Figure~\ref{fig:lifecycle} summarizes these transitions.
+
+The delete endpoint defaults to a soft deletion that retains the record for
+audit. A hard deletion removes the memory row, but the current event log retains
+an audit entry. The implementation therefore does not claim cryptographic
+erasure or deletion from storage-layer backups.
 
 \input{figure_lifecycle}
 
-% ===========================================================================
-\section{Interpretable Memory Scoring}
-\label{sec:scoring}
+\section{Retrieval and Ranking}
+\label{sec:retrieval}
 
-Given a query $q$ with embedding $\mathbf{e}_q$ and a candidate memory $m$,
-\osname{} computes a single scalar score as a weighted sum of named components.
-Let $\mathrm{sim}(m,q)\in[0,1]$ be the hybrid similarity (\S\ref{sec:retrieval}),
-$I_m,C_m\in[0,1]$ the importance and confidence, and define the derived signals
+Retrieval first excludes archived, expired, superseded, and deleted records.
+For each remaining record $m$ and query $q$, the implementation computes dense
+cosine similarity $d(m,q)\in[0,1]$ and lexical overlap
 
-\begin{align}
-\text{recency}(m) &= \exp\!\left(-\frac{\Delta t_m}{\tau}\right),
-  \qquad \tau = 14~\text{days}, \label{eq:recency}\\
-\text{usage}(m) &= 1 - \frac{1}{1 + \ln(1+u_m)}, \label{eq:usage}
-\end{align}
+\begin{equation}
+k(m,q) = \frac{|T(q)\cap T(m)|}{|T(q)|},
+\end{equation}
 
-where $\Delta t_m$ is the age in days since \texttt{updated\_at} and $u_m$ is the
-usage count. Equation~\eqref{eq:recency} is an exponential forgetting curve with
-a two-week half-life regime; Equation~\eqref{eq:usage} gives diminishing returns,
-so a memory used many times is only modestly preferred over one used a few times.
-Binary contextual indicators capture project match
-($\text{proj}(m)=\mathbb{1}[\text{project}_m = \text{project}_q]$) and criticality
-($\text{crit}(m)=\mathbb{1}[m~\text{is critical/pinned}]$). Penalty indicators flag
-outdated content ($P^{\text{out}}_m$), privacy
-($P^{\text{priv}}_m\in\{0,0.4,1\}$ for public/private/sensitive), and supersession
-($P^{\text{sup}}_m=\mathbb{1}[\text{status}\in\{\text{superseded,expired,deleted}\}]$).
-The final score is
+where $T(\cdot)$ is the set of lowercase alphanumeric tokens and $T(m)$ also
+includes tags. The hybrid relevance signal is
+
+\begin{equation}
+r(m,q) = \max\left(d(m,q),\frac{d(m,q)+k(m,q)}{2}\right).
+\end{equation}
+
+The ranking score combines relevance with record metadata:
 
 \begin{equation}
 \label{eq:score}
 \begin{aligned}
-S(m,q) =\ & 0.40\,\mathrm{sim}(m,q) + 0.20\,I_m + 0.15\,\text{recency}(m) \\
-        & + 0.10\,C_m + 0.10\,\text{usage}(m) + 0.15\,\text{proj}(m) + 0.20\,\text{crit}(m) \\
-        & - 0.30\,P^{\text{out}}_m - 0.25\,P^{\text{priv}}_m - 0.50\,P^{\text{sup}}_m.
+S(m,q) ={}& 0.40r + 0.20I + 0.15R + 0.10C + 0.10U \\
+          & + 0.15P + 0.20K - 0.30O - 0.25V - 0.50X.
 \end{aligned}
 \end{equation}
 
-Three properties follow directly from the form of Equation~\eqref{eq:score} and
-are central to the system's behavior:
+$I$ is importance, $C$ confidence, $P$ project match, and $K$ a critical or
+pinned indicator. $O$, $V$, and $X$ penalize outdated, private/sensitive, and
+superseded/expired/deleted records. Recency uses
+$R=\exp(-\Delta t/14)$ with $\Delta t$ in days; 14 days is the exponential
+time constant, not the half-life. Usage is
+$U=1-(1+\ln(1+u))^{-1}$ for usage count $u$.
 
-\begin{description}[leftmargin=1.2em,itemsep=2pt]
-  \item[Interpretability.] Every score decomposes into ten named terms. The
-  trace (\S\ref{sec:trace}) reports each term, so a ranking can be explained and
-  audited rather than merely trusted.
-  \item[Semantics-led but not semantics-only.] Similarity is the largest single
-  weight ($0.40$), so relevance dominates, but governance signals can override:
-  a superseded memory pays a $-0.50$ penalty, larger than the full similarity
-  weight, ensuring stale decisions sink below valid ones even when textually
-  similar to the query.
-  \item[Criticality as a soft-then-hard rule.] The $+0.20$ critical bonus raises
-  critical memories in the ranking, and the budget stage (\S\ref{sec:budget})
-  converts this into a \emph{hard} guarantee of inclusion.
-\end{description}
+The score is a ranking policy, not a calibrated probability. Its weights are
+hand set and its positive terms can sum above one. The trace exposes each
+component so that a ranking can be inspected. The evaluation in
+Section~\ref{sec:evaluation} does not establish that these weights are optimal.
 
-The specific weights are hand-set priors chosen to encode these qualitative
-commitments; we treat them as a transparent default policy and discuss
-data-driven weight learning as future work (\S\ref{sec:limitations}).
+For stores above 1,024 eligible records, the current implementation computes
+dense similarity over the store and applies full hybrid scoring to the nearest
+512 records plus every critical or pinned record. This is an engineering bound
+on reranking work, not a measured scalability result.
 
-% ===========================================================================
-\section{Hybrid Retrieval}
-\label{sec:retrieval}
-
-For each candidate, \osname{} blends a dense and a sparse signal. The dense
-signal is cosine similarity between the query and memory embeddings, clamped to
-$[0,1]$. The sparse signal is the fraction of query tokens that appear in the
-memory's content or tags,
-\[
-\text{kw}(m,q) = \frac{|\,T(q)\cap T(m)\,|}{|\,T(q)\,|},
-\]
-where $T(\cdot)$ denotes the lowercased alphanumeric token set. The combined
-similarity is
-\begin{equation}
-\mathrm{sim}(m,q) = \max\!\Big(\text{dense}(m,q),\ \tfrac{1}{2}\text{dense}(m,q) + \tfrac{1}{2}\text{kw}(m,q)\Big),
-\end{equation}
-which never underperforms pure dense retrieval and boosts memories with exact
-lexical overlap, valuable for the identifier-heavy content of developer
-assistants. Retrieval first applies structured filters (user, project, and the
-exclusion of inactive states), scores all remaining candidates with
-Equation~\eqref{eq:score}, and returns them sorted so that critical/pinned
-records lead, then by score. Because memory stores per user/project are small
-relative to web-scale corpora, exhaustive scoring is fast (sub-millisecond to
-low-millisecond in local mode); an ANN index~\citep{johnson2019faiss} can be
-substituted transparently behind the same interface at scale.
-
-% ===========================================================================
-\section{Budget-Aware Context Assembly}
+\section{Strict Context Assembly and Trace}
 \label{sec:budget}
 
-Retrieved candidates are not all injected. A context builder fills a strict
-token budget $B$ (default $B=2{,}500$) under the following policy, with token
-cost estimated at $\approx 4$ characters/token:
+The context builder enforces a hard 2,500-token memory budget and a default
+top-$k$ window of eight non-priority records. Fitting critical and pinned
+records are considered first and can raise the total above eight; other records
+then enter by score. Priority never overrides the budget: an oversized critical
+record is skipped and traced.
 
-\begin{enumerate}[leftmargin=1.4em,itemsep=1pt]
-  \item Order candidates with critical/pinned first, then by score $S(m,q)$.
-  \item Inject critical/pinned memories \emph{unconditionally}, even if doing so
-  exceeds $B$ (the budget is overridden, and the trace records this).
-  \item Inject the top-$k$ ($k=8$) remaining memories in score order while they
-  fit within $B$.
-  \item Skip the rest, recording for each a reason, either ``token budget
-  exhausted'' or ``outside the top-$k$ relevance window.''
-\end{enumerate}
+Token cost is approximated as four characters per token. This keeps behavior
+provider independent but is not exact for every tokenizer or language. The
+builder also ensures that an optional session summary fits before including it.
 
-This cleanly separates two classes of memory with different service-level
-requirements: ``always honor'' instructions (a security constraint must never be
-dropped because the budget is tight) versus ``recall if relevant'' facts
-(competing for the remaining budget by score). The assembled system prompt wraps
-the selected memories in an explicit \texttt{ACTIVE LONG-TERM MEMORY} block with
-instructions to honor critical items, prefer the most recent decision on
-conflict, and never use superseded/expired content, reinforcing at the prompt
-level the policy already enforced at the data level.
+Every answer returns a \texttt{MemoryTrace} with the included and skipped
+records, ranking components, human-readable reason, estimated token cost,
+candidate count, and retrieval latency. The trace is available through the API
+and rendered in the interface. It explains the implementation's selection
+path; it is not an explanation of the language model's internal reasoning.
 
-% ===========================================================================
-\section{Non-Destructive Forgetting}
-\label{sec:forgetting}
-
-A forgetting sweep runs over the store and applies three rules, each emitting an
-auditable timeline event:
-
-\begin{itemize}[leftmargin=1.4em,itemsep=1pt]
-  \item \textbf{Expire.} A memory with a past \texttt{expires\_at} transitions
-  to \texttt{expired} (e.g. ``the staging server is down today only'').
-  \item \textbf{Archive.} An \texttt{active}, non-critical memory unused for more
-  than 30 days with importance below $0.35$ transitions to \texttt{archived}.
-  \item \textbf{Supersede.} When extraction detects a contradicting decision, the
-  old record is linked via \texttt{superseded\_by} and excluded from retrieval.
-\end{itemize}
-
-No rule hard-deletes data; deletion happens only on explicit user request.
-Expired/archived/superseded records remain queryable on the timeline and in the
-Memory Graph but are excluded from context, so the agent never reasons from
-invalid memory while the user retains a complete, reversible history. This is the
-operational realization of our thesis that forgetting should be \emph{governed
-and explainable} rather than lossy.
-
-% ===========================================================================
-\section{Transparency: The Memory Trace}
-\label{sec:trace}
-
-Every chat response carries a \texttt{MemoryTrace} object recording the complete
-decision surface: the list of \emph{included} memories with their full component
-breakdown and inclusion reason, the list of \emph{skipped} memories with their
-reason, the token budget and tokens used, the number of candidates considered,
-and retrieval latency. The trace is rendered in the UI but is also a plain API
-object, making the system debuggable and auditable end-to-end. To our knowledge
-this degree of built-in inclusion-level explanation is uncommon among
-memory-augmented assistants and is, we argue, the practical embodiment of the
-interpretability the scoring function was designed to provide.
-
-% ===========================================================================
 \section{Evaluation}
-\label{sec:eval}
+\label{sec:evaluation}
 
-\subsection{Protocol}
-We implement a benchmark harness that runs 24 diagnostic scenarios spanning six
-capability categories (Table~\ref{tab:scenarios}). Each scenario seeds one or
-more \emph{setup messages} (which \osname{} converts to memories), then poses a
-\emph{test question}. The harness evaluates two systems on the identical
-question:
+\subsection{Questions and protocol}
 
-\begin{itemize}[leftmargin=1.4em,itemsep=1pt]
-  \item \textbf{Memory agent.} The question is answered with the \osname{}-built
-  context (retrieve $\rightarrow$ score $\rightarrow$ budget assembly).
-  \item \textbf{No-memory baseline.} The same model answers with a bare system
-  prompt and no long-term memory, isolating the contribution of the memory
-  layer.
-\end{itemize}
+The repository contains 24 synthetic scenarios covering preference recall,
+cross-session project facts, supersession, expiry, critical constraints,
+mistake and deadline recall, a learning goal, and multi-fact composition. Each
+scenario writes one or more setup messages, runs the normal extraction and
+lifecycle path, asks a test question, and inspects the assembled memory context.
 
-We grade two complementary quantities. \emph{Retrieval-level} metrics
-(\textsc{recall@5}, outdated-memory leaks, token savings, latency) are
-properties of the \osname{} layer and are independent of the answer model.
-\emph{Answer-level} accuracy grades the text the LLM actually produces, and we
-report it for each of several interchangeable backbones (\S\ref{sec:crossmodel})
-to test whether the benefit of the memory layer generalizes across models.
+Twenty-two scenarios define target keywords for context recall. Fourteen define
+forbidden terms used to detect a stale injection. A forbidden term counts as a
+leak only when it appears in an included record without the expected replacement
+term; this avoids treating a current statement such as ``Next.js instead of
+React'' as stale merely because it names the previous choice.
 
-Correctness is decided by keyword criteria attached to each scenario:
-\emph{expected} keywords that must be recalled and \emph{forbidden} keywords that
-must not leak. To avoid penalizing legitimate references to a superseded choice
-(e.g. ``use Next.js \emph{instead of} React''), a forbidden phrase counts as a
-\emph{leak} only when it appears in an injected memory that does not also carry an
-expected phrase, i.e. a genuinely outdated memory rather than a superseding
-decision. From these we compute task accuracy, \textsc{recall@5}, supersession
-success, outdated-memory leaks, an accuracy delta over baseline, and token
-savings versus a full-history baseline. The headline numbers are from a live
-\textsc{Qwen} backend (\texttt{qwen3.7-max}); the harness also runs against a
-deterministic offline backend that reflects the memory \emph{mechanism} in
-isolation and is exactly reproducible without credentials, so reported behavior
-does not depend on a specific model endpoint.
+The run uses deterministic extraction and hashing embeddings, SQLite storage,
+top-$k=8$, and a 2,500-token memory budget. No provider key is loaded. The
+script \path{paper/run_reproducible_eval.py} generates the raw diagnostic,
+ablation, and manifest under \path{paper/results/}. Offline answer accuracy is
+stored for debugging but excluded from this report because the fallback is a
+test double rather than a language model.
 
-\begin{table}[t]
+\subsection{Diagnostic results}
+
+Table~\ref{tab:diagnostic} reports the current run. Context recall is 21/22.
+No scenario injects a stale record. The selected memory blocks contain 222
+estimated tokens in aggregate, compared with 323 estimated tokens for replaying
+the setup messages, a 31\% reduction. The comparison covers historical text
+only; the system prompt and current question are common to both paths.
+
+\begin{table}[tbp]
 \centering
 \small
-\caption{The six capability categories probed by the 24-scenario benchmark
-(four scenarios per category). Together they probe the capabilities a
-governance-oriented memory layer must exhibit.}
-\label{tab:scenarios}
-\begin{tabular}{@{}llp{0.46\linewidth}@{}}
+\caption{Deterministic 24-scenario mechanism diagnostic.}
+\label{tab:diagnostic}
+\begin{tabular}{@{}lrr@{}}
 \toprule
-\textbf{Scenario} & \textbf{Capability} & \textbf{Probe} \\
+\textbf{Metric} & \textbf{Count} & \textbf{Rate/value} \\
 \midrule
-Preference recall & Intrinsic recall & Recall a stated stack preference. \\
-Cross-session recall & Persistence & Recall a project decision made earlier. \\
-Contradiction / supersession & Lifecycle & Honor the \emph{new} decision, suppress the old. \\
-Expired deadline & Expiry & Do \emph{not} report a temporary fact that has expired. \\
-Critical memory recall & Guaranteed inclusion & Always surface a critical constraint. \\
-No-memory vs.\ memory & End-to-end & Compose multiple preferences into one answer. \\
+Target memory reaches assembled context & 21/22 & 0.95 \\
+Scenario with stale memory injected & 0/24 & 0.00 \\
+Selected historical-memory tokens & 222 & -- \\
+Replayed setup-history tokens & 323 & -- \\
+Historical-context reduction & -- & 31\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{Results}
-Table~\ref{tab:results} reports aggregate metrics from the 24-scenario harness
-with a live \textsc{Qwen} backend (\texttt{qwen3.7-max}, accessed through the
-Alibaba Cloud DashScope OpenAI-compatible endpoint; \texttt{text-embedding-v3}
-embeddings). The memory agent answers $0.75$ of test questions correctly versus
-$0.50$ for the no-memory baseline (a $+0.25$ delta), retrieves the target fact
-into context at \textsc{recall@5} $=0.77$, and reduces injected context by
-$\approx 98\%$ relative to replaying the full history, all within the
-$2{,}500$-token budget and at a mean memory-retrieval latency under $5$~ms. The
-absolute scores are deliberately conservative: correctness is strict keyword
-matching on the generated answer, and the released system strengthens
-supersession beyond the configuration measured here (Table~\ref{tab:results} is
-a lower bound on lifecycle accuracy).
+This is a regression diagnostic, not an estimate of population performance.
+The scenarios are small, synthetic, and developed alongside the system. Their
+value is that they exercise known lifecycle cases deterministically and expose
+implementation regressions.
 
-\begin{table}[t]
+\subsection{Governance ablation}
+
+The ablation changes one mechanism at a time while keeping the scenarios,
+storage, embeddings, top-$k$, and budget fixed. Table~\ref{tab:ablation} shows
+that lifecycle exclusion is decisive for stale-memory control in this suite.
+Allowing inactive records back into the candidate set raises the leak rate to
+0.33 (8 of 24 scenarios), while context recall rises from 0.95 to 1.00 because
+obsolete records can now satisfy a lexical target.
+
+\begin{table}[tbp]
 \centering
 \small
-\caption{Benchmark results with a live \textsc{Qwen} backend
-(\texttt{qwen3.7-max}; 24 scenarios). The memory layer is the only difference
-between the two systems.}
-\label{tab:results}
-\begin{tabular}{@{}lcc@{}}
-\toprule
-\textbf{Metric} & \textbf{Memory agent} & \textbf{No-memory baseline} \\
-\midrule
-Task accuracy            & \textbf{0.75} & 0.50 \\
-Accuracy delta           & \multicolumn{2}{c}{$+0.25$} \\
-\textsc{recall@5}        & 0.77 & n/a \\
-Outdated-memory avoidance& 0.83 & n/a \\
-Token savings vs.\ full history & $\approx 98\%$ & n/a \\
-Avg.\ retrieval latency  & $\approx 4$~ms & n/a \\
-Context budget           & 2{,}500 tok & (full history) \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Cross-model generalization}
-\label{sec:crossmodel}
-Because \osname{} is decoupled from the answer model, we re-run the benchmark
-holding the entire memory layer fixed and swapping only the LLM that generates
-the final answer. Table~\ref{tab:crossmodel} reports the memory agent and the
-no-memory baseline for two frontier backbones. The memory layer improves
-accuracy for \emph{both} models, by $+0.25$ for \texttt{qwen3.7-max} and $+0.12$
-for \texttt{gpt-4o}. The smaller delta for the stronger general model is
-expected, since a more capable model recovers more answers from priors alone;
-the consistent positive gain is evidence that the contribution we measure is the
-memory layer rather than any single model.
-
-\begin{table}[t]
-\centering
-\small
-\caption{Cross-model generalization. The \osname{} layer (extraction, scoring,
-retrieval, budgeting) is identical across rows; only the answer-generating LLM
-changes. \textsc{Qwen} is the production model; GPT-4o is included to test
-generalization.}
-\label{tab:crossmodel}
-\begin{tabular}{@{}lccc@{}}
-\toprule
-\textbf{Answer backbone} & \textbf{Memory agent} & \textbf{No-memory} & \textbf{Delta} \\
-\midrule
-Qwen (\texttt{qwen3.7-max}) & \textbf{0.75} & 0.50 & $+0.25$ \\
-OpenAI (\texttt{gpt-4o})    & \textbf{0.79} & 0.67 & $+0.12$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Analysis}
-The accuracy gap is concentrated in exactly the scenarios the baseline cannot
-solve in principle: cross-session recall and supersession require state that a
-stateless model does not have, so the baseline's successes come only from
-generic priors (e.g. naming a popular framework) rather than from the user's
-actual choices. The remaining agent errors are concentrated in supersession,
-where a live model paraphrases the user's switch (e.g. ``move from Flask to
-FastAPI'') in ways that a purely lexical contradiction rule can miss; the
-released system mitigates this with replacement-cue-aware detection and by
-honoring the extractor's structured supersede actions, and full elimination of
-such leaks is a function of extraction quality rather than of the lifecycle
-mechanism itself, which excludes any record once it is marked superseded or
-expired. The large token reduction (about $98\%$ on these scenarios) shows that
-selective, scored injection under a budget retains the relevant facts while
-discarding the bulk of raw history, addressing both cost and the
-``lost-in-the-middle'' degradation of long contexts~\citep{liu2024lostmiddle}.
-
-\subsection{Ablation: which mechanism matters?}
-\label{sec:ablation}
-To isolate the contribution of each governance mechanism we disable one at a
-time and measure retrieval/assembly quality at the memory-layer stage, without
-answer generation, which makes the study deterministic and exactly reproducible
-on the offline backend (Table~\ref{tab:ablation}). The decisive result is that
-\emph{lifecycle exclusion} is what suppresses outdated memory: removing it
-(treating superseded and expired records as eligible and zeroing their
-penalties) raises the outdated-leak rate ninefold, from $0.04$ to $0.38$, with no
-recall benefit. By contrast, \textsc{recall@5} and critical inclusion are
-insensitive to the exact scoring weights (both unchanged under a similarity-only
-ranking and under uniform weights), because on these stores the hybrid
-similarity already surfaces the target and the score's critical bonus already
-ranks critical memories highly. The quality of the layer therefore comes from
-its \emph{governance machinery}, lifecycle exclusion and the explicit penalties,
-rather than from delicate weight tuning, which is consistent with our central
-thesis; the hard critical-inclusion guarantee (\S\ref{sec:budget}) is a
-worst-case safety net on top of the bonus that binds only under extreme budget
-pressure.
-
-\begin{table}[t]
-\centering
-\small
-\caption{Governance ablation (24 scenarios, deterministic offline backend).
-Disabling lifecycle exclusion alone increases outdated-memory leaks ninefold;
-recall and critical inclusion are insensitive to the scoring weights.}
+\caption{Deterministic governance ablation. Critical inclusion is measured only
+when a scenario creates a critical record and that record fits the budget.}
 \label{tab:ablation}
 \begin{tabular}{@{}lccc@{}}
 \toprule
-\textbf{Variant} & \textbf{\textsc{recall@5}} & \textbf{Leak rate} & \textbf{Critical incl.} \\
+\textbf{Variant} & \textbf{Context recall} & \textbf{Leak rate} & \textbf{Critical incl.} \\
 \midrule
-Full (proposed)              & 0.95 & \textbf{0.04} & 1.00 \\
-$-$ lifecycle exclusion      & 1.00 & 0.38          & 1.00 \\
-similarity-only ranking      & 0.95 & 0.04          & 1.00 \\
-uniform weights              & 0.95 & 0.04          & 1.00 \\
+Full policy & 0.95 & 0.00 & 1.00 \\
+No priority ordering & 0.95 & 0.00 & 1.00 \\
+No lifecycle exclusion & 1.00 & 0.33 & 1.00 \\
+Similarity-only weights & 0.95 & 0.00 & 1.00 \\
+Uniform positive weights & 0.95 & 0.00 & 1.00 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{A standard-benchmark first cut: LoCoMo}
-\label{sec:locomo}
-To situate the system on a shared, external benchmark we run a first cut on
-LoCoMo~\citep{maharana2024locomo}, the long-conversation memory dataset used by
-recent production systems. We ingest three conversations \emph{verbatim} (one
-memory per dialogue turn, $1{,}451$ turns total), answer all $150$
-non-adversarial questions with the standard retrieve\,$\to$\,score\,$\to$\,budget
-assembly (top-$k=8$ within the $2{,}500$-token budget) using
-\texttt{qwen3.7-max}, and grade with strict token-level F1 and exact match by
-category (Table~\ref{tab:locomo}). Overall F1 is $0.252$ and EM $0.093$;
-\emph{evidence recall@8}, the model-independent fraction of questions whose
-annotated evidence turn was actually injected into the context, is $0.358$
-(against a $k/|store|\!\approx\!0.02$ random baseline).
+The unchanged rows matter. On these scenarios, similarity already retrieves
+the target and critical records fit comfortably within the budget. The
+diagnostic therefore provides no evidence that priority ordering improves
+critical inclusion under pressure or that the selected weights outperform
+simpler alternatives. A larger ranking benchmark and adversarial budget cases
+are required before making either claim.
 
-\begin{table}[t]
-\centering
-\small
-\caption{LoCoMo first cut (3 conversations, $1{,}451$ verbatim turns, $150$
-questions; \texttt{qwen3.7-max}, top-$k=8$, strict token-F1). The lower block
-conditions F1 on whether the evidence turn was retrieved into context.}
-\label{tab:locomo}
-\begin{tabular}{@{}lcccc@{}}
-\toprule
-\textbf{Category} & \textbf{n} & \textbf{F1} & \textbf{EM} & \textbf{Ev.\ recall@8} \\
-\midrule
-Temporal    & 67  & 0.308 & 0.164 & 0.403 \\
-Open-domain & 13  & 0.331 & 0.077 & 0.364 \\
-Multi-hop   & 57  & 0.189 & 0.018 & 0.333 \\
-Single-hop  & 13  & 0.158 & 0.077 & 0.231 \\
-\textbf{Overall} & \textbf{150} & \textbf{0.252} & \textbf{0.093} & \textbf{0.358} \\
-\midrule
-\multicolumn{5}{@{}l}{\emph{Conditioned on evidence retrieval:}} \\
-Evidence retrieved & 53  & \textbf{0.572} & 0.245 & n/a \\
-Evidence missed    & 95  & 0.068 & 0.011 & n/a \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-The most informative view is the conditional one. When the memory layer places
-the annotated evidence turn into the context, answer F1 is $0.572$; when it does
-not, F1 collapses to $0.068$, an \textbf{$8.4\times$} gap. This cleanly
-separates the two error sources: the answer model is competent \emph{given} the
-right memory, and the binding constraint at this configuration is retrieval
-\emph{depth}, $k=8$ memories drawn from $\sim\!480$ candidate turns under a
-tight token budget. Depth is a tunable dial (raise $k$ or the budget, or use a
-stronger embedding model), not a property of the governance mechanism, and the
-harness makes the trade-off directly measurable. We emphasize that these are
-deliberately conservative numbers, strict token-F1 rather than LLM-judged
-grading, short-phrase prompting, and verbatim per-turn ingestion with no
-summarization advantage, and are therefore \emph{not} directly comparable to the
-LLM-judged LoCoMo figures reported for Mem0~\citep{chhikara2025mem0} and
-Zep~\citep{rasmussen2025zep}. The apparatus for a fair head-to-head, the same
-answer model and grader for every system, is released with the paper; the
-runner is checkpointed so that full-dataset runs are interruption-safe.
-
-% ===========================================================================
-\section{Limitations and Future Work}
+\section{Limitations}
 \label{sec:limitations}
 
-\paragraph{Benchmark scope.} The 24-scenario harness is diagnostic rather than
-large-scale; its keyword-based correctness, while precise and reproducible, does
-not capture answer fluency or subtle reasoning. The cross-backbone study covers
-two frontier models (Qwen and GPT-4o); broadening it to more models and a
-larger, multi-session benchmark with human or model-graded answers. Our LoCoMo
-first cut (\S\ref{sec:locomo}) is a step in this direction but is deliberately
-conservative: strict token-F1 rather than LLM-judged grading, verbatim per-turn
-ingestion, and a shallow $k=8$ retrieval budget. The $8.4\times$
-evidence-conditioned gap shows retrieval depth, not answering, is the current
-bottleneck, so the clearest next steps are a top-$k$/budget sweep, an
-LLM-judged grading mode, and a full-dataset, identically-graded comparison
-against external systems (Mem0~\citep{chhikara2025mem0},
-Zep~\citep{rasmussen2025zep}, MemGPT~\citep{packer2023memgpt},
-A-Mem~\citep{xu2025amem}). The released adapter and its checkpointed runner make
-these runs reproducible and interruption-safe.
+\paragraph{No live-model result.}
+This report does not measure answer quality with Qwen or any other hosted model.
+The online integration is implemented, but a versioned model-backed run from a
+declared deployment is still required. Provider model identifiers, prompts,
+temperature, retries, failures, and raw outputs must accompany that result.
 
-\paragraph{Hand-set weights.} The scoring weights in Equation~\eqref{eq:score}
-are interpretable priors, not learned. Learning them, e.g. by optimizing
-downstream task accuracy or from preference feedback, while preserving the
-linear, inspectable form is an attractive direction, as is per-user adaptation.
+\paragraph{Internal diagnostic.}
+The 24 scenarios are useful regression tests but are not independent or large
+enough for statistical claims. They do not measure fluent generation, temporal
+reasoning at scale, multilingual memory, or user-perceived quality.
 
-\paragraph{Extraction reliability.} Memory quality is bounded by extraction
-quality; erroneous or over-eager extraction propagates downstream. Confidence
-calibration, extraction-level evaluation, and user-in-the-loop confirmation for
-low-confidence or sensitive memories would strengthen robustness.
+\paragraph{External evaluation pending.}
+The repository includes a checkpointed LoCoMo adapter. This report omits a
+LoCoMo number because a complete run under a frozen protocol has not yet been
+produced. Reporting a partial run would make comparison with published systems
+misleading.
 
-\paragraph{Token estimation and budgeting.} The $\approx\!4$-characters/token
-heuristic is adequate for budgeting but approximate; exact tokenizer-aware
-accounting and adaptive budgets per model would tighten the guarantees.
+\paragraph{Hand-set policy.}
+The ranking weights, 14-day recency time constant, 30-day archival rule,
+top-$k$, and token budget are engineering defaults. The ablation does not show
+that the weights are better than uniform or similarity-only ranking on the
+current suite.
 
-% ===========================================================================
+\paragraph{Approximate accounting and bounded safety.}
+The four-character token estimate can differ from the provider tokenizer.
+Pattern-based redaction can miss unknown credential formats, and privacy labels
+do not replace authorization or encryption. Prompt-injection resistance,
+multi-tenant isolation, and deletion guarantees require dedicated security
+evaluation.
+
+\paragraph{Scale.}
+The two-stage reranker bounds hybrid scoring above 1,024 records, but this
+report contains no throughput, tail-latency, concurrent-load, or large-store
+quality study.
+
+\section{Reproducibility and Availability}
+\label{sec:reproducibility}
+
+Source code, scenario definitions, tests, and paper artifacts are available at
+\url{https://github.com/MaharMuavia/memopilot-iq}. The project is released under
+the MIT License. The paper evaluation can be regenerated on Windows from the
+repository root with:
+
+\begin{quote}
+\texttt{cd paper}\\
+\texttt{..\textbackslash backend\textbackslash .venv\textbackslash Scripts\textbackslash python.exe run\_reproducible\_eval.py}
+\end{quote}
+
+The script blanks model-provider credentials before importing application
+configuration, creates an isolated SQLite database, runs the diagnostic and
+ablation, closes the client, removes the temporary database, and writes JSON
+artifacts to \texttt{paper/results}. The manifest separates the metrics cited
+in this report from offline answer fields that must not be interpreted as model
+results.
+
+The synthetic scenarios contain no personal conversation data. The external
+LoCoMo dataset is not redistributed by the evaluation script.
+
 \section{Conclusion}
-\label{sec:conclusion}
 
-We presented \sysname{}, a persistent-memory agent built on \osname{}, a memory
-layer that treats long-term memory as a \emph{governance} problem rather than a
-capacity problem. By making memory typed, scoring it with a fully interpretable
-linear model, assembling context under a budget that guarantees critical
-inclusion, forgetting through an auditable state machine, and exposing a complete
-per-answer trace, the system remembers what matters, refuses to act on what has
-become invalid, and can explain every decision. On a reproducible 24-scenario
-benchmark it improves task accuracy over a no-memory baseline for two frontier
-backbones ($+0.25$ for \texttt{qwen3.7-max}, $+0.12$ for \texttt{gpt-4o}) while
-cutting injected context by roughly $98\%$, evidence that the benefit comes from
-the memory layer rather than any single model. An ablation shows the layer's
-trustworthiness rests on lifecycle governance (removing exclusion raises
-outdated-memory leaks ninefold), and an evidence-conditioned LoCoMo analysis
-($8.4\times$ F1 gap) localizes the remaining headroom to retrieval depth, a
-tunable parameter, rather than to the mechanism. We release the system, the
-benchmarks, and the trace format to support reproducible research on
-trustworthy agent memory.
-
-% ===========================================================================
-\section*{Reproducibility and Availability}
-The complete system (backend, frontend, the benchmark harnesses, and the test
-suite) runs offline with no external credentials via a deterministic
-embedding/LLM fallback. All mechanism-level results, the governance ablation
-(Table~\ref{tab:ablation}) and the retrieval diagnostics, are exactly
-reproducible on commodity hardware with no API key; the live-model results
-(Tables~\ref{tab:results}, \ref{tab:crossmodel}, and \ref{tab:locomo}) are
-reproducible given API access to the corresponding models, and the LoCoMo
-runner is checkpointed so long runs are interruption-safe. The scoring weights,
-scenario definitions, and trace schema are specified in
-\S\ref{sec:scoring}--\S\ref{sec:trace} and in the released code.
+Persistent memory fails when retrieval ignores validity. \sysname{} addresses
+that failure with typed records, explicit lifecycle states, strict context
+budgeting, and a trace that makes selection decisions inspectable. The current
+diagnostic supports one narrow conclusion: lifecycle exclusion prevents stale
+records from re-entering context on the tested scenarios. It does not establish
+optimal ranking weights, production-scale performance, or superior answer
+quality. Those questions require a frozen cloud run, an external benchmark, and
+stronger security and scale evaluation.
 
 \bibliographystyle{plainnat}
 \bibliography{references}
