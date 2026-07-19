@@ -36,6 +36,7 @@ class QwenClient:
         self._client: Optional[httpx.AsyncClient] = None
         self._provider_status = "online" if self.settings.qwen_configured else "offline"
         self._fallback_count = 0
+        self._usage: Dict[str, Dict[str, int]] = {}
 
     @property
     def online(self) -> bool:
@@ -50,6 +51,26 @@ class QwenClient:
     def fallback_count(self) -> int:
         """Number of configured-provider calls that required offline fallback."""
         return self._fallback_count
+
+    @property
+    def usage(self) -> Dict[str, Any]:
+        """Return provider-reported token usage without model-price assumptions."""
+        operations = {name: dict(values) for name, values in self._usage.items()}
+        totals: Dict[str, int] = {}
+        for values in operations.values():
+            for key, value in values.items():
+                totals[key] = totals.get(key, 0) + value
+        return {"operations": operations, "totals": totals}
+
+    def _record_usage(self, operation: str, data: Dict[str, Any]) -> None:
+        usage = data.get("usage")
+        if not isinstance(usage, dict):
+            return
+        bucket = self._usage.setdefault(operation, {})
+        for key in ("prompt_tokens", "completion_tokens", "total_tokens"):
+            value = usage.get(key)
+            if isinstance(value, int) and value >= 0:
+                bucket[key] = bucket.get(key, 0) + value
 
     async def _http(self) -> httpx.AsyncClient:
         if self._client is None:
@@ -124,6 +145,7 @@ class QwenClient:
                 "chat",
             )
             data = resp.json()
+            self._record_usage("chat", data)
             self._provider_status = "online"
             return data["choices"][0]["message"]["content"].strip()
         except Exception as exc:  # pragma: no cover - network failure path
@@ -156,7 +178,9 @@ class QwenClient:
                 },
                 "extraction",
             )
-            content = resp.json()["choices"][0]["message"]["content"]
+            data = resp.json()
+            self._record_usage("extraction", data)
+            content = data["choices"][0]["message"]["content"]
             self._provider_status = "online"
             return _safe_json(content)
         except Exception as exc:  # pragma: no cover
@@ -202,7 +226,9 @@ class QwenClient:
                 "embedding",
             )
             self._provider_status = "online"
-            items = sorted(resp.json()["data"], key=lambda item: item.get("index", 0))
+            data = resp.json()
+            self._record_usage("embedding", data)
+            items = sorted(data["data"], key=lambda item: item.get("index", 0))
             embeddings = [item["embedding"] for item in items]
             if len(embeddings) != len(texts):
                 raise ValueError("Qwen embedding response count did not match request")

@@ -61,7 +61,7 @@
   <rect x="1035" y="350" width="350" height="126" rx="18" fill="#fffbeb" stroke="#fbbf24" class="box"/>
   <text x="1210" y="393" class="heading" text-anchor="middle">Alibaba Tablestore</text>
   <text x="1210" y="420" class="body" text-anchor="middle">persistent memories + audit events</text>
-  <text x="1210" y="443" class="note" text-anchor="middle">cross-session retrieval</text>
+  <text x="1210" y="443" class="note" text-anchor="middle">tenant/project range reads</text>
 
   <rect x="1035" y="544" width="350" height="126" rx="18" fill="#fffbeb" stroke="#fbbf24" class="box"/>
   <text x="1210" y="587" class="heading" text-anchor="middle">Alibaba OSS</text>

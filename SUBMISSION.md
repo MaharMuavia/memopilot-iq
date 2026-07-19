@@ -2,6 +2,9 @@
 
 **Qwen Cloud Global AI Hackathon · Track 1: MemoryAgent**
 
+> Naming disclosure: this hackathon project is not affiliated with the separate
+> 2026 research system named MemoPilot ([arXiv:2606.08656](https://arxiv.org/abs/2606.08656)).
+
 | Requirement | Status | Submission artifact |
 |---|---|---|
 | Public, open-source repository | Ready | [MaharMuavia/memopilot-iq](https://github.com/MaharMuavia/memopilot-iq) · [MIT License](LICENSE) |

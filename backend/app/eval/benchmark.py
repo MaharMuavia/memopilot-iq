@@ -1,8 +1,10 @@
 """Evaluation benchmark runner.
 
-Runs the scenarios in ``scenarios.json`` twice:
-  * memory-agent: seeds memories, builds context with MemoryOS, then answers.
-  * baseline: answers with NO long-term memory (current message only).
+Runs each scenario against four answer strategies:
+  * memory-agent: governed MemoryOS context.
+  * no-memory baseline: current question only.
+  * full-history baseline: all raw setup turns.
+  * history-summary baseline: an LLM-generated summary of the setup turns.
 
 It measures preference adherence, cross-session recall, supersession success,
 expired-memory avoidance, critical recall, recall in the assembled context,
@@ -76,6 +78,7 @@ class BenchmarkRunner:
     async def run(self) -> Dict[str, Any]:
         run_started = time.perf_counter()
         fallbacks_before = self.memos.qwen.fallback_count
+        usage_before = self.memos.qwen.usage
         data = load_scenarios()
         scenarios = data["scenarios"]
         eval_user = f"eval-{uuid.uuid4().hex[:8]}"
@@ -122,6 +125,7 @@ class BenchmarkRunner:
             contexts.append({
                 "id": sc["id"], "title": sc["title"],
                 "system_prompt": system_prompt, "question": sc["test_question"],
+                "setup_messages": sc["setup_messages"],
                 "expected": expected, "forbidden": forbidden,
                 "tokens_used": trace.tokens_used, "leaked": leaked,
             })
@@ -149,6 +153,8 @@ class BenchmarkRunner:
                 "id": c["id"], "title": c["title"],
                 "memory_agent_correct": primary_per.get(c["id"], {}).get("agent_correct", False),
                 "baseline_correct": primary_per.get(c["id"], {}).get("baseline_correct", False),
+                "full_history_correct": primary_per.get(c["id"], {}).get("full_history_correct", False),
+                "history_summary_correct": primary_per.get(c["id"], {}).get("history_summary_correct", False),
                 "tokens_used": c["tokens_used"],
                 "forbidden_leaked": c["leaked"],
             }
@@ -169,6 +175,8 @@ class BenchmarkRunner:
             "provider_fallbacks": provider_fallbacks,
             "memory_agent_accuracy": primary["agent_accuracy"] if primary else 0.0,
             "baseline_no_memory_accuracy": primary["baseline_accuracy"] if primary else 0.0,
+            "baseline_full_history_accuracy": primary["full_history_accuracy"] if primary else 0.0,
+            "baseline_history_summary_accuracy": primary["history_summary_accuracy"] if primary else 0.0,
             "memory_recall_at_context": round(recall_hits / recall_total, 2) if recall_total else 1.0,
             "memory_recall_hits": recall_hits,
             "memory_recall_total": recall_total,
@@ -179,6 +187,8 @@ class BenchmarkRunner:
             "memory_context_tokens": memory_tokens_total,
             "full_history_tokens": full_history_tokens,
             "response_accuracy_delta": primary["delta"] if primary else 0.0,
+            "provider_token_usage": _usage_delta(usage_before, self.memos.qwen.usage),
+            "model_calls_per_scenario_per_backbone": 5,
             "avg_retrieval_latency_ms": round(sum(latencies) / len(latencies), 1) if latencies else 0.0,
             "retrieval_latency_ms": round(sum(latencies) / len(latencies), 1) if latencies else 0.0,
             "num_scenarios": n,
@@ -237,10 +247,11 @@ class BenchmarkRunner:
 
         results: List[Dict[str, Any]] = []
         for b in runners:
-            agent_c = base_c = ok = skipped = 0
+            agent_c = base_c = history_c = summary_c = ok = skipped = 0
             per: List[Dict[str, Any]] = []
 
             async def evaluate(c):
+                history = "\n".join(f"- {message}" for message in c["setup_messages"])
                 agent_messages = [
                     {"role": "system", "content": c["system_prompt"]},
                     {"role": "user", "content": c["question"]},
@@ -249,23 +260,69 @@ class BenchmarkRunner:
                     {"role": "system", "content": _BASE_SYSTEM},
                     {"role": "user", "content": c["question"]},
                 ]
-                agent, base = await asyncio.gather(
+                full_history_messages = [
+                    {
+                        "role": "system",
+                        "content": (
+                            f"{_BASE_SYSTEM}\nUse this raw prior conversation history when relevant. "
+                            f"Later statements override earlier ones.\n{history}"
+                        ),
+                    },
+                    {"role": "user", "content": c["question"]},
+                ]
+                summary_messages = [
+                    {
+                        "role": "system",
+                        "content": (
+                            "Summarize the durable current user facts and decisions in the "
+                            "provided history. Resolve contradictions in favor of the latest "
+                            "statement. Do not answer any question or invent information."
+                        ),
+                    },
+                    {"role": "user", "content": history},
+                ]
+                agent, base, full_history, history_summary = await asyncio.gather(
                     limited_chat(b["chat"], agent_messages),
                     limited_chat(b["chat"], baseline_messages),
+                    limited_chat(b["chat"], full_history_messages),
+                    limited_chat(b["chat"], summary_messages),
                 )
-                return c, agent, base
+                summary_answer = await limited_chat(
+                    b["chat"],
+                    [
+                        {
+                            "role": "system",
+                            "content": f"{_BASE_SYSTEM}\nPrior-user summary:\n{history_summary}",
+                        },
+                        {"role": "user", "content": c["question"]},
+                    ],
+                )
+                return c, agent, base, full_history, summary_answer
 
             evaluated = await asyncio.gather(*(evaluate(c) for c in contexts))
-            for c, agent, base in evaluated:
-                if agent is None or base is None:
+            for c, agent, base, full_history, summary_answer in evaluated:
+                if any(
+                    answer is None
+                    for answer in (agent, base, full_history, summary_answer)
+                ):
                     skipped += 1  # provider hiccup on this item; skip, keep going
                     continue
                 a_ok = answer_correct(agent, c["expected"], c["forbidden"])
                 b_ok = answer_correct(base, c["expected"], c["forbidden"])
+                h_ok = answer_correct(full_history, c["expected"], c["forbidden"])
+                s_ok = answer_correct(summary_answer, c["expected"], c["forbidden"])
                 agent_c += int(a_ok)
                 base_c += int(b_ok)
+                history_c += int(h_ok)
+                summary_c += int(s_ok)
                 ok += 1
-                per.append({"id": c["id"], "agent_correct": a_ok, "baseline_correct": b_ok})
+                per.append({
+                    "id": c["id"],
+                    "agent_correct": a_ok,
+                    "baseline_correct": b_ok,
+                    "full_history_correct": h_ok,
+                    "history_summary_correct": s_ok,
+                })
             if ok == 0:
                 results.append({"name": b["name"], "label": b["label"], "error": True})
                 continue
@@ -274,6 +331,8 @@ class BenchmarkRunner:
                 "name": b["name"], "label": b["label"], "n": ok,
                 "agent_accuracy": round(agent_c / ok, 2),
                 "baseline_accuracy": round(base_c / ok, 2),
+                "full_history_accuracy": round(history_c / ok, 2),
+                "history_summary_accuracy": round(summary_c / ok, 2),
                 "delta": round((agent_c - base_c) / ok, 2),
                 "per_scenario": per,
             })
@@ -296,3 +355,22 @@ def _has_leak(injected, expected, forbidden) -> bool:
 
 def _approx_tokens(text: str) -> int:
     return max(1, len(text) // 4)
+
+
+def _usage_delta(before: Dict[str, Any], after: Dict[str, Any]) -> Dict[str, Any]:
+    """Subtract cumulative provider counters for one reproducible benchmark run."""
+    output: Dict[str, Any] = {"operations": {}, "totals": {}}
+    for operation, values in after.get("operations", {}).items():
+        previous = before.get("operations", {}).get(operation, {})
+        delta = {
+            key: value - previous.get(key, 0)
+            for key, value in values.items()
+            if value - previous.get(key, 0) > 0
+        }
+        if delta:
+            output["operations"][operation] = delta
+    for key, value in after.get("totals", {}).items():
+        delta = value - before.get("totals", {}).get(key, 0)
+        if delta > 0:
+            output["totals"][key] = delta
+    return output

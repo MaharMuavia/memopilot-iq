@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, type EvalReport } from "../api";
 import { IconCheck } from "./icons";
 
@@ -18,6 +18,12 @@ export function EvaluationDashboard() {
   const [report, setReport] = useState<EvalReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void api.getEvalReport().then(setReport).catch(() => {
+      // No report exists until an administrator completes the first run.
+    });
+  }, []);
 
   async function run() {
     setLoading(true);
@@ -62,7 +68,7 @@ export function EvaluationDashboard() {
             </button>
           )}
           <button className="btn-primary" onClick={run} disabled={loading}>
-            {loading ? "Running…" : "Run benchmark"}
+            {loading ? "Running…" : "Run benchmark (admin)"}
           </button>
         </div>
       </div>
@@ -70,17 +76,19 @@ export function EvaluationDashboard() {
       {error && <p className="text-xs text-rose-600">{error}</p>}
       {!report && !loading && (
         <p className="text-sm text-slate-400">
-          Run the benchmark to compare the memory agent against a no-memory
-          baseline across 24 diagnostic scenarios. Results are generated live
-          for the currently configured model and strict keyword evaluator.
+          Compare governed memory against no-memory, raw full-history, and
+          model-generated history-summary baselines across 24 scenarios.
+          Results are generated live for the configured model.
         </p>
       )}
 
       {report && (
         <>
-          <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3">
+          <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
             <Metric label="Memory agent accuracy" value={pct(report.memory_agent_accuracy)} good />
             <Metric label="Baseline (no memory)" value={pct(report.baseline_no_memory_accuracy)} />
+            <Metric label="Baseline (full history)" value={pct(report.baseline_full_history_accuracy)} />
+            <Metric label="Baseline (history summary)" value={pct(report.baseline_history_summary_accuracy)} />
             <Metric label={`Recall in context (top ${report.retrieval_top_k})`} value={pct(report.memory_recall_at_context)} good />
             <Metric label="Token savings" value={`${report.token_savings_percent}%`} good />
             <Metric label="Outdated mem errors" value={`${report.outdated_memory_errors}`} good={report.outdated_memory_errors === 0} />
@@ -97,15 +105,26 @@ export function EvaluationDashboard() {
 
           <ComparisonBar
             agent={report.memory_agent_accuracy}
-            baseline={report.baseline_no_memory_accuracy}
+            noMemory={report.baseline_no_memory_accuracy}
+            fullHistory={report.baseline_full_history_accuracy}
+            historySummary={report.baseline_history_summary_accuracy}
           />
+
+          {report.provider_token_usage.totals.total_tokens !== undefined && (
+            <p className="mt-3 text-xs text-slate-400">
+              Provider-reported tokens for this run: {report.provider_token_usage.totals.total_tokens.toLocaleString()}.
+              Pricing is intentionally not estimated because model rates change.
+            </p>
+          )}
 
           <table className="mt-4 w-full text-left text-sm">
             <thead>
               <tr className="text-xs uppercase text-slate-400">
                 <th className="py-1">Scenario</th>
                 <th>Agent</th>
-                <th>Baseline</th>
+                <th>No mem</th>
+                <th>History</th>
+                <th>Summary</th>
                 <th>Tokens</th>
                 <th>Leak</th>
               </tr>
@@ -116,6 +135,8 @@ export function EvaluationDashboard() {
                   <td className="py-1.5 text-slate-700">{s.title}</td>
                   <td><Mark ok={s.memory_agent_correct} /></td>
                   <td><Mark ok={s.baseline_correct} /></td>
+                  <td><Mark ok={s.full_history_correct} /></td>
+                  <td><Mark ok={s.history_summary_correct} /></td>
                   <td className="text-slate-500">{s.tokens_used}</td>
                   <td>
                     {s.forbidden_leaked ? (
@@ -147,11 +168,23 @@ function Metric({ label, value, good }: { label: string; value: string; good?: b
   );
 }
 
-function ComparisonBar({ agent, baseline }: { agent: number; baseline: number }) {
+function ComparisonBar({
+  agent,
+  noMemory,
+  fullHistory,
+  historySummary,
+}: {
+  agent: number;
+  noMemory: number;
+  fullHistory: number;
+  historySummary: number;
+}) {
   return (
     <div className="space-y-2">
       <Row label="Memory agent" value={agent} color="bg-brand-500" />
-      <Row label="No-memory baseline" value={baseline} color="bg-slate-400" />
+      <Row label="No-memory baseline" value={noMemory} color="bg-slate-300" />
+      <Row label="Full-history baseline" value={fullHistory} color="bg-slate-400" />
+      <Row label="History-summary baseline" value={historySummary} color="bg-slate-500" />
     </div>
   );
 }

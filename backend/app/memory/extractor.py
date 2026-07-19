@@ -239,7 +239,12 @@ class MemoryExtractor:
             old_id = str(upd.get("old_memory_id") or "")
             action = upd.get("action")
             mem = await self.store.get(old_id) if old_id else None
-            if not mem or mem.status not in {MemoryStatus.active, MemoryStatus.pinned}:
+            if (
+                not mem
+                or mem.user_id != user_id
+                or mem.project_id not in {project_id, None}
+                or mem.status not in {MemoryStatus.active, MemoryStatus.pinned}
+            ):
                 continue
             if mem.is_critical:
                 continue
@@ -260,7 +265,7 @@ class MemoryExtractor:
         # Explicit forget instructions from the model.
         for f in result.get("forget", []) or []:
             mem = await self.store.get(f.get("memory_id", ""))
-            if mem:
+            if mem and mem.user_id == user_id and mem.project_id in {project_id, None}:
                 mem.status = MemoryStatus.expired if f.get("action") == "expire" else MemoryStatus.archived
                 mem.updated_at = datetime.now(timezone.utc)
                 await self.store.update(mem)

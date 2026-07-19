@@ -10,6 +10,10 @@
 
 **Qwen Cloud Global AI Hackathon — Track 1: MemoryAgent**
 
+> **Naming disclosure:** MemoPilot IQ is an independent Qwen Cloud hackathon
+> project and is not affiliated with the separate 2026 research system named
+> MemoPilot described in [arXiv:2606.08656](https://arxiv.org/abs/2606.08656).
+
 MemoPilot IQ is a persistent-memory AI agent. Unlike a normal chatbot that only
 sees recent chat history, it has a dedicated **MemoPilot memory-governance
 layer** that extracts structured memories from conversations, stores them
@@ -73,7 +77,7 @@ layer that knows what to remember, what to forget, and can prove its reasoning.
 
 ## Key features
 > **Implementation note:** Memory priority never overrides the configured token
-> budget; the reflection feature consolidates memories but does not train model
+> budget; memory consolidation is deterministic and does not train model
 > weights; the diagnostic suite has 24 scenarios; and Alibaba deployment is
 > considered complete only after a live deployment has been evidenced.
 
@@ -83,9 +87,9 @@ layer that knows what to remember, what to forget, and can prove its reasoning.
 - 📏 **Context budget manager** — strict 2,500-token budget; critical/pinned memories are prioritized.
 - ♻️ **Forgetting engine** — expire deadlines, archive stale memories, supersede contradicted decisions (non-destructive).
 - 🪞 **Memory Trace** — see exactly which memories were injected/skipped, their scores, reasons and token cost.
-- 📊 **Evaluation dashboard** — a 24-scenario diagnostic against a no-memory baseline.
-- 🧠 **Reflection engine** — a self-improvement pass that merges duplicates, promotes frequently-used memories, and derives higher-level insights.
-- 🕸️ **Live Memory Graph** — interactive visualization of memories with supersession/related edges, critical rings, and insight nodes.
+- 📊 **Evaluation dashboard** — a 24-scenario answer diagnostic plus comparative memory-layer baselines (full history, dense-only, recency-only, lifecycle-disabled, and full governance).
+- 🧹 **Memory consolidation** — a deterministic pass that merges duplicates, promotes frequently-used memories, and creates source-linked cluster summaries.
+- 🕸️ **Live Memory Graph** — interactive visualization of memories with supersession/related edges, critical rings, and consolidation-summary nodes.
 - 📈 **Analytics dashboard** — memory growth, type/status distribution, forgetting rate, token savings.
 - 🔒 **Secret-safe** — secrets are redacted before storage; never committed.
 - ☁️ **Alibaba Cloud deployment** — ECS compute, Qwen Cloud, Tablestore, and OSS.
@@ -129,7 +133,9 @@ If `QWEN_API_KEY` is unset, a deterministic offline implementation keeps the
 whole app, tests and benchmark working end-to-end.
 
 ## How Alibaba Cloud is used
-- **Tablestore** — persistent memory + event store ([`store_alibaba.py`](backend/app/memory/store_alibaba.py)).
+- **Tablestore** — persistent memory + event store with tenant/project/record
+  composite keys and tenant-scoped range reads
+  ([`store_alibaba.py`](backend/app/memory/store_alibaba.py)).
 - **OSS** — redacted turn snapshots and evaluation artifacts ([`oss_client.py`](backend/app/storage/oss_client.py)).
 - **Submitted deployment** — Nginx and FastAPI Docker containers on Alibaba Cloud ECS.
 Full guide & proof checklist: [docs/deployment_alibaba.md](docs/deployment_alibaba.md).
@@ -231,6 +237,9 @@ Copy [`.env.example`](.env.example) to `backend/.env` and fill in real values
 | `RETRIEVAL_MIN_KEYWORD_OVERLAP` | Lexical admission threshold; default `0.20` |
 | `EVAL_MAX_CONCURRENCY` | Concurrent model calls during evaluation (default 4, maximum 8) |
 | `MEMOPILOT_API_KEYS` / `RATE_LIMIT_PER_MINUTE` | Optional API auth and rate limit |
+| `MEMOPILOT_PUBLIC_DEMO_ISOLATION` / `MEMOPILOT_IDENTITY_SECRET` | Signed HttpOnly anonymous-tenant isolation for a public browser demo |
+| `MEMOPILOT_ADMIN_KEY` | Protect expensive evaluation POST endpoints with `X-Admin-Key` |
+| `APP_BUILD_SHA` | Deployed revision exposed by `/health` and Settings |
 
 ## Alibaba deployment
 See [docs/deployment_alibaba.md](docs/deployment_alibaba.md) for ECS (Docker),
@@ -259,13 +268,17 @@ Interactive OpenAPI docs at `http://localhost:8000/docs`.
 | GET | `/api/eval/report` | Latest evaluation report |
 | POST | `/api/demo/run` | Run the scripted 4-session judge demo |
 | GET | `/api/trace/{session_id}` | Latest Memory Trace for a session |
-| POST | `/api/reflect` | Run the reflection / consolidation pass |
+| POST | `/api/reflect` | Run deterministic memory consolidation |
 | GET | `/api/analytics` | Aggregate memory analytics |
 | GET | `/api/graph` | Memory graph nodes + edges |
 
 **Production hardening** (all optional, zero-friction locally): set
 `MEMOPILOT_API_KEYS=key1,key2` to require an `X-API-Key` header on `/api/*`,
 and `RATE_LIMIT_PER_MINUTE` (default 120) for per-key/IP rate limiting.
+For a browser-accessible public demo, enable signed anonymous isolation with
+`MEMOPILOT_PUBLIC_DEMO_ISOLATION=true` and a persistent random
+`MEMOPILOT_IDENTITY_SECRET`. Configure `MEMOPILOT_ADMIN_KEY` to prevent public
+execution of expensive evaluation jobs.
 `GET /api/memories` supports `type`, `status`, `q` (text search), `limit`,
 `offset`. See [sdk/python](sdk/python/README.md) for the embeddable client.
 
@@ -285,10 +298,12 @@ The Chat tab has four starter buttons that replay the 4-session demo.
 
 ## Evaluation results
 Run **Evaluation → Run benchmark** in the UI, or `POST /api/eval/run`.
-The report records the configured model, strict keyword evaluator, retrieval
-depth, context recall, stale-memory leaks, historical-context token reduction,
-and latency for that run. Results depend on the selected model and are not
-hard-coded in the landing page. See
+The answer report records the configured model, strict keyword evaluator,
+retrieval depth, context recall, stale-memory leaks, historical-context token
+reduction, and latency. The deterministic ablation additionally compares full
+conversation history, dense-only retrieval, recency-only retrieval, hybrid
+retrieval without lifecycle exclusion, and the full governance policy. Results
+depend on the deployed revision and are not hard-coded in the landing page. See
 [docs/evaluation_results.md](docs/evaluation_results.md) for the protocol and
 reporting checklist.
 

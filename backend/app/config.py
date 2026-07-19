@@ -183,6 +183,15 @@ class Settings(BaseModel):
     frontend_origin: str = Field(
         default_factory=lambda: _env_or_default("FRONTEND_ORIGIN", "http://localhost:5173")
     )
+    public_demo_isolation: bool = Field(
+        default_factory=lambda: _env_bool("MEMOPILOT_PUBLIC_DEMO_ISOLATION", False)
+    )
+    identity_secret: Optional[str] = Field(
+        default_factory=lambda: _optional_env("MEMOPILOT_IDENTITY_SECRET")
+    )
+    app_build_sha: str = Field(
+        default_factory=lambda: _env_or_default("APP_BUILD_SHA", "development")
+    )
 
     # --- Context budget ---
     memory_token_budget: int = Field(

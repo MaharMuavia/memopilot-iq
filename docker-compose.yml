@@ -16,6 +16,9 @@ services:
       # SQLite mode and this path keeps Docker data persistent.
       DATABASE_URL: sqlite:////data/memopilot.db
       FRONTEND_ORIGIN: http://localhost:5173
+      # Supply APP_BUILD_SHA from the deployment command so /health and the UI
+      # prove exactly which revision is running.
+      APP_BUILD_SHA: ${APP_BUILD_SHA:-development}
     env_file:
       - path: ./backend/.env
         required: false

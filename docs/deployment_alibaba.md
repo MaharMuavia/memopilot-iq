@@ -49,11 +49,15 @@ and the UI header switches to the orange **Alibaba Cloud** badge.
 ## 3a. Deploy to ECS (Docker)
 
 ```bash
-# On an ECS instance with Docker installed:
-docker build -t memopilot-iq-backend ./backend
-docker run -d --env-file backend/.env -p 8000:8000 memopilot-iq-backend
-# Front with Nginx/SLB for TLS + the built frontend (frontend/dist).
+# On an ECS instance with deploy/.env.production configured:
+bash deploy/ecs_deploy.sh
+# This builds React/Nginx and runs FastAPI on a private Docker network.
 ```
+
+For the single-instance demo, [`deploy/enable_https.sh`](../deploy/enable_https.sh)
+runs a Caddy TLS gateway on port 443. Set `PUBLIC_HOST` to a real domain or an
+IP-encoded `sslip.io` hostname and keep ports 80/443 open. A managed domain and
+Alibaba Cloud load balancer remain the recommended long-lived deployment.
 
 ## 3b. Deploy to Function Compute (Serverless Devs)
 

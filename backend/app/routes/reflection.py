@@ -1,4 +1,4 @@
-"""Reflection endpoint — runs the memory consolidation / self-improvement pass."""
+"""Endpoint for the deterministic memory-consolidation pass."""
 from __future__ import annotations
 
 import asyncio
@@ -7,7 +7,7 @@ from fastapi import APIRouter, Request
 
 from ..utils.identity import effective_user_id
 
-router = APIRouter(prefix="/api", tags=["reflection"])
+router = APIRouter(prefix="/api", tags=["consolidation"])
 
 
 @router.post("/reflect")

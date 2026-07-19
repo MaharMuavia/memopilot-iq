@@ -10,7 +10,7 @@ Alibaba Cloud **DashScope** OpenAI-compatible endpoint.
 |---|---|---|---|
 | Chat / reasoning | `QwenClient.chat` | `qwen-plus` | Generates the final answer from the budgeted memory context. |
 | Memory extraction | `QwenClient.extract_json` | `qwen-plus` | The "Memory Editor" prompt returns strict JSON of `new_memories`, `updates`, `forget`. |
-| Reflection / contradiction | `QwenClient.extract_json` | `qwen-plus` | The same structured pass flags updates/supersession; the SupersessionEngine applies them. |
+| General contradiction updates | `QwenClient.extract_json` | `qwen-plus` | The structured pass flags updates outside the deterministic taxonomy; ownership checks and lifecycle rules apply them. |
 | Embeddings | `QwenClient.embed` | `text-embedding-v3` | Vectorises memories + queries for semantic retrieval. |
 
 ## Configuration

@@ -18,8 +18,8 @@ export function EvaluationPreview() {
           </h2>
           <p className="mt-3 text-slate-600">
             A built-in 24-scenario diagnostic compares the memory agent against
-            a no-memory baseline. Run it in the app to generate results for the
-            currently configured model.
+            no-memory, raw-history, and model-summary baselines. Run it in the
+            app to generate results for the currently configured model.
           </p>
         </div>
 

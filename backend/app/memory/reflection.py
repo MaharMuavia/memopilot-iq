@@ -1,14 +1,12 @@
-"""Memory Reflection / Consolidation engine.
+"""Deterministic memory consolidation engine.
 
-A self-improvement pass (the agent's "sleep cycle"). Over the active memory
-set it:
+Over the active memory set it:
 
   1. Merges near-duplicate memories of the same type (keeps the strongest,
      archives the rest) — reducing clutter.
   2. Promotes frequently-used memories by raising their importance.
-  3. Derives higher-level *insight* memories from clusters (e.g. "you have 4
-     established stack preferences"), tagged so they show up distinctly in the
-     Memory Graph.
+  3. Creates explicit cluster summaries (for example, "you have 4 active
+     preference memories") with the source memory IDs attached to the report.
 
 Everything is non-destructive (merged memories are archived, not deleted) and
 emits timeline events, so reflection is fully auditable.
@@ -26,8 +24,9 @@ logger = get_logger("reflection")
 
 MERGE_SIMILARITY = 0.82
 PROMOTE_USAGE_THRESHOLD = 2
-INSIGHT_CLUSTER_MIN = 3
-INSIGHT_TAG = "insight"
+SUMMARY_CLUSTER_MIN = 3
+SUMMARY_TAG = "consolidation-summary"
+_LEGACY_SUMMARY_TAG = "insight"
 
 
 def _similar(a: str, b: str) -> float:
@@ -49,18 +48,18 @@ class ReflectionEngine:
 
         merged = await self._merge_duplicates(memories)
         promoted = await self._promote_used(memories)
-        insights = await self._derive_insights(user_id, project_id, memories)
+        summaries = await self._derive_summaries(user_id, project_id, memories)
 
         report = {
             "reviewed": len(memories),
             "merged": merged,
             "promoted": promoted,
-            "insights": insights,
+            "summaries": summaries,
             "ran_at": datetime.now(timezone.utc).isoformat(),
         }
         logger.info(
-            "Reflection: reviewed=%d merged=%d promoted=%d insights=%d",
-            len(memories), len(merged), len(promoted), len(insights),
+            "Consolidation: reviewed=%d merged=%d promoted=%d summaries=%d",
+            len(memories), len(merged), len(promoted), len(summaries),
         )
         return report
 
@@ -72,7 +71,7 @@ class ReflectionEngine:
         for mem in sorted(memories, key=lambda m: m.importance, reverse=True):
             if mem.status not in {MemoryStatus.active, MemoryStatus.pinned}:
                 continue
-            if INSIGHT_TAG in mem.tags:
+            if SUMMARY_TAG in mem.tags or _LEGACY_SUMMARY_TAG in mem.tags:
                 continue
             duplicate_of = None
             for keeper in seen:
@@ -119,37 +118,40 @@ class ReflectionEngine:
                 )
         return promoted
 
-    async def _derive_insights(
+    async def _derive_summaries(
         self,
         user_id: str,
         project_id: Optional[str],
         memories: List[MemoryRecord],
-    ) -> List[Dict[str, str]]:
-        # Cluster active, non-insight memories by type.
+    ) -> List[Dict[str, Any]]:
+        # Cluster active memories by type. These are deterministic aggregation
+        # summaries, not claims of model-derived reasoning.
         clusters: Dict[MemoryType, List[MemoryRecord]] = {}
         for mem in memories:
             if mem.status not in {MemoryStatus.active, MemoryStatus.pinned}:
                 continue
-            if INSIGHT_TAG in mem.tags:
+            if SUMMARY_TAG in mem.tags or _LEGACY_SUMMARY_TAG in mem.tags:
                 continue
             clusters.setdefault(mem.type, []).append(mem)
 
         existing_summaries = {
-            m.summary for m in memories if INSIGHT_TAG in m.tags
+            m.summary
+            for m in memories
+            if SUMMARY_TAG in m.tags or _LEGACY_SUMMARY_TAG in m.tags
         }
-        insights: List[Dict[str, str]] = []
+        summaries: List[Dict[str, Any]] = []
         for mtype, group in clusters.items():
-            if len(group) < INSIGHT_CLUSTER_MIN:
+            if len(group) < SUMMARY_CLUSTER_MIN:
                 continue
             label = mtype.value.replace("_", " ")
             summary = f"You have {len(group)} active {label} memories guiding this project."
             if summary in existing_summaries:
-                continue  # idempotent — don't re-create the same insight
-            tags = sorted({t for m in group for t in m.tags})[:6] + [INSIGHT_TAG, mtype.value]
-            insight = MemoryRecord(
+                continue
+            tags = sorted({t for m in group for t in m.tags})[:6] + [SUMMARY_TAG, mtype.value]
+            cluster_summary = MemoryRecord(
                 user_id=user_id,
                 project_id=project_id,
-                session_id="reflection",
+                session_id="consolidation",
                 type=MemoryType.decision,
                 status=MemoryStatus.active,
                 content=summary,
@@ -157,14 +159,18 @@ class ReflectionEngine:
                 importance=0.6,
                 confidence=0.8,
                 tags=tags,
-                reason="Derived by the Reflection engine from a memory cluster.",
+                reason="Deterministic count summary created by memory consolidation.",
             )
             if self.qwen is not None:
-                insight.embedding = await self.qwen.embed(insight.content)
-            await self.store.add(insight)
-            await self._event(insight, "created", insight.reason)
-            insights.append({"memory_id": insight.memory_id, "summary": summary})
-        return insights
+                cluster_summary.embedding = await self.qwen.embed(cluster_summary.content)
+            await self.store.add(cluster_summary)
+            await self._event(cluster_summary, "created", cluster_summary.reason)
+            summaries.append({
+                "memory_id": cluster_summary.memory_id,
+                "summary": summary,
+                "source_memory_ids": [memory.memory_id for memory in group],
+            })
+        return summaries
 
     async def _event(self, mem: MemoryRecord, kind: str, reason: str) -> None:
         await self.store.add_event(

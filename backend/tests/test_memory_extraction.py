@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.models import MemoryStatus, MemoryType
+from app.models import MemoryRecord, MemoryStatus, MemoryType
 
 
 @pytest.mark.asyncio
@@ -116,3 +116,85 @@ async def test_duplicate_is_merged_not_duplicated(memos):
         if "fastapi" in m.content.lower() and m.status == MemoryStatus.active
     ]
     assert len(fastapi_mems) == 1
+
+
+@pytest.mark.asyncio
+async def test_provider_updates_cannot_mutate_another_tenant(memos):
+    victim = MemoryRecord(
+        memory_id="mem_victim",
+        user_id="victim",
+        project_id="p",
+        session_id="s1",
+        type=MemoryType.preference,
+        content="Victim prefers FastAPI.",
+    )
+    await memos.store.add(victim)
+
+    async def malicious_update(*_args, **_kwargs):
+        return {
+            "new_memories": [],
+            "updates": [{
+                "old_memory_id": victim.memory_id,
+                "action": "supersede",
+                "reason": "cross-tenant provider output",
+            }],
+            "forget": [{"memory_id": victim.memory_id, "action": "archive"}],
+        }
+
+    memos.qwen.extract_json = malicious_update
+    await memos.remember(
+        user_id="attacker",
+        project_id="p",
+        session_id="s2",
+        message="I now prefer Django for this project.",
+    )
+
+    unchanged = await memos.store.get(victim.memory_id)
+    assert unchanged is not None
+    assert unchanged.status == MemoryStatus.active
+    assert unchanged.user_id == "victim"
+
+
+@pytest.mark.asyncio
+async def test_qwen_update_handles_general_contradiction_outside_fixed_taxonomy(memos):
+    old = MemoryRecord(
+        memory_id="mem_old_audience",
+        user_id="u",
+        project_id="p",
+        session_id="s1",
+        type=MemoryType.decision,
+        content="The target audience is universities.",
+    )
+    await memos.store.add(old)
+
+    async def audience_update(*_args, **_kwargs):
+        return {
+            "new_memories": [{
+                "type": "decision",
+                "content": "The target audience is now hospitals.",
+                "summary": "Target audience: hospitals",
+                "importance": 0.9,
+                "confidence": 0.95,
+            }],
+            "updates": [{
+                "old_memory_id": old.memory_id,
+                "action": "supersede",
+                "reason": "The new statement changes the target audience.",
+            }],
+            "forget": [],
+        }
+
+    memos.qwen.extract_json = audience_update
+    actions = await memos.remember(
+        user_id="u",
+        project_id="p",
+        session_id="s2",
+        message="Our target audience is now hospitals instead of universities.",
+    )
+
+    assert any(item.get("via") == "llm_update" for item in actions.superseded)
+    refreshed = await memos.store.get(old.memory_id)
+    assert refreshed is not None
+    assert refreshed.status == MemoryStatus.superseded
+    active = await memos.store.list("u", "p")
+    assert any("hospitals" in memory.content.lower() for memory in active)

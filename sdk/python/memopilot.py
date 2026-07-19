@@ -140,14 +140,25 @@ class MemoPilotClient:
             params={"user_id": user_id, "project_id": project_id},
         )
 
-    def pin(self, memory_id: str) -> Dict[str, Any]:
-        return self._request("PATCH", f"/api/memories/{memory_id}", json={"pin": True})
+    def pin(self, memory_id: str, user_id: str = "demo-user") -> Dict[str, Any]:
+        return self._request(
+            "PATCH", f"/api/memories/{memory_id}",
+            params={"user_id": user_id}, json={"pin": True},
+        )
 
-    def archive(self, memory_id: str) -> Dict[str, Any]:
-        return self._request("PATCH", f"/api/memories/{memory_id}", json={"archive": True})
+    def archive(self, memory_id: str, user_id: str = "demo-user") -> Dict[str, Any]:
+        return self._request(
+            "PATCH", f"/api/memories/{memory_id}",
+            params={"user_id": user_id}, json={"archive": True},
+        )
 
-    def forget(self, memory_id: str, hard: bool = False) -> Dict[str, Any]:
-        return self._request("DELETE", f"/api/memories/{memory_id}", params={"hard": hard})
+    def forget(
+        self, memory_id: str, hard: bool = False, user_id: str = "demo-user"
+    ) -> Dict[str, Any]:
+        return self._request(
+            "DELETE", f"/api/memories/{memory_id}",
+            params={"hard": hard, "user_id": user_id},
+        )
 
     def forget_all(
         self, user_id: str = "demo-user", project_id: Optional[str] = "qwen-memoryagent"
@@ -171,7 +182,7 @@ class MemoPilotClient:
     def reflect(
         self, user_id: str = "demo-user", project_id: Optional[str] = "qwen-memoryagent"
     ) -> Dict[str, Any]:
-        """Run the reflection/consolidation pass."""
+        """Run the deterministic consolidation pass."""
         return self._request("POST", "/api/reflect",
                              params={"user_id": user_id, "project_id": project_id})
 

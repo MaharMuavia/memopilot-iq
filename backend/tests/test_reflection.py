@@ -35,22 +35,23 @@ async def test_reflection_promotes_frequently_used(memos):
 
 
 @pytest.mark.asyncio
-async def test_reflection_derives_insight_from_cluster(memos):
+async def test_consolidation_creates_traceable_cluster_summary(memos):
     await memos.store.add(_mem("I prefer the FastAPI backend"))
     await memos.store.add(_mem("Use Alibaba Cloud for deployment"))
     await memos.store.add(_mem("Keep all answers short and practical"))
     report = await memos.reflection.reflect("u", "p")
-    assert report["insights"]
+    assert report["summaries"]
+    assert len(report["summaries"][0]["source_memory_ids"]) == 3
     mems = await memos.store.list("u", "p")
-    assert any("insight" in m.tags for m in mems)
+    assert any("consolidation-summary" in m.tags for m in mems)
 
 
 @pytest.mark.asyncio
-async def test_reflection_is_idempotent_for_insights(memos):
+async def test_consolidation_is_idempotent_for_summaries(memos):
     await memos.store.add(_mem("I prefer the FastAPI backend"))
     await memos.store.add(_mem("Use Alibaba Cloud for deployment"))
     await memos.store.add(_mem("Keep all answers short and practical"))
     first = await memos.reflection.reflect("u", "p")
     second = await memos.reflection.reflect("u", "p")
-    assert first["insights"]
-    assert second["insights"] == []  # no duplicate insight created
+    assert first["summaries"]
+    assert second["summaries"] == []

@@ -21,6 +21,16 @@
   non-reversible server-side memory namespace. Request `user_id` values cannot
   select another key's memories, and trace/update/delete operations enforce the
   same namespace.
+- For a public browser demo, `MEMOPILOT_PUBLIC_DEMO_ISOLATION=true` issues a
+  signed, HttpOnly, SameSite=Lax anonymous-tenant cookie. Set
+  `MEMOPILOT_COOKIE_SECURE=true` when HTTPS terminates at a reverse proxy. The server ignores
+  caller-supplied `user_id` values, so separate browsers cannot list, mutate,
+  export, or clear one another's memories. Configure a persistent random
+  `MEMOPILOT_IDENTITY_SECRET` of at least 32 bytes; an automatically generated
+  development secret intentionally becomes invalid after a process restart.
+- Public isolation disables evaluation POST endpoints until a
+  `MEMOPILOT_ADMIN_KEY` is configured. The key belongs only in server-side
+  configuration and must never be included in the frontend bundle.
 - API keys are a small deployment safeguard, not full user authentication.
   Internet-facing production deployments still need TLS, an identity provider,
   key rotation, and a gateway-backed distributed rate limiter.

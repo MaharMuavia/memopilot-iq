@@ -115,7 +115,7 @@ export function MemoryGraph({ refreshKey }: { refreshKey: number }) {
               const p = positions[node.id];
               if (!p) return null;
               const r = 9 + node.importance * 9;
-              const color = node.is_insight ? "#eab308" : TYPE_COLOR[node.type] || "#64748b";
+              const color = node.is_consolidation_summary ? "#eab308" : TYPE_COLOR[node.type] || "#64748b";
               return (
                 <g
                   key={node.id}
@@ -131,7 +131,7 @@ export function MemoryGraph({ refreshKey }: { refreshKey: number }) {
                     <circle r={r + 4} fill="none" stroke="#ef4444" strokeWidth={2} />
                   )}
                   <circle r={r} fill={color} stroke="white" strokeWidth={2} />
-                  {node.is_insight && (
+                  {node.is_consolidation_summary && (
                     <text textAnchor="middle" dy="4" fontSize="11" fill="white">★</text>
                   )}
                   <title>{`[${node.type}/${node.status}] ${node.label}`}</title>
@@ -147,7 +147,7 @@ export function MemoryGraph({ refreshKey }: { refreshKey: number }) {
               <div className="mb-1 flex items-center gap-1.5">
                 <span
                   className="h-3 w-3 rounded-full"
-                  style={{ background: selectedNode.is_insight ? "#eab308" : TYPE_COLOR[selectedNode.type] }}
+                  style={{ background: selectedNode.is_consolidation_summary ? "#eab308" : TYPE_COLOR[selectedNode.type] }}
                 />
                 <span className="text-xs font-semibold uppercase text-slate-500">
                   {selectedNode.type}
@@ -171,7 +171,7 @@ export function MemoryGraph({ refreshKey }: { refreshKey: number }) {
           ) : (
             <p className="text-slate-400">
               Click any node to inspect its type, status, importance, and links.
-              Red dashed edges = supersession; gold ★ = reflection insight.
+              Red dashed edges = supersession; gold ★ = consolidation summary.
             </p>
           )}
         </aside>
@@ -185,7 +185,7 @@ function Legend() {
     { c: "#3b82f6", l: "preference" },
     { c: "#8b5cf6", l: "decision" },
     { c: "#ef4444", l: "critical" },
-    { c: "#eab308", l: "insight ★" },
+    { c: "#eab308", l: "summary ★" },
     { c: "#f43f5e", l: "supersedes —" },
   ];
   return (

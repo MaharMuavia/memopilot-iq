@@ -7,12 +7,14 @@ from fastapi import APIRouter, HTTPException, Request
 
 from ..eval.ablation import AblationRunner
 from ..eval.benchmark import BenchmarkRunner
+from ..utils.platform import require_admin
 
 router = APIRouter(prefix="/api/eval", tags=["evaluation"])
 
 
 @router.post("/run")
 async def run_eval(request: Request):
+    require_admin(request)
     memos = request.app.state.memos
     runner = BenchmarkRunner(memos)
     report = await runner.run()
@@ -31,6 +33,7 @@ async def run_eval(request: Request):
 @router.post("/ablation")
 async def run_ablation(request: Request):
     """Run the governance ablation study (deterministic; isolates each mechanism)."""
+    require_admin(request)
     memos = request.app.state.memos
     report = await AblationRunner(memos).run()
     try:

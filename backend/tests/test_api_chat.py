@@ -273,6 +273,7 @@ def test_editing_content_refreshes_its_embedding(client):
 
     updated = client.patch(
         f"/api/memories/{created.json()['memory_id']}",
+        params={"user_id": "t"},
         json={"content": "Use Next.js."},
     )
     assert updated.status_code == 200

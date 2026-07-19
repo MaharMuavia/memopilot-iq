@@ -1,20 +1,21 @@
-"""Alibaba Cloud memory store (Tablestore / OTS).
+"""Alibaba Cloud Tablestore memory store.
 
-This is the ALIBABA_CLOUD_MODE persistent backend. It uses Alibaba Cloud
-Tablestore (`tablestore` SDK) for durable, multi-region memory storage and is
-the production target for the deployed backend.
+Production rows use a tenant/project/record composite primary key.  That is
+important for both cost and isolation: normal reads are bounded to one tenant
+range instead of scanning every row in the instance and filtering in Python.
 
-Deployment proof: this file imports and uses the official Alibaba Cloud
-``tablestore`` SDK with credentials/endpoint sourced from
-:class:`~app.config.Settings`. When the SDK or credentials are unavailable it
-raises, and the factory in :mod:`app.memory` falls back to SQLite so local dev
-still works. See ``docs/deployment_alibaba.md``.
+The first startup after this schema was introduced performs an idempotent,
+one-time migration from the legacy single-key tables.  The legacy tables are
+left intact as a rollback aid, but are never read by request paths after the
+migration marker is written.
 """
 from __future__ import annotations
 
 import asyncio
 import json
-from typing import Any, Dict, List, Optional
+import uuid
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from ..config import Settings
 from ..models import MemoryRecord
@@ -23,33 +24,37 @@ from .store_base import MemoryStore
 
 logger = get_logger("store_alibaba")
 
-_PRIMARY_TABLE = "memopilot_memories"
-_EVENTS_TABLE = "memopilot_events"
+_LEGACY_PRIMARY_TABLE = "memopilot_memories"
+_LEGACY_EVENTS_TABLE = "memopilot_events"
+_PRIMARY_TABLE = "memopilot_memories_v2"
+_EVENTS_TABLE = "memopilot_events_v2"
+_LOOKUP_TABLE = "memopilot_memory_lookup"
+_META_TABLE = "memopilot_meta"
+_MIGRATION_MARKER = "composite_schema_v2"
+_GLOBAL_PROJECT_SCOPE = "0:global"
 
 
 def _attribute_value(attribute_columns: Any, name: str) -> Any:
-    """Return an OTS attribute value across supported SDK row shapes.
-
-    The Tablestore SDK can include a timestamp as the third item in each
-    attribute tuple, for example ``("data", value, timestamp)``. Converting
-    those tuples with ``dict()`` raises ``ValueError`` and makes every read
-    path fail even though writes succeed.
-    """
+    """Return an attribute value across supported SDK row tuple shapes."""
     for column in attribute_columns or []:
         if len(column) >= 2 and column[0] == name:
             return column[1]
     return None
 
 
-class AlibabaTablestoreMemoryStore(MemoryStore):
-    """Tablestore-backed implementation.
+def _project_scope(project_id: Optional[str]) -> str:
+    """Encode nullable project IDs without colliding with user project names."""
+    return _GLOBAL_PROJECT_SCOPE if project_id is None else f"1:{project_id}"
 
-    Requires: ``pip install tablestore`` and the ALIBABA_* env vars.
-    """
+
+class AlibabaTablestoreMemoryStore(MemoryStore):
+    """Tenant-scoped Tablestore implementation using the official SDK."""
+
+    schema_version = "composite-v2"
 
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
-        self._client = None  # lazily created OTSClient
+        self._client = None
 
     @property
     def backend_name(self) -> str:
@@ -57,7 +62,6 @@ class AlibabaTablestoreMemoryStore(MemoryStore):
 
     def _ots(self):
         if self._client is None:
-            # Imported lazily so the SDK is only a hard dependency in cloud mode.
             from tablestore import OTSClient  # type: ignore
 
             s = self.settings
@@ -78,96 +82,257 @@ class AlibabaTablestoreMemoryStore(MemoryStore):
 
     def _init_sync(self) -> None:
         from tablestore import (  # type: ignore
+            CapacityUnit,
+            ReservedThroughput,
             TableMeta,
             TableOptions,
-            ReservedThroughput,
-            CapacityUnit,
         )
 
         client = self._ots()
         existing = set(client.list_table())
-        for table in (_PRIMARY_TABLE, _EVENTS_TABLE):
-            if table not in existing:
-                schema = [("pk", "STRING")]
-                meta = TableMeta(table, schema)
-                client.create_table(
-                    meta,
-                    TableOptions(),
-                    ReservedThroughput(CapacityUnit(0, 0)),
+        schemas: Dict[str, List[Tuple[str, str]]] = {
+            _PRIMARY_TABLE: [
+                ("tenant_id", "STRING"),
+                ("project_scope", "STRING"),
+                ("record_id", "STRING"),
+            ],
+            _EVENTS_TABLE: [
+                ("tenant_id", "STRING"),
+                ("project_scope", "STRING"),
+                ("record_id", "STRING"),
+            ],
+            _LOOKUP_TABLE: [("memory_id", "STRING")],
+            _META_TABLE: [("pk", "STRING")],
+        }
+        for table, schema in schemas.items():
+            if table in existing:
+                continue
+            client.create_table(
+                TableMeta(table, schema),
+                TableOptions(),
+                ReservedThroughput(CapacityUnit(0, 0)),
+            )
+            existing.add(table)
+            logger.info("Created Tablestore table %s", table)
+
+        self._migrate_legacy_sync(existing)
+
+    def _put_single_row(
+        self,
+        table: str,
+        primary_key: Sequence[Tuple[str, Any]],
+        payload: Dict[str, Any],
+    ) -> None:
+        from tablestore import Condition, Row, RowExistenceExpectation  # type: ignore
+
+        attributes = [("data", json.dumps(payload, default=str))]
+        self._ots().put_row(
+            table,
+            Row(list(primary_key), attributes),
+            Condition(RowExistenceExpectation.IGNORE),
+        )
+
+    def _put_entity_row(
+        self,
+        table: str,
+        user_id: str,
+        project_id: Optional[str],
+        record_id: str,
+        payload: Dict[str, Any],
+    ) -> None:
+        from tablestore import Condition, Row, RowExistenceExpectation  # type: ignore
+
+        primary_key = [
+            ("tenant_id", user_id),
+            ("project_scope", _project_scope(project_id)),
+            ("record_id", record_id),
+        ]
+        attributes: List[Tuple[str, Any]] = [
+            ("data", json.dumps(payload, default=str)),
+            ("user_id", user_id),
+            ("project_id", project_id or ""),
+        ]
+        # These fields remain visible to a future SearchIndex without changing
+        # the durable JSON record used by the rest of the application.
+        for key in ("status", "type", "updated_at", "importance", "kind", "timestamp"):
+            value = payload.get(key)
+            if value is not None:
+                attributes.append((key, value if isinstance(value, (int, float)) else str(value)))
+        self._ots().put_row(
+            table,
+            Row(primary_key, attributes),
+            Condition(RowExistenceExpectation.IGNORE),
+        )
+
+    def _put_memory_sync(self, memory: MemoryRecord) -> None:
+        payload = json.loads(memory.model_dump_json())
+        self._put_entity_row(
+            _PRIMARY_TABLE,
+            memory.user_id,
+            memory.project_id,
+            memory.memory_id,
+            payload,
+        )
+        # The lookup table preserves the existing get(memory_id) contract
+        # without any scan. API and extraction layers still enforce ownership.
+        self._put_single_row(
+            _LOOKUP_TABLE,
+            [("memory_id", memory.memory_id)],
+            payload,
+        )
+
+    def _get_payload(
+        self, table: str, primary_key: Sequence[Tuple[str, Any]]
+    ) -> Optional[Dict[str, Any]]:
+        _, row, _ = self._ots().get_row(table, list(primary_key), [], None, 1)
+        if not row:
+            return None
+        data = _attribute_value(row.attribute_columns, "data")
+        return json.loads(data) if data else None
+
+    def _range_payloads(
+        self, table: str, user_id: str, project_id: Optional[str], all_projects: bool
+    ) -> List[Dict[str, Any]]:
+        from tablestore import Direction, INF_MAX, INF_MIN  # type: ignore
+
+        if all_projects:
+            start = [
+                ("tenant_id", user_id),
+                ("project_scope", INF_MIN),
+                ("record_id", INF_MIN),
+            ]
+            end = [
+                ("tenant_id", user_id),
+                ("project_scope", INF_MAX),
+                ("record_id", INF_MAX),
+            ]
+        else:
+            scope = _project_scope(project_id)
+            start = [
+                ("tenant_id", user_id),
+                ("project_scope", scope),
+                ("record_id", INF_MIN),
+            ]
+            end = [
+                ("tenant_id", user_id),
+                ("project_scope", scope),
+                ("record_id", INF_MAX),
+            ]
+
+        output: List[Dict[str, Any]] = []
+        while start:
+            _, next_start, rows, _ = self._ots().get_range(
+                table, Direction.FORWARD, start, end, [], 5000
+            )
+            for row in rows:
+                data = _attribute_value(row.attribute_columns, "data")
+                if data:
+                    output.append(json.loads(data))
+            start = next_start
+        return output
+
+    def _legacy_scan(self, table: str) -> List[Dict[str, Any]]:
+        """Full scan used only by the one-time schema migration."""
+        from tablestore import Direction, INF_MAX, INF_MIN  # type: ignore
+
+        start = [("pk", INF_MIN)]
+        end = [("pk", INF_MAX)]
+        output: List[Dict[str, Any]] = []
+        while start:
+            _, next_start, rows, _ = self._ots().get_range(
+                table, Direction.FORWARD, start, end, [], 5000
+            )
+            for row in rows:
+                data = _attribute_value(row.attribute_columns, "data")
+                if data:
+                    output.append(json.loads(data))
+            start = next_start
+        return output
+
+    def _migrate_legacy_sync(self, existing: set[str]) -> None:
+        if self._get_payload(_META_TABLE, [("pk", _MIGRATION_MARKER)]):
+            return
+
+        migrated_memories = 0
+        migrated_events = 0
+        if _LEGACY_PRIMARY_TABLE in existing:
+            for payload in self._legacy_scan(_LEGACY_PRIMARY_TABLE):
+                memory = MemoryRecord.model_validate(payload)
+                self._put_memory_sync(memory)
+                migrated_memories += 1
+        if _LEGACY_EVENTS_TABLE in existing:
+            for payload in self._legacy_scan(_LEGACY_EVENTS_TABLE):
+                event_id = str(payload.get("event_id") or f"evt_{uuid.uuid4().hex}")
+                payload = {**payload, "event_id": event_id}
+                user_id = str(payload.get("user_id") or "")
+                if not user_id:
+                    logger.warning("Skipping legacy event without user_id")
+                    continue
+                self._put_entity_row(
+                    _EVENTS_TABLE,
+                    user_id,
+                    payload.get("project_id"),
+                    event_id,
+                    payload,
                 )
-                logger.info("Created Tablestore table %s", table)
+                migrated_events += 1
 
-    # The Tablestore row helpers below keep the whole record as a single JSON
-    # attribute so the schema mirrors the SQLite store exactly.
-    def _put_row(self, table: str, pk_value: str, payload: Dict[str, Any]) -> None:
-        from tablestore import Row, Condition, RowExistenceExpectation  # type: ignore
-
-        client = self._ots()
-        primary_key = [("pk", pk_value)]
-        attribute_columns = [("data", json.dumps(payload, default=str))]
-        for key in ("user_id", "project_id"):
-            if payload.get(key) is not None:
-                attribute_columns.append((key, str(payload[key])))
-        row = Row(primary_key, attribute_columns)
-        client.put_row(
-            table, row, Condition(RowExistenceExpectation.IGNORE)
+        self._put_single_row(
+            _META_TABLE,
+            [("pk", _MIGRATION_MARKER)],
+            {
+                "schema": self.schema_version,
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+                "memories": migrated_memories,
+                "events": migrated_events,
+            },
+        )
+        logger.info(
+            "Tablestore composite-key migration complete: %d memories, %d events",
+            migrated_memories,
+            migrated_events,
         )
 
     async def add(self, memory: MemoryRecord) -> MemoryRecord:
-        await asyncio.to_thread(
-            self._put_row,
-            _PRIMARY_TABLE,
-            memory.memory_id,
-            json.loads(memory.model_dump_json()),
-        )
+        await asyncio.to_thread(self._put_memory_sync, memory)
         return memory
 
     async def get(self, memory_id: str) -> Optional[MemoryRecord]:
-        from tablestore import INF_MIN, INF_MAX  # type: ignore  # noqa: F401
-
-        def _get() -> Optional[str]:
-            client = self._ots()
-            _, row, _ = client.get_row(_PRIMARY_TABLE, [("pk", memory_id)], [], None, 1)
-            if not row:
-                return None
-            return _attribute_value(row.attribute_columns, "data")
-
-        data = await asyncio.to_thread(_get)
-        return MemoryRecord.model_validate_json(data) if data else None
+        payload = await asyncio.to_thread(
+            self._get_payload, _LOOKUP_TABLE, [("memory_id", memory_id)]
+        )
+        return MemoryRecord.model_validate(payload) if payload else None
 
     async def update(self, memory: MemoryRecord) -> MemoryRecord:
         return await self.add(memory)
 
-    async def delete(self, memory_id: str) -> None:
-        await asyncio.to_thread(self._delete_row, _PRIMARY_TABLE, memory_id)
+    def _delete_row(
+        self, table: str, primary_key: Sequence[Tuple[str, Any]]
+    ) -> None:
+        from tablestore import Condition, Row, RowExistenceExpectation  # type: ignore
 
-    def _delete_row(self, table: str, pk_value: str) -> None:
-        from tablestore import Row, Condition, RowExistenceExpectation  # type: ignore
-
-        client = self._ots()
-        client.delete_row(
+        self._ots().delete_row(
             table,
-            Row([("pk", pk_value)]),
+            Row(list(primary_key)),
             Condition(RowExistenceExpectation.IGNORE),
         )
 
-    def _scan(self, table: str) -> List[Dict[str, Any]]:
-        from tablestore import INF_MIN, INF_MAX, Direction  # type: ignore
-
-        client = self._ots()
-        start = [("pk", INF_MIN)]
-        end = [("pk", INF_MAX)]
-        rows_out: List[Dict[str, Any]] = []
-        while start:
-            consumed, next_start, rows, _ = client.get_range(
-                table, Direction.FORWARD, start, end, [], 5000
-            )
-            for r in rows:
-                data = _attribute_value(r.attribute_columns, "data")
-                if data:
-                    rows_out.append(json.loads(data))
-            start = next_start
-        return rows_out
+    async def delete(self, memory_id: str) -> None:
+        memory = await self.get(memory_id)
+        if memory is None:
+            return
+        await asyncio.to_thread(
+            self._delete_row,
+            _PRIMARY_TABLE,
+            [
+                ("tenant_id", memory.user_id),
+                ("project_scope", _project_scope(memory.project_id)),
+                ("record_id", memory.memory_id),
+            ],
+        )
+        await asyncio.to_thread(
+            self._delete_row, _LOOKUP_TABLE, [("memory_id", memory.memory_id)]
+        )
 
     async def list(
         self,
@@ -176,39 +341,73 @@ class AlibabaTablestoreMemoryStore(MemoryStore):
         statuses: Optional[List[str]] = None,
         include_all: bool = False,
     ) -> List[MemoryRecord]:
-        rows = await asyncio.to_thread(self._scan, _PRIMARY_TABLE)
-        records = [MemoryRecord.model_validate(r) for r in rows if r.get("user_id") == user_id]
-        if project_id is not None:
-            records = [m for m in records if m.project_id in (project_id, None)]
+        if project_id is None:
+            rows = await asyncio.to_thread(
+                self._range_payloads, _PRIMARY_TABLE, user_id, None, True
+            )
+        else:
+            project_rows = await asyncio.to_thread(
+                self._range_payloads, _PRIMARY_TABLE, user_id, project_id, False
+            )
+            global_rows = await asyncio.to_thread(
+                self._range_payloads, _PRIMARY_TABLE, user_id, None, False
+            )
+            rows = [*project_rows, *global_rows]
+
+        records = [MemoryRecord.model_validate(row) for row in rows]
         if include_all:
             return records
         if statuses:
-            return [m for m in records if m.status.value in statuses]
+            return [memory for memory in records if memory.status.value in statuses]
         return records
 
     async def add_event(self, event: Dict[str, Any]) -> None:
-        import uuid
-
-        event_id = f"evt_{uuid.uuid4().hex}"
-        payload = {**event, "event_id": event_id}
-        await asyncio.to_thread(self._put_row, _EVENTS_TABLE, event_id, payload)
+        timestamp = str(event.get("timestamp") or datetime.now(timezone.utc).isoformat())
+        event_id = f"{timestamp}|evt_{uuid.uuid4().hex}"
+        payload = {**event, "event_id": event_id, "timestamp": timestamp}
+        user_id = str(payload.get("user_id") or "")
+        if not user_id:
+            raise ValueError("Tablestore events require user_id")
+        await asyncio.to_thread(
+            self._put_entity_row,
+            _EVENTS_TABLE,
+            user_id,
+            payload.get("project_id"),
+            event_id,
+            payload,
+        )
 
     async def list_events(
         self, user_id: str, project_id: Optional[str] = None
     ) -> List[Dict[str, Any]]:
-        rows = await asyncio.to_thread(self._scan, _EVENTS_TABLE)
-        events = [e for e in rows if e.get("user_id") == user_id]
-        if project_id is not None:
-            events = [e for e in events if e.get("project_id") in (project_id, None)]
-        return events
+        if project_id is None:
+            return await asyncio.to_thread(
+                self._range_payloads, _EVENTS_TABLE, user_id, None, True
+            )
+        project_rows = await asyncio.to_thread(
+            self._range_payloads, _EVENTS_TABLE, user_id, project_id, False
+        )
+        global_rows = await asyncio.to_thread(
+            self._range_payloads, _EVENTS_TABLE, user_id, None, False
+        )
+        return [*project_rows, *global_rows]
 
     async def clear_user(self, user_id: str, project_id: Optional[str] = None) -> int:
         records = await self.list(user_id, project_id, include_all=True)
-        for m in records:
-            await self.delete(m.memory_id)
         events = await self.list_events(user_id, project_id)
+        for memory in records:
+            await self.delete(memory.memory_id)
         for event in events:
-            event_id = event.get("event_id")
-            if event_id:
-                await asyncio.to_thread(self._delete_row, _EVENTS_TABLE, str(event_id))
+            event_id = str(event.get("event_id") or "")
+            if not event_id:
+                continue
+            await asyncio.to_thread(
+                self._delete_row,
+                _EVENTS_TABLE,
+                [
+                    ("tenant_id", user_id),
+                    ("project_scope", _project_scope(event.get("project_id"))),
+                    ("record_id", event_id),
+                ],
+            )
         return len(records)

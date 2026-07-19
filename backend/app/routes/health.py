@@ -24,4 +24,11 @@ async def health(request: Request) -> dict:
         "alibaba_configured": settings.alibaba_configured,
         "oss_configured": settings.oss_configured,
         "token_budget": settings.memory_token_budget,
+        "tenant_isolation": (
+            "signed-anonymous-cookie"
+            if settings.public_demo_isolation
+            else "api-key-or-caller-demo"
+        ),
+        "storage_schema": getattr(memos.store, "schema_version", "local"),
+        "build_sha": settings.app_build_sha,
     }

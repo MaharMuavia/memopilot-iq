@@ -17,17 +17,19 @@ async def test_ablation_reports_clean_single_factor_variants(memos):
 
     variants = {row["variant"]: row for row in report["variants"]}
     assert set(variants) == {
-        "Full policy",
-        "No priority ordering",
-        "No lifecycle exclusion",
-        "Similarity-only weights",
-        "Uniform positive weights",
+        "Full conversation history",
+        "Dense-only retrieval",
+        "Recency-only retrieval",
+        "Hybrid without lifecycle exclusion",
+        "Full governance",
     }
     assert all("context_recall" in row for row in variants.values())
+    assert all("avg_context_tokens" in row for row in variants.values())
+    assert all("retrieval_latency_p95_ms" in row for row in variants.values())
     assert all("recall_at_5" not in row for row in variants.values())
-    assert variants["No lifecycle exclusion"]["leak_rate"] > variants[
-        "Full policy"
-    ]["leak_rate"]
+    assert variants["Hybrid without lifecycle exclusion"]["stale_memory_leak_rate"] > variants[
+        "Full governance"
+    ]["stale_memory_leak_rate"]
 
 
 @pytest.mark.asyncio
@@ -38,6 +40,12 @@ async def test_benchmark_reports_raw_metric_counts(memos):
     assert 0 <= report["memory_recall_hits"] <= report["memory_recall_total"]
     assert report["memory_context_tokens"] >= 0
     assert report["full_history_tokens"] > 0
+    assert 0 <= report["baseline_full_history_accuracy"] <= 1
+    assert 0 <= report["baseline_history_summary_accuracy"] <= 1
+    assert report["model_calls_per_scenario_per_backbone"] == 5
+    assert "totals" in report["provider_token_usage"]
+    assert all("full_history_correct" in row for row in report["scenarios"])
+    assert all("history_summary_correct" in row for row in report["scenarios"])
     assert report["memory_recall_at_context"] == round(
         report["memory_recall_hits"] / report["memory_recall_total"], 2
     )

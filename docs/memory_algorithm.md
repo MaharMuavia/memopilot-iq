@@ -60,8 +60,11 @@ budget. Every decision is recorded in the trace.
 2. Qwen "Memory Editor" returns strict JSON (`new_memories`, `updates`, `forget`).
 3. Drop anything still secret-like.
 4. Merge near-duplicates (`SequenceMatcher > 0.86`) instead of duplicating.
-5. Detect topic-level contradictions (framework, cloud, theme…) and supersede
-   the old memory (never supersedes critical memories).
+5. Detect common topic-level contradictions with deterministic rules, then
+   apply Qwen's structured `updates` as the general fallback for dimensions
+   outside the taxonomy (audience, budget, policy, and similar decisions).
+   Ownership is revalidated before every model-requested update; critical
+   memories are never automatically superseded.
 6. Set `expires_at` for temporary/deadline memories.
 7. Embed and persist; emit a timeline event.
 
@@ -79,7 +82,7 @@ For every answer the trace exposes: included vs skipped memories, each one's
 final score and component breakdown, the human-readable reason, approximate
 token cost, candidates considered, and retrieval latency.
 
-## 8. Reflection / consolidation (`memory/reflection.py`)
+## 8. Deterministic consolidation (`memory/reflection.py`)
 
 A consolidation "sleep" pass the agent can run over its active memory set:
 
@@ -87,16 +90,18 @@ A consolidation "sleep" pass the agent can run over its active memory set:
   the strongest survives, the rest are archived (non-destructive) and the
   survivor's importance/usage are boosted.
 - **Promote** frequently-used memories (`usage_count ≥ 2`) by raising importance.
-- **Derive insights** from clusters: a type with ≥ 3 active memories produces a
-  higher-level insight memory (tagged `insight`), shown as a gold ★ node in the
-  Memory Graph. Insight creation is idempotent.
+- **Create cluster summaries**: a type with ≥ 3 active memories produces a
+  deterministic count summary tagged `consolidation-summary`. The API reports
+  its source memory IDs, the graph shows it as a gold ★ node, and creation is
+  idempotent. This is aggregation, not an LLM-derived reasoning claim.
 
 Exposed via `POST /api/reflect` and the Analytics tab. Feeds the Memory Graph
 (`GET /api/graph`) and Analytics (`GET /api/analytics`) views.
 
 ## 9. Evaluation runner (`eval/benchmark.py`)
 
-Runs `eval/scenarios.json` for both the memory agent and a no-memory baseline
-and aggregates strict-keyword accuracy, recall in the assembled context,
+Runs `eval/scenarios.json` for the memory agent plus no-memory, raw-history,
+and model-generated history-summary answer baselines. It aggregates
+strict-keyword accuracy, recall in the assembled context,
 outdated-avoidance, historical-context token reduction, and
 latency. See [judging_mapping.md](judging_mapping.md).

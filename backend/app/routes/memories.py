@@ -132,12 +132,17 @@ async def create_memory(req: CreateMemoryRequest, request: Request):
 
 
 @router.patch("/memories/{memory_id}")
-async def update_memory(memory_id: str, req: UpdateMemoryRequest, request: Request):
+async def update_memory(
+    memory_id: str,
+    req: UpdateMemoryRequest,
+    request: Request,
+    user_id: str = "demo-user",
+):
     memos = request.app.state.memos
     candidate = await memos.store.get(memory_id)
     mem = require_owned(
         candidate,
-        effective_user_id(request, candidate.user_id if candidate else "demo-user"),
+        effective_user_id(request, user_id),
     )
 
     if req.pin:
@@ -189,14 +194,19 @@ async def update_memory(memory_id: str, req: UpdateMemoryRequest, request: Reque
 
 
 @router.delete("/memories/{memory_id}")
-async def delete_memory(memory_id: str, request: Request, hard: bool = False):
+async def delete_memory(
+    memory_id: str,
+    request: Request,
+    hard: bool = False,
+    user_id: str = "demo-user",
+):
     """Delete a memory. By default this is a soft delete (status=deleted);
     pass ``hard=true`` to remove the row entirely (explicit user action)."""
     memos = request.app.state.memos
     candidate = await memos.store.get(memory_id)
     mem = require_owned(
         candidate,
-        effective_user_id(request, candidate.user_id if candidate else "demo-user"),
+        effective_user_id(request, user_id),
     )
     if hard:
         await memos.store.delete(memory_id)

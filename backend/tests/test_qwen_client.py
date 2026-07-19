@@ -24,6 +24,7 @@ async def test_embed_many_sorts_provider_results_by_index(monkeypatch):
 
         def json(self):
             return {
+                "usage": {"prompt_tokens": 7, "total_tokens": 7},
                 "data": [
                     {"index": 1, "embedding": [2.0]},
                     {"index": 0, "embedding": [1.0]},
@@ -40,6 +41,7 @@ async def test_embed_many_sorts_provider_results_by_index(monkeypatch):
 
     monkeypatch.setattr(client, "_http", fake_http)
     assert await client.embed_many(["first", "second"]) == [[1.0], [2.0]]
+    assert client.usage["operations"]["embedding"]["total_tokens"] == 7
 
 
 @pytest.mark.asyncio
@@ -55,7 +57,14 @@ async def test_transient_timeout_is_retried_before_fallback(monkeypatch):
             return None
 
         def json(self):
-            return {"choices": [{"message": {"content": "Live Qwen answer"}}]}
+            return {
+                "usage": {
+                    "prompt_tokens": 10,
+                    "completion_tokens": 4,
+                    "total_tokens": 14,
+                },
+                "choices": [{"message": {"content": "Live Qwen answer"}}],
+            }
 
     class HttpClient:
         async def post(self, _path, json):
@@ -82,3 +91,8 @@ async def test_transient_timeout_is_retried_before_fallback(monkeypatch):
     assert calls == 2
     assert client.provider_status == "online"
     assert client.fallback_count == 0
+    assert client.usage["totals"] == {
+        "prompt_tokens": 10,
+        "completion_tokens": 4,
+        "total_tokens": 14,
+    }

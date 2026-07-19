@@ -95,7 +95,9 @@ async def graph(
             "status": m.status.value,
             "is_critical": m.is_critical,
             "importance": round(m.importance, 3),
-            "is_insight": "insight" in m.tags,
+            "is_consolidation_summary": (
+                "consolidation-summary" in m.tags or "insight" in m.tags
+            ),
             "tags": m.tags,
         }
         for m in visible

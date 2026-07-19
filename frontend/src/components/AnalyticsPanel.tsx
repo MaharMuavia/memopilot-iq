@@ -50,7 +50,7 @@ export function AnalyticsPanel({
 
   return (
     <div className="space-y-4">
-      {/* Reflection engine */}
+      {/* Deterministic consolidation engine */}
       <div className="overflow-hidden rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 shadow-glass">
         <div className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
@@ -58,15 +58,15 @@ export function AnalyticsPanel({
               <IconSparkle size={16} />
             </span>
             <div>
-              <h3 className="text-sm font-bold text-slate-800">Memory Reflection (self-improvement)</h3>
+              <h3 className="text-sm font-bold text-slate-800">Memory Consolidation</h3>
               <p className="text-xs text-slate-500">
-                Consolidates duplicates, promotes frequently-used memories, and
-                derives higher-level insights.
+                Deterministically merges duplicates, promotes frequently-used
+                memories, and creates source-linked cluster summaries.
               </p>
             </div>
           </div>
           <button className="btn-primary px-4 py-2 text-sm" onClick={runReflection} disabled={reflecting}>
-            {reflecting ? "Reflecting…" : "Run Reflection"}
+            {reflecting ? "Consolidating…" : "Run Consolidation"}
           </button>
         </div>
         {reflection && (
@@ -74,11 +74,13 @@ export function AnalyticsPanel({
             <Stat label="Reviewed" value={reflection.reviewed} />
             <Stat label="Merged" value={reflection.merged.length} tone="text-cyan-600" />
             <Stat label="Promoted" value={reflection.promoted.length} tone="text-emerald-600" />
-            <Stat label="Insights derived" value={reflection.insights.length} tone="text-amber-600" />
-            {reflection.insights.length > 0 && (
+            <Stat label="Cluster summaries" value={reflection.summaries.length} tone="text-amber-600" />
+            {reflection.summaries.length > 0 && (
               <ul className="sm:col-span-4 space-y-1 text-xs text-slate-600">
-                {reflection.insights.map((i) => (
-                  <li key={i.memory_id}>★ {i.summary}</li>
+                {reflection.summaries.map((item) => (
+                  <li key={item.memory_id}>
+                    ★ {item.summary} ({item.source_memory_ids.length} sources)
+                  </li>
                 ))}
               </ul>
             )}

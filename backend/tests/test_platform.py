@@ -17,6 +17,10 @@ def _make_client(tmp_path, monkeypatch, **env):
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path/'platform.db'}")
     monkeypatch.delenv("QWEN_API_KEY", raising=False)
     monkeypatch.delenv("MEMOPILOT_API_KEYS", raising=False)
+    monkeypatch.delenv("MEMOPILOT_PUBLIC_DEMO_ISOLATION", raising=False)
+    monkeypatch.delenv("MEMOPILOT_IDENTITY_SECRET", raising=False)
+    monkeypatch.delenv("MEMOPILOT_ADMIN_KEY", raising=False)
+    monkeypatch.delenv("MEMOPILOT_COOKIE_SECURE", raising=False)
     monkeypatch.delenv("RATE_LIMIT_PER_MINUTE", raising=False)
     for k, v in env.items():
         monkeypatch.setenv(k, v)
@@ -79,6 +83,98 @@ def test_api_key_owns_its_memory_namespace(tmp_path, monkeypatch):
                        json={"pin": True}).status_code == 200
 
 
+def test_signed_anonymous_cookie_isolates_public_browsers(tmp_path, monkeypatch):
+    with _make_client(
+        tmp_path,
+        monkeypatch,
+        MEMOPILOT_PUBLIC_DEMO_ISOLATION="true",
+        MEMOPILOT_IDENTITY_SECRET="test-only-secret-with-sufficient-entropy",
+    ) as c:
+        created = c.post("/api/memories", json={
+            "user_id": "victim", "project_id": "p", "type": "preference",
+            "content": "browser one private preference",
+        })
+        assert created.status_code == 200
+        assert created.json()["user_id"].startswith("anon_")
+        assert created.json()["user_id"] != "victim"
+        memory_id = created.json()["memory_id"]
+        cookie_header = created.headers["set-cookie"].lower()
+        assert "httponly" in cookie_header
+        assert "samesite=lax" in cookie_header
+
+        # Clearing the cookie simulates a second browser. Supplying the first
+        # browser's requested user_id still cannot select its signed namespace.
+        c.cookies.clear()
+        assert c.get("/api/memories", params={
+            "user_id": "victim", "project_id": "p",
+        }).json()["total"] == 0
+        assert c.patch(
+            f"/api/memories/{memory_id}",
+            params={"user_id": "victim"},
+            json={"pin": True},
+        ).status_code == 404
+
+
+def test_public_cookie_can_be_forced_secure_behind_tls_proxy(tmp_path, monkeypatch):
+    with _make_client(
+        tmp_path,
+        monkeypatch,
+        MEMOPILOT_PUBLIC_DEMO_ISOLATION="true",
+        MEMOPILOT_IDENTITY_SECRET="test-only-secret-with-sufficient-entropy",
+        MEMOPILOT_COOKIE_SECURE="true",
+    ) as c:
+        response = c.get("/api/memories")
+        assert response.status_code == 200
+        assert "secure" in response.headers["set-cookie"].lower()
+
+
+def test_public_isolation_rejects_weak_identity_secret(tmp_path, monkeypatch):
+    with pytest.raises(RuntimeError, match="at least 32 bytes"):
+        _make_client(
+            tmp_path,
+            monkeypatch,
+            MEMOPILOT_PUBLIC_DEMO_ISOLATION="true",
+            MEMOPILOT_IDENTITY_SECRET="too-short",
+        )
+
+
+def test_open_demo_mutations_require_the_requested_owner(tmp_path, monkeypatch):
+    with _make_client(tmp_path, monkeypatch) as c:
+        created = c.post("/api/memories", json={
+            "user_id": "alice", "project_id": "p", "type": "preference",
+            "content": "alice preference",
+        }).json()
+        memory_id = created["memory_id"]
+        assert c.patch(
+            f"/api/memories/{memory_id}",
+            params={"user_id": "bob"},
+            json={"pin": True},
+        ).status_code == 404
+        assert c.patch(
+            f"/api/memories/{memory_id}",
+            params={"user_id": "alice"},
+            json={"pin": True},
+        ).status_code == 200
+
+
+def test_admin_key_protects_expensive_evaluation_endpoints(tmp_path, monkeypatch):
+    with _make_client(tmp_path, monkeypatch, MEMOPILOT_ADMIN_KEY="admin-test-key") as c:
+        denied = c.post("/api/eval/ablation")
+        assert denied.status_code == 403
+        assert denied.json()["detail"] == "Admin authorization required."
+
+
+def test_public_deployment_disables_eval_when_admin_key_is_missing(tmp_path, monkeypatch):
+    with _make_client(
+        tmp_path,
+        monkeypatch,
+        MEMOPILOT_PUBLIC_DEMO_ISOLATION="true",
+        MEMOPILOT_IDENTITY_SECRET="test-only-secret-with-sufficient-entropy",
+    ) as c:
+        denied = c.post("/api/eval/ablation")
+        assert denied.status_code == 503
+
+
 # ---------------------------------------------------------- rate limiting
 def test_rate_limit_enforced(tmp_path, monkeypatch):
     with _make_client(tmp_path, monkeypatch, RATE_LIMIT_PER_MINUTE="5") as c:
@@ -138,8 +234,8 @@ def test_memory_history_trail(tmp_path, monkeypatch):
             "content": "history subject memory",
         }).json()
         mid = created["memory_id"]
-        c.patch(f"/api/memories/{mid}", json={"pin": True})
-        c.delete(f"/api/memories/{mid}")
+        c.patch(f"/api/memories/{mid}", params={"user_id": "h"}, json={"pin": True})
+        c.delete(f"/api/memories/{mid}", params={"user_id": "h"})
 
         trail = c.get(f"/api/memories/{mid}/history",
                       params={"user_id": "h", "project_id": "proj"}).json()

@@ -5,11 +5,19 @@ recall, cross-session recall, supersession, temporary-memory expiry, critical
 constraints, and multi-fact composition. Run it with `POST /api/eval/run` or
 the Evaluation dashboard.
 
+`POST /api/eval/ablation` separately compares five memory assembly strategies:
+full conversation history, dense-only retrieval, recency-only retrieval,
+hybrid retrieval without lifecycle exclusion, and MemoPilot's full governance
+policy. It reports context recall, stale-memory leakage, lifecycle safety,
+average context tokens, and p50/p95 in-process assembly latency. It makes zero
+answer-model calls and does not claim final-answer accuracy.
+
 ## What the report measures
 
-- Strict keyword accuracy for the memory-augmented answer and a no-memory
-  baseline. An answer containing a forbidden/outdated term is not counted as a
-  pass, even if it also contains an expected term.
+- Strict keyword accuracy for the memory-augmented answer, no-memory baseline,
+  raw full-history baseline, and model-generated history-summary baseline. An
+  answer containing a forbidden/outdated term is not counted as a pass, even
+  if it also contains an expected term.
 - Recall in the assembled context at the configured retrieval depth.
 - Stale-memory leaks in the assembled context.
 - Historical-context token reduction, comparing selected memory text against
@@ -21,6 +29,11 @@ the Evaluation dashboard.
   chat/embedding model names, token budget, and bounded-concurrency
   configuration. The UI can download the complete JSON report for the
   submission evidence bundle.
+- Provider-reported prompt, completion, and total-token usage for the run.
+  Monetary cost is not guessed because model prices can change by region and
+  date.
+- The ablation artifact also includes the deployed `APP_BUILD_SHA`, evaluator
+  version, and explicit methodology notes.
 
 ## Reproducibility rules
 

@@ -43,7 +43,7 @@ const FEATURES = [
   {
     Icon: IconEval,
     title: "Evaluation Benchmark",
-    body: "Built-in scenarios score the memory agent against a no-memory baseline on recall and accuracy.",
+    body: "Built-in scenarios compare governed memory with no-memory, raw-history, and model-summary baselines.",
   },
 ];
 

@@ -27,7 +27,7 @@ flowchart LR
     end
 
     QC[Qwen Cloud / DashScope<br/>Chat · JSON extraction · embeddings]
-    TS[(Alibaba Tablestore<br/>Persistent memories + events)]
+    TS[(Alibaba Tablestore<br/>Tenant-scoped memories + events)]
     OSS[(Alibaba OSS<br/>Redacted snapshots + evaluation reports)]
 
     U -->|public web| FE
@@ -41,7 +41,7 @@ flowchart LR
 1. **Receive** — Nginx serves the React application and proxies `/api` calls to
    FastAPI on the same Alibaba Cloud ECS instance.
 2. **Govern** — the memory layer runs lifecycle rules, then retrieves active,
-   user-scoped records from Alibaba Tablestore.
+   user/project-scoped records through a Tablestore composite-key range query.
 3. **Retrieve and score** — Qwen embeddings, sparse keyword overlap, memory
    metadata, recency, importance, confidence, and project scope are combined
    into an explainable score.
