@@ -175,7 +175,7 @@ class ScriptedDemoRunner:
                 content="I prefer Alibaba Cloud deployment.",
                 memory_type=MemoryType.preference,
                 importance=0.75,
-                tags=["alibaba", "deployment"],
+                tags=["alibaba", "deployment", "architecture"],
             ),
             self._memory(
                 session_id=session_id,

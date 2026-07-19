@@ -53,6 +53,8 @@ def test_chat_creates_and_uses_memory(client):
     })
     body = r2.json()
     assert body["mode"] == "LOCAL_MODE"
+    assert body["qwen_provider_status"] == "offline"
+    assert body["qwen_fallback_used"] is False
     assert body["trace"]["candidates_considered"] >= 1
     contents = " ".join(m["content"].lower() for m in body["used_memories"])
     assert "fastapi" in contents or "api keys" in contents

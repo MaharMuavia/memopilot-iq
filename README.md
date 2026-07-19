@@ -217,6 +217,7 @@ Copy [`.env.example`](.env.example) to `backend/.env` and fill in real values
 | `APP_MODE` | Use `alibaba` for the submitted cloud deployment |
 | `QWEN_API_KEY` / `QWEN_BASE_URL` | Qwen Cloud auth + endpoint |
 | `QWEN_CHAT_MODEL` / `QWEN_EMBEDDING_MODEL` | Qwen models |
+| `QWEN_REQUEST_TIMEOUT_SECONDS` / `QWEN_MAX_RETRIES` | Bounded provider timeout and transient retry policy |
 | `ALIBABA_ACCESS_KEY_ID/SECRET/REGION` | Alibaba Cloud credentials |
 | `ALIBABA_OSS_BUCKET/ENDPOINT` | OSS storage |
 | `ALIBABA_TABLESTORE_ENDPOINT/INSTANCE` | Tablestore memory store |

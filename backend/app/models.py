@@ -132,6 +132,8 @@ class ChatResponse(BaseModel):
     memory_actions: MemoryActions
     trace: MemoryTrace
     mode: str
+    qwen_provider_status: str
+    qwen_fallback_used: bool = False
 
 
 class CreateMemoryRequest(BaseModel):

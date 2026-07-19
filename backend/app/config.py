@@ -58,6 +58,26 @@ def _positive_env_int(name: str, default: int) -> int:
     return parsed if parsed > 0 else default
 
 
+def _bounded_int(name: str, default: int, minimum: int, maximum: int) -> int:
+    """Read a bounded integer without allowing bad env values to break boot."""
+    value = os.getenv(name)
+    try:
+        parsed = int(value.strip()) if value and value.strip() else default
+    except ValueError:
+        return default
+    return parsed if minimum <= parsed <= maximum else default
+
+
+def _bounded_float(name: str, default: float, minimum: float, maximum: float) -> float:
+    """Read a bounded float without allowing bad env values to break boot."""
+    value = os.getenv(name)
+    try:
+        parsed = float(value.strip()) if value and value.strip() else default
+    except ValueError:
+        return default
+    return parsed if minimum <= parsed <= maximum else default
+
+
 def _unit_interval_env_float(name: str, default: float) -> float:
     """Read a float in [0, 1] without allowing bad env values to break boot."""
     value = os.getenv(name)
@@ -91,6 +111,18 @@ class Settings(BaseModel):
     )
     qwen_embedding_model: str = Field(
         default_factory=lambda: _env_or_default("QWEN_EMBEDDING_MODEL", "text-embedding-v3")
+    )
+    qwen_request_timeout_seconds: float = Field(
+        default_factory=lambda: _bounded_float(
+            "QWEN_REQUEST_TIMEOUT_SECONDS", 60.0, 1.0, 180.0
+        ),
+        gt=0.0,
+        le=180.0,
+    )
+    qwen_max_retries: int = Field(
+        default_factory=lambda: _bounded_int("QWEN_MAX_RETRIES", 1, 0, 3),
+        ge=0,
+        le=3,
     )
 
     # --- Alibaba Cloud ---

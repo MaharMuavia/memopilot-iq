@@ -69,6 +69,8 @@ export interface ChatResponse {
   memory_actions: MemoryActions;
   trace: MemoryTrace;
   mode: string;
+  qwen_provider_status: "online" | "offline" | "degraded_offline_fallback";
+  qwen_fallback_used: boolean;
 }
 
 export interface HealthInfo {
@@ -157,7 +159,31 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export const DEFAULT_USER = "demo-user";
+function getOrCreateDemoUser(): string {
+  const storageKey = "memopilot-demo-user-v1";
+  try {
+    const existing = window.localStorage.getItem(storageKey);
+    if (existing) return existing;
+    const random = new Uint32Array(3);
+    if (window.crypto?.getRandomValues) {
+      window.crypto.getRandomValues(random);
+    } else {
+      random.set([
+        Math.floor(Math.random() * 0xffffffff),
+        Date.now() >>> 0,
+        Math.floor(Math.random() * 0xffffffff),
+      ]);
+    }
+    const suffix = Array.from(random, (value) => value.toString(16).padStart(8, "0")).join("");
+    const userId = `demo-${suffix}`;
+    window.localStorage.setItem(storageKey, userId);
+    return userId;
+  } catch {
+    return `demo-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  }
+}
+
+export const DEFAULT_USER = getOrCreateDemoUser();
 export const DEFAULT_PROJECT = "qwen-memoryagent";
 
 export const api = {

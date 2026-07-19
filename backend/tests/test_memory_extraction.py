@@ -23,11 +23,31 @@ async def test_extracts_multiple_typed_memories(memos):
 
 @pytest.mark.asyncio
 async def test_questions_are_not_stored(memos):
+    async def fail_if_called(*_args, **_kwargs):
+        raise AssertionError("Pure questions must not call the Memory Editor.")
+
+    memos.qwen.extract_json = fail_if_called
     actions = await memos.remember(
         user_id="u", project_id="p", session_id="s1",
         message="What backend should I use and how do I deploy it?",
     )
     # Pure questions carry no durable facts.
+    assert actions.created == []
+
+
+@pytest.mark.asyncio
+async def test_assistant_commands_do_not_call_memory_editor(memos):
+    async def fail_if_called(*_args, **_kwargs):
+        raise AssertionError("Assistant commands must not call the Memory Editor.")
+
+    memos.qwen.extract_json = fail_if_called
+    actions = await memos.remember(
+        user_id="u",
+        project_id="p",
+        session_id="s1",
+        message="Design the backend architecture.",
+    )
+
     assert actions.created == []
 
 

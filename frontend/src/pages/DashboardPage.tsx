@@ -62,6 +62,11 @@ export default function DashboardPage() {
 
   function onActivity(resp: ChatResponse) {
     setLast(resp);
+    setHealth((current) =>
+      current
+        ? { ...current, qwen_provider_status: resp.qwen_provider_status }
+        : current
+    );
     setRefreshKey((k) => k + 1);
   }
 
@@ -199,7 +204,9 @@ function StatusBadges({
         title={
           qwenOnline
             ? `Qwen online · ${health.qwen_model}`
-            : "Qwen offline — deterministic local fallback"
+            : qwenFallback
+              ? "The most recent Qwen request timed out; that turn used the deterministic fallback"
+              : "Qwen is not configured; deterministic local fallback is active"
         }
       >
         <span

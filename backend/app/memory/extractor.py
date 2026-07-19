@@ -83,6 +83,40 @@ _EXPLICIT_MEMORY_INTENT = re.compile(
     re.IGNORECASE,
 )
 
+_NON_DURABLE_REQUEST_START = re.compile(
+    r"^(?:what|which|who|why|when|where|how|can|could|would|should|do|does|"
+    r"is|are|design|show|explain|tell|give|write|create|generate|summarize|"
+    r"analyse|analyze|help)\b",
+    re.IGNORECASE,
+)
+
+_DURABLE_SIGNAL = re.compile(
+    r"\b(?:i|we)\s+(?:prefer|want|need|decided|use|will|am|are)\b|"
+    r"\b(?:my|our)\s+[^.!?]{1,80}\s+is\b|"
+    r"^(?:use|prefer|remember|never|must|do not|don't|temporary note|deadline)\b|"
+    r"\b(?:changed my mind|switch to|migrate|after this submission|forget|archive)\b",
+    re.IGNORECASE,
+)
+
+
+def should_extract_memory(message: str) -> bool:
+    """Return False for pure requests that cannot contain durable user facts."""
+    stripped = message.strip()
+    if not stripped:
+        return False
+    if _EXPLICIT_MEMORY_INTENT.search(stripped):
+        return True
+    # Check request-leading verbs before broad first-person signals. Without
+    # this ordering, "What backend should I use?" is misread as the durable
+    # statement "I use ..." and triggers an unnecessary provider call.
+    if _NON_DURABLE_REQUEST_START.match(stripped):
+        return False
+    if _DURABLE_SIGNAL.search(stripped):
+        return True
+    if "?" in stripped:
+        return False
+    return True
+
 def _similar(a: str, b: str) -> float:
     return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
@@ -118,6 +152,12 @@ class MemoryExtractor:
         if contains_secret(message):
             actions.redacted.append("Secret-like content detected and redacted before extraction.")
         safe_message = redact_secrets(message)
+
+        # Pure questions and assistant-directed commands contain no durable
+        # user fact. Skipping the Memory Editor avoids a second, unnecessary
+        # Qwen completion and materially lowers live latency and timeout risk.
+        if not should_extract_memory(safe_message):
+            return actions
 
         existing = await self.store.list(
             user_id, project_id, statuses=[MemoryStatus.active.value, MemoryStatus.pinned.value]

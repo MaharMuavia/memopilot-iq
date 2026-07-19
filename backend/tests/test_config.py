@@ -43,6 +43,8 @@ def test_blank_credentials_and_invalid_numeric_values_are_safe(monkeypatch):
     monkeypatch.setenv("RETRIEVAL_TOP_K", "0")
     monkeypatch.setenv("RETRIEVAL_MIN_SIMILARITY", "not-a-number")
     monkeypatch.setenv("RETRIEVAL_MIN_KEYWORD_OVERLAP", "1.5")
+    monkeypatch.setenv("QWEN_REQUEST_TIMEOUT_SECONDS", "999")
+    monkeypatch.setenv("QWEN_MAX_RETRIES", "99")
 
     settings = Settings()
 
@@ -52,3 +54,5 @@ def test_blank_credentials_and_invalid_numeric_values_are_safe(monkeypatch):
     assert settings.retrieval_top_k == 8
     assert settings.retrieval_min_similarity == 0.62
     assert settings.retrieval_min_keyword_overlap == 0.20
+    assert settings.qwen_request_timeout_seconds == 60.0
+    assert settings.qwen_max_retries == 1

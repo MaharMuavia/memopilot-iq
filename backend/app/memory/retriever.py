@@ -35,13 +35,29 @@ _EXCLUDED_STATES = {
     MemoryStatus.archived,
 }
 
+_KEYWORD_STOP_WORDS = {
+    "a", "an", "and", "are", "as", "at", "be", "can", "could", "do",
+    "does", "for", "from", "how", "i", "in", "is", "it", "my", "of",
+    "on", "or", "our", "should", "that", "the", "this", "to", "today",
+    "use", "uses", "was", "we", "what", "when", "where", "which", "who",
+    "why", "with", "would", "you", "your",
+}
+
+
+def _meaningful_tokens(text: str) -> set[str]:
+    return {
+        token
+        for token in re.findall(r"[a-z0-9]+", text.lower())
+        if token not in _KEYWORD_STOP_WORDS
+    }
+
 
 def _keyword_overlap(query: str, memory: MemoryRecord) -> float:
-    q = set(re.findall(r"[a-z0-9]+", query.lower()))
+    q = _meaningful_tokens(query)
     if not q:
         return 0.0
     text = f"{memory.content} {' '.join(memory.tags)}".lower()
-    t = set(re.findall(r"[a-z0-9]+", text))
+    t = _meaningful_tokens(text)
     if not t:
         return 0.0
     return len(q & t) / len(q)

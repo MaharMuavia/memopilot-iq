@@ -33,6 +33,7 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
     system_prompt, trace, used = await memos.build_context(
         user_id, req.project_id, req.message
     )
+    fallback_count_before = memos.qwen.fallback_count
     # The answer and memory extraction are independent after context is built;
     # running them together avoids serial provider latency on normal chat.
     answer, actions = await asyncio.gather(
@@ -88,10 +89,16 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
     while len(traces) > _TRACE_CACHE_MAX_ENTRIES:
         traces.pop(next(iter(traces)))
 
+    fallback_used = memos.qwen.fallback_count > fallback_count_before
+    provider_status = (
+        "degraded_offline_fallback" if fallback_used else memos.qwen.provider_status
+    )
     return ChatResponse(
         answer=answer,
         used_memories=[m.public_view() for m in used],
         memory_actions=actions,
         trace=trace,
         mode=memos.mode,
+        qwen_provider_status=provider_status,
+        qwen_fallback_used=fallback_used,
     )
