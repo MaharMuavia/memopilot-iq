@@ -41,7 +41,7 @@ SYSTEM_PROMPT = (
 
 _PROJECT_WIDE_INTENT = re.compile(
     r"\b(?:architecture|architect|design|stack|recommend|recommendation|plan|"
-    r"requirements?|constraints?|approach|blueprint)\b",
+    r"requirements?|constraints?|approach|blueprint|scaffold)\b",
     re.IGNORECASE,
 )
 _PROJECT_GOVERNANCE_TYPES = frozenset({

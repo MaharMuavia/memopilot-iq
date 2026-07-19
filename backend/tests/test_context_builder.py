@@ -129,6 +129,21 @@ def test_broad_architecture_request_admits_project_governance_preferences():
     assert "broad architecture/design request" in trace.included[0].reason
 
 
+def test_scaffold_request_admits_project_framework_preference():
+    builder = ContextBuilder(token_budget=2500, top_k=8)
+    memory, components = _scored("Frontend preference: React with Vite", sim=0.40)
+
+    _, _, used = builder.build(
+        "What should I scaffold the UI with?",
+        [(memory, components)],
+        "p",
+        candidates_considered=1,
+        retrieval_latency_ms=1.0,
+    )
+
+    assert used == [memory]
+
+
 def test_broad_request_does_not_admit_other_project_memory():
     builder = ContextBuilder(token_budget=2500, top_k=8)
     memory, components = _scored(

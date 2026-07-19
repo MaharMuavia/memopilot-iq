@@ -11,6 +11,8 @@ def test_answer_grader_uses_term_boundaries_and_rejection_language():
     assert answer_correct("Use pnpm for this project.", ["pnpm"], ["npm"])
     assert answer_correct("Use a light theme and avoid dark mode.", ["light"], ["dark"])
     assert answer_correct("Dark was replaced by light.", ["light"], ["dark"])
+    assert answer_correct("Keep replies concise.", ["short"], [], {"short": ["concise"]})
+    assert answer_correct("Do not log tokens.", ["token"], [])
     assert not answer_correct("Use dark mode.", ["light"], ["dark"])
 
 

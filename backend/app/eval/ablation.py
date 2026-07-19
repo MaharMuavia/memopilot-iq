@@ -109,6 +109,7 @@ class AblationRunner:
             q_emb = await self.memos.qwen.embed(sc["test_question"])
             mems_all = await self.memos.store.list(user, project, include_all=True)
             expected = sc["expected_answer_keywords"]
+            expected_alternatives = sc.get("expected_answer_alternatives", {})
             forbidden = sc["must_not_use_keywords"]
 
             # Raw-history baseline: no retrieval and no lifecycle filtering.
@@ -116,7 +117,9 @@ class AblationRunner:
             history_tally = tallies["Full conversation history"]
             if expected:
                 history_tally["recall_tot"] += 1
-                history_tally["recall_hit"] += int(_keywords_present(history, expected))
+                history_tally["recall_hit"] += int(
+                    _keywords_present(history, expected, expected_alternatives)
+                )
             history_tally["leak_tot"] += 1
             history_tally["leak"] += int(
                 _has_leak(
@@ -178,7 +181,7 @@ class AblationRunner:
                 )
                 if has_expected:
                     t["recall_tot"] += 1
-                    if _keywords_present(inj_text, expected):
+                    if _keywords_present(inj_text, expected, expected_alternatives):
                         t["recall_hit"] += 1
                 t["leak_tot"] += 1
                 if _has_leak(inj_dicts, expected, forbidden):

@@ -49,12 +49,22 @@ def _term_matches(text: str, term: str) -> list[re.Match[str]]:
     if normalized[0].isalnum():
         pattern = rf"(?<![a-z0-9]){pattern}"
     if normalized[-1].isalnum():
-        pattern = rf"{pattern}(?![a-z0-9])"
+        # Treat a simple plural as the same lexical concept (key/keys,
+        # token/tokens) while retaining the boundary that keeps npm != pnpm.
+        pattern = rf"{pattern}s?(?![a-z0-9])"
     return list(re.finditer(pattern, text, flags=re.IGNORECASE))
 
 
-def _keywords_present(text: str, keywords: List[str]) -> bool:
-    return all(_term_matches(text, keyword) for keyword in keywords) if keywords else True
+def _keywords_present(
+    text: str,
+    keywords: List[str],
+    alternatives: Dict[str, List[str]] | None = None,
+) -> bool:
+    aliases = alternatives or {}
+    return all(
+        any(_term_matches(text, candidate) for candidate in [keyword, *aliases.get(keyword, [])])
+        for keyword in keywords
+    ) if keywords else True
 
 
 def _forbidden_is_asserted(text: str, forbidden: str) -> bool:
@@ -82,16 +92,34 @@ def _forbidden_is_asserted(text: str, forbidden: str) -> bool:
     return False
 
 
-def answer_correct(answer: str, expected: List[str], forbidden: List[str]) -> bool:
+def answer_correct(
+    answer: str,
+    expected: List[str],
+    forbidden: List[str],
+    expected_alternatives: Dict[str, List[str]] | None = None,
+) -> bool:
     """Deterministic phrase-and-negation grader for the diagnostic suite."""
     text = answer or ""
-    has_expected = _keywords_present(text, expected)
+    has_expected = _keywords_present(text, expected, expected_alternatives)
     has_forbidden = any(_forbidden_is_asserted(text, term) for term in forbidden)
     return has_expected and not has_forbidden
 
 
-def _answer_failure_reason(answer: str, expected: List[str], forbidden: List[str]) -> str | None:
-    missing = [term for term in expected if not _term_matches(answer or "", term)]
+def _answer_failure_reason(
+    answer: str,
+    expected: List[str],
+    forbidden: List[str],
+    expected_alternatives: Dict[str, List[str]] | None = None,
+) -> str | None:
+    aliases = expected_alternatives or {}
+    missing = [
+        term
+        for term in expected
+        if not any(
+            _term_matches(answer or "", candidate)
+            for candidate in [term, *aliases.get(term, [])]
+        )
+    ]
     asserted = [term for term in forbidden if _forbidden_is_asserted(answer or "", term)]
     if not missing and not asserted:
         return None
@@ -162,13 +190,14 @@ class BenchmarkRunner:
 
             injected = [i.model_dump() for i in trace.included]
             expected = sc["expected_answer_keywords"]
+            expected_alternatives = sc.get("expected_answer_alternatives", {})
             forbidden = sc["must_not_use_keywords"]
             leaked = _has_leak(injected, expected, forbidden)
 
             if expected:
                 recall_total += 1
                 injected_text = " ".join(m["memory"]["content"] for m in injected)
-                if _keywords_present(injected_text, expected):
+                if _keywords_present(injected_text, expected, expected_alternatives):
                     recall_hits += 1
             if leaked:
                 outdated_errors += 1
@@ -179,6 +208,7 @@ class BenchmarkRunner:
                 "system_prompt": system_prompt, "question": sc["test_question"],
                 "setup_messages": sc["setup_messages"],
                 "expected": expected, "forbidden": forbidden,
+                "expected_alternatives": expected_alternatives,
                 "tokens_used": trace.tokens_used, "leaked": leaked,
                 "context_recall": _keywords_present(
                     " ".join(
@@ -186,6 +216,7 @@ class BenchmarkRunner:
                         for item in injected
                     ),
                     expected,
+                    expected_alternatives,
                 ) if expected else True,
             })
 
@@ -370,10 +401,18 @@ class BenchmarkRunner:
                 ):
                     skipped += 1  # provider hiccup on this item; skip, keep going
                     continue
-                a_ok = answer_correct(agent, c["expected"], c["forbidden"])
-                b_ok = answer_correct(base, c["expected"], c["forbidden"])
-                h_ok = answer_correct(full_history, c["expected"], c["forbidden"])
-                s_ok = answer_correct(summary_answer, c["expected"], c["forbidden"])
+                a_ok = answer_correct(
+                    agent, c["expected"], c["forbidden"], c["expected_alternatives"]
+                )
+                b_ok = answer_correct(
+                    base, c["expected"], c["forbidden"], c["expected_alternatives"]
+                )
+                h_ok = answer_correct(
+                    full_history, c["expected"], c["forbidden"], c["expected_alternatives"]
+                )
+                s_ok = answer_correct(
+                    summary_answer, c["expected"], c["forbidden"], c["expected_alternatives"]
+                )
                 agent_c += int(a_ok)
                 base_c += int(b_ok)
                 history_c += int(h_ok)
@@ -387,7 +426,10 @@ class BenchmarkRunner:
                     "history_summary_correct": s_ok,
                     "agent_answer": agent,
                     "answer_failure_reason": _answer_failure_reason(
-                        agent, c["expected"], c["forbidden"]
+                        agent,
+                        c["expected"],
+                        c["forbidden"],
+                        c["expected_alternatives"],
                     ),
                 })
             if ok == 0:
