@@ -45,6 +45,8 @@ def test_blank_credentials_and_invalid_numeric_values_are_safe(monkeypatch):
     monkeypatch.setenv("RETRIEVAL_MIN_KEYWORD_OVERLAP", "1.5")
     monkeypatch.setenv("QWEN_REQUEST_TIMEOUT_SECONDS", "999")
     monkeypatch.setenv("QWEN_MAX_RETRIES", "99")
+    monkeypatch.setenv("QWEN_ENABLE_THINKING", "not-a-boolean")
+    monkeypatch.setenv("QWEN_MAX_OUTPUT_TOKENS", "99999")
 
     settings = Settings()
 
@@ -56,3 +58,5 @@ def test_blank_credentials_and_invalid_numeric_values_are_safe(monkeypatch):
     assert settings.retrieval_min_keyword_overlap == 0.20
     assert settings.qwen_request_timeout_seconds == 60.0
     assert settings.qwen_max_retries == 1
+    assert settings.qwen_enable_thinking is False
+    assert settings.qwen_max_output_tokens == 700

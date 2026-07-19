@@ -59,6 +59,8 @@ async def test_transient_timeout_is_retried_before_fallback(monkeypatch):
 
     class HttpClient:
         async def post(self, _path, json):
+            assert json["enable_thinking"] is False
+            assert json["max_tokens"] == 700
             nonlocal calls
             calls += 1
             if calls == 1:

@@ -118,6 +118,8 @@ class QwenClient:
                     "model": self.settings.qwen_chat_model,
                     "messages": messages,
                     "temperature": temperature,
+                    "enable_thinking": self.settings.qwen_enable_thinking,
+                    "max_tokens": self.settings.qwen_max_output_tokens,
                 },
                 "chat",
             )
@@ -148,6 +150,8 @@ class QwenClient:
                         {"role": "user", "content": user_prompt},
                     ],
                     "temperature": 0.0,
+                    "enable_thinking": False,
+                    "max_tokens": max(1200, self.settings.qwen_max_output_tokens),
                     "response_format": {"type": "json_object"},
                 },
                 "extraction",

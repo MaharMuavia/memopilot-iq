@@ -88,6 +88,19 @@ def _unit_interval_env_float(name: str, default: float) -> float:
     return parsed if 0.0 <= parsed <= 1.0 else default
 
 
+def _env_bool(name: str, default: bool) -> bool:
+    """Read a conventional boolean value and fall back safely on typos."""
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return default
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    return default
+
+
 class Settings(BaseModel):
     """Strongly-typed view over the environment."""
 
@@ -123,6 +136,16 @@ class Settings(BaseModel):
         default_factory=lambda: _bounded_int("QWEN_MAX_RETRIES", 1, 0, 3),
         ge=0,
         le=3,
+    )
+    qwen_enable_thinking: bool = Field(
+        default_factory=lambda: _env_bool("QWEN_ENABLE_THINKING", False)
+    )
+    qwen_max_output_tokens: int = Field(
+        default_factory=lambda: _bounded_int(
+            "QWEN_MAX_OUTPUT_TOKENS", 700, 64, 4096
+        ),
+        ge=64,
+        le=4096,
     )
 
     # --- Alibaba Cloud ---
