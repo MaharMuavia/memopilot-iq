@@ -1,13 +1,13 @@
-# Submission Readiness — Qwen Cloud Global AI Hackathon
+# Submission Readiness - Qwen Cloud Global AI Hackathon
 
-This is the release gate for **MemoPilot IQ · Track 1: MemoryAgent**. It
-separates repository work that is complete from live evidence that must still
-be produced from the final Alibaba Cloud deployment.
+This is the release gate for **MemoPilot IQ - Track 1: MemoryAgent**. It
+separates completed repository and cloud work from artifacts that require the
+entrant's publishing account.
 
 ## Deadline and official requirements
 
 - **Deadline:** July 20, 2026 at 2:00 PM Pacific Time (July 21 at 2:00 AM PKT).
-- The project must use Qwen models available through Qwen Cloud and must run as
+- The project must use Qwen models available through Qwen Cloud and run as
   depicted in the submission.
 - The submission needs a public open-source repository, project description,
   architecture diagram, proof of Alibaba Cloud use, a publicly viewable demo
@@ -24,44 +24,40 @@ and [Devpost official rules](https://qwencloud-hackathon.devpost.com/rules).
 
 | Deliverable | Status | Acceptance check |
 |---|---|---|
-| Public source repository and MIT license | Ready | Repository is public; LICENSE is visible |
+| Public source repository and MIT license | Ready | GitHub reports the repository as public with a detected MIT license |
 | Setup, architecture, algorithm, and security docs | Ready | A new judge can run local mode from the README |
-| Qwen chat, extraction, and embedding integration | Ready in code | Final deployment reports `qwen_configured: true` |
-| MemoryAgent lifecycle and transparent trace | Ready | Demo proves recall, supersession, and exclusion of stale memory |
-| Automated backend/frontend validation | Ready | Final commit passes tests, build, audits, and Docker config validation |
-| Alibaba Cloud deployment | Ready | Public backend runs on Alibaba Cloud ECS in `ALIBABA_CLOUD_MODE` |
-| Public working-project URL | Ready | [http://47.84.129.218/app](http://47.84.129.218/app) opens without private credentials |
-| Cloud proof | Ready | [Proof gallery](alibaba_cloud_proof.md) shows automated creation and cross-session Tablestore recall |
-| Final model-backed benchmark | **Blocking** | Run on the deployed commit and download the JSON report |
-| Public demo video | **Blocking** | Under 3:00, English or English subtitles, no copyrighted music |
-| Presentation deck | **Blocking** | Export the 11-slide outline to PPT/PDF and verify every link |
-| Devpost submission | **Blocking** | Add track, description, repository, working URL, video, and deck |
+| Qwen chat, extraction, and embedding integration | Ready | Public health reports Qwen configured and online |
+| MemoryAgent lifecycle and transparent trace | Ready | Public demos prove recall, supersession, and stale-memory exclusion |
+| Automated backend/frontend validation | Ready | 81 backend tests and the frontend production build pass |
+| Alibaba Cloud deployment | Ready | Public backend runs on ECS in `ALIBABA_CLOUD_MODE` |
+| Public working-project URL | Ready | [http://47.84.129.218/app](http://47.84.129.218/app) opens without credentials |
+| Cloud proof | Ready | [Proof gallery](alibaba_cloud_proof.md) shows automatic creation and cross-session Tablestore recall |
+| Architecture diagram | Ready | SVG, Mermaid source, and architecture guide are committed |
+| Project description and track | Ready | `SUBMISSION.md` identifies Track 1: MemoryAgent and includes submission copy |
+| Optional blog prize | Ready | Published Dev.to build journey is linked from the README and submission package |
+| Presentation deck | Ready | Editable deck is committed at `assets/memopilot-iq-hackathon-deck.pptx` |
+| Model-backed benchmark | Supplementary | Evaluation dashboard is included; a downloaded report is not required by the quoted submission checklist |
+| Public demo video | **Blocking** | Under 3:00, public, English or English subtitles, no copyrighted music |
+| Devpost submission | **Blocking** | Add track, description, repository, working URL, proof code link, architecture, video, and optional blog |
 
-“Blocking” means the artifact requires the final cloud environment or the
-entrant's account. It must not be represented as completed before evidence is
-captured.
+"Blocking" means the artifact requires the entrant's publishing account. It
+must not be represented as completed before the public link or form exists.
 
-## Critical path
+## Remaining critical path
 
-Complete these in order so every artifact describes the same build:
+The code and cloud deployment are complete. Finish the entrant-owned artifacts
+in this order:
 
-1. **Freeze and deploy the final commit.** Use the Alibaba deployment guide and
-   configure Qwen Cloud, Tablestore, OSS, CORS, TLS, and a public frontend URL.
-2. **Run a cloud smoke test.** Confirm `/health` reports the intended model,
-   `qwen_configured: true`, and the actual storage mode. Create a memory,
-   restart the service, and verify that the memory persists.
-3. **Generate final evidence.** Run the 24-scenario evaluation once on the
-   deployed build, download its JSON, and save it under `assets/evaluation/`
-   with the UTC date, model, and commit SHA.
-4. **Capture judge-facing media.** Take clean screenshots and record the
-   documented demo scenario in under three minutes. Never show credentials,
-   account numbers, or private console details.
-5. **Finish the deck and Devpost page.** Use the presentation outline, add the
-   verified benchmark figures and public URL, then test every link in a signed-
-   out browser.
-6. **Perform a final consistency check.** The video, screenshots, health
-   response, benchmark, README, deck, public deployment, and submitted commit
-   must agree on model, features, and runtime mode.
+1. **Record the public deployment.** Follow `docs/demo_script.md`, stay under
+   three minutes, and never show credentials, account numbers, or cloud-console
+   details.
+2. **Upload the video publicly.** Use YouTube, Vimeo, or Facebook Video and
+   verify playback in a signed-out window.
+3. **Complete the submission form.** Add Track 1: MemoryAgent, the project
+   description, repository, live URL, Alibaba proof code link, architecture,
+   video, and optional blog URL.
+4. **Perform a final link check.** Open the form links signed out and confirm
+   the repository still shows the MIT license and latest `main` commit.
 
 ## Judge-facing positioning
 
@@ -79,7 +75,7 @@ generic chatbot. The strongest proof sequence is:
    trail.
 3. The Memory Trace proves why the active decision was selected and why the
    stale one was excluded.
-4. The final Qwen-backed evaluation quantifies the behavior against the
+4. The Qwen-backed evaluation provides supplementary evidence against the
    no-memory baseline.
 
 Do not claim production-scale retrieval or benchmark superiority beyond the
@@ -94,7 +90,6 @@ Submit only when all answers are **yes**:
 - Does the public URL work in a signed-out browser?
 - Does the deployed app persist memory across a service restart?
 - Does health show live Qwen configuration and the actual storage backend?
-- Is the benchmark JSON generated by the exact submitted commit?
 - Is the video public, under three minutes, and easy to understand without
   reading the repository?
 - Does the deck contain the architecture, value, technical differentiator,

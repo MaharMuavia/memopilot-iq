@@ -1,31 +1,41 @@
-# Demo Video Script (under 3 minutes)
+# Demo Video Script (target: 2 minutes 40 seconds)
 
-> Use **Run Judge Demo** for the deterministic memory-lifecycle replay. Use
-> the Chat starter prompts for a live Qwen answer; separating the two keeps a
-> provider delay from interrupting the lifecycle proof.
+Record only the public Alibaba deployment at
+[http://47.84.129.218/app](http://47.84.129.218/app). Use a fresh browser, zoom
+to 90% if needed, hide bookmarks/notifications, and never show `.env` files,
+cloud-console pages, API keys, or account identifiers.
 
-> Record this only against the final public Alibaba Cloud deployment. The
-> official Devpost rules say the video should be under three minutes, even
-> though the event landing page lists a five-minute maximum.
+Before recording:
 
-> Seed first so the store is demo-ready: `cd backend && SEED_DEMO=1 uvicorn app.main:app --port 8000`
-> (Windows PowerShell: `$env:SEED_DEMO=1; uvicorn app.main:app --port 8000`).
-> Or just run the four Chat starter buttons live in order.
+1. Open the public URL and confirm the header says **Alibaba Cloud**, **Qwen
+   Online**, and **Alibaba Store**.
+2. Run the four guided Chat steps once without recording. If any turn says
+   **Qwen Fallback**, stop and retry later.
+3. Refresh the page. Keep the mouse near the next button and close unrelated
+   browser tabs.
 
 | Time | On screen | Narration |
 |---|---|---|
-| 0:00–0:15 | App header, mode badge | "AI assistants forget everything between sessions. MemoPilot IQ is a persistent-memory agent — it remembers, forgets, and explains what matters." |
-| 0:15–0:35 | Chat tab, send starter #1 | "I tell it my preferences: FastAPI, React + Vite, Alibaba Cloud, light UI, never commit API keys. Watch the memory badges — it created structured memories and tagged the API-key rule as **critical**." |
-| 0:35–1:05 | Send "Design the backend architecture." + Trace panel | "Next session I ask for an architecture. The **Memory Trace** shows exactly which memories were retrieved, their scores, and that critical constraints are prioritized within a strict 2,500-token budget." |
-| 1:05–1:35 | Send starter #3 (planned migration) | "For the next iteration after this submission, I plan to migrate to Next.js. The agent **supersedes** the earlier frontend preference — see the ↻ badge and the Timeline event." |
-| 1:35–2:05 | Send starter #4 + Trace | "Now I ask what this submitted build uses today and what is planned next. It identifies React + Vite as the current implementation and Next.js as the planned migration. The Trace shows why a preference does not rewrite a verified implementation fact." |
-| 2:05–2:30 | Evaluation tab → Run benchmark | "The Evaluation Dashboard runs a 24-scenario diagnostic against a no-memory baseline. It reports the final build's strict evaluator, context recall, stale-memory checks, historical-context token reduction, and latency." |
-| 2:30–2:50 | Public `/health` + safe cloud proof | "This submitted build uses Qwen Cloud for chat, extraction and embeddings, with Alibaba Cloud Tablestore and OSS for persistence. The health endpoint confirms the live configuration." |
-| 2:50–3:00 | Header | "MemoPilot IQ — a memory layer any AI assistant can plug into. Thanks for watching." |
+| 0:00-0:15 | Header and Chat dashboard | "AI agents do not need unlimited memory. They need governed memory. MemoPilot IQ turns conversations into persistent, explainable decisions." |
+| 0:15-0:35 | Point to the three header badges, then click **Run Judge Demo** | "This is the public Alibaba Cloud deployment. Qwen is online, Tablestore is the active memory store, and the backend runs on ECS." |
+| 0:35-0:55 | Four lifecycle result cards | "One click exercises four sessions: structured memory creation, cross-session recall, decision supersession, and critical safety recall inside a strict token budget." |
+| 0:55-1:05 | Active and superseded columns | "The new Next.js plan stays active, while the submitted React and Vite preference remains visible in the audit trail but is excluded from future context." |
+| 1:05-1:15 | Click **Hide results**, then **Run step 1** | "Now this is a live Qwen flow. I save my stack, response style, cloud choice, and the rule never to commit API keys." |
+| 1:15-1:30 | Creation badges, then **Run step 2** | "MemoPilot extracts structured memories. In the next request it recalls the relevant FastAPI and Alibaba preferences to design the backend." |
+| 1:30-1:45 | Qwen architecture answer and Memory Trace | "The trace exposes every injected memory, score, reason, and token cost. Unrelated candidates are rejected before they reach Qwen." |
+| 1:45-2:00 | **Run step 3** | "I change the future frontend plan. MemoPilot creates the Next.js decision and supersedes the older preference without deleting history." |
+| 2:00-2:15 | **Run step 4** and final answer | "The final answer correctly separates reality from intent: this submitted build is React 18 with Vite; Next.js is only the planned next iteration." |
+| 2:15-2:30 | Open **Timeline** or **Graph** | "The lifecycle remains auditable through the timeline, graph, controls, analytics, and evaluation views." |
+| 2:30-2:40 | Return to header | "MemoPilot IQ is a reusable memory-governance layer for trustworthy long-running agents, built with Qwen Cloud and Alibaba Cloud." |
 
-## Talking points if asked
-- Secrets are redacted before storage (try pasting a fake `sk-...` key).
-- Forgetting is non-destructive: superseded/expired memories stay on the
-  timeline but never enter the context.
-- Works fully offline (deterministic fallback) so the demo never depends on
-  network/credentials.
+## Recording acceptance check
+
+- Duration is below 3:00.
+- The public URL is visible at least once.
+- The Alibaba Cloud, Qwen Online, and Alibaba Store badges are readable.
+- Memory creation, recall, supersession, and the final current-versus-planned
+  answer are visible.
+- No fallback warning, credential, private console, desktop notification, or
+  copyrighted music appears.
+- Upload to YouTube, Vimeo, or Facebook Video as **Public**, then test the link
+  while signed out.
