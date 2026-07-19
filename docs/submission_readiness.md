@@ -37,7 +37,7 @@ and [Devpost official rules](https://qwencloud-hackathon.devpost.com/rules).
 | Optional blog prize | Ready | Published Dev.to build journey is linked from the README and submission package |
 | Presentation deck | Ready | Editable deck is committed at `assets/memopilot-iq-hackathon-deck.pptx` |
 | Final evaluation evidence | Ready | [Qwen report and ablation](evaluation_results.md) embed deployed SHA `97b1ff57f36c`; provider online, zero fallbacks |
-| Public demo video | **Blocking** | Under 3:00, public, English or English subtitles, no copyrighted music |
+| Public demo video | Linked — verify | [YouTube demo](https://youtu.be/UE2h4K_VaL8); verify public playback, duration, captions, and no copyrighted music before submitting |
 | Devpost submission | **Blocking** | Add track, description, repository, working URL, proof code link, architecture, video, and optional blog |
 
 "Blocking" means the artifact requires the entrant's publishing account. It
@@ -45,18 +45,18 @@ must not be represented as completed before the public link or form exists.
 
 ## Remaining critical path
 
-The repository code, cloud deployment, and evaluation evidence are validated,
-but the release is not complete until entrant-owned media is done:
+The repository code, cloud deployment, and evaluation evidence are ready. The
+demo-video link is included; the remaining entrant-owned actions are validating
+its public playback and completing the submission form:
 
-1. **Record the public deployment.** Follow `docs/demo_script.md`, stay under
-   three minutes, and never show credentials, account numbers, or cloud-console
+1. **Verify the public video.** Open [the YouTube demo](https://youtu.be/UE2h4K_VaL8)
+   in a signed-out window. Confirm it meets the event's duration and language
+   requirements and exposes no credentials, account numbers, or cloud-console
    details.
-2. **Upload the video publicly.** Use YouTube, Vimeo, or Facebook Video and
-   verify playback in a signed-out window.
-3. **Complete the submission form.** Add Track 1: MemoryAgent, the project
+2. **Complete the submission form.** Add Track 1: MemoryAgent, the project
    description, repository, live URL, Alibaba proof code link, architecture,
    video, and optional blog URL.
-4. **Perform a final link check.** Open the form links signed out and confirm
+3. **Perform a final link check.** Open the form links signed out and confirm
    the repository still shows the MIT license and latest `main` commit.
 
 ## Judge-facing positioning

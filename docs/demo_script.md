@@ -1,5 +1,7 @@
 # Demo Video Script (target: 2 minutes 40 seconds)
 
+**Demo link:** [Watch on YouTube](https://youtu.be/UE2h4K_VaL8).
+
 Record only the public Alibaba deployment at
 [https://47-84-129-218.sslip.io/app](https://47-84-129-218.sslip.io/app). Use a fresh browser, zoom
 to 90% if needed, hide bookmarks/notifications, and never show `.env` files,

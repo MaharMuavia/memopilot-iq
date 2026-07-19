@@ -4,6 +4,7 @@
 [![Alibaba Cloud](https://img.shields.io/badge/Deployed%20on-Alibaba%20Cloud%20ECS-ff6a00?style=for-the-badge)](docs/alibaba_cloud_proof.md)
 [![License](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge)](LICENSE)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-HTTPS-2563eb?style=for-the-badge)](https://47-84-129-218.sslip.io/app)
+[![Video Demo](https://img.shields.io/badge/Video%20Demo-YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/UE2h4K_VaL8)
 [![Build Journey](https://img.shields.io/badge/Build%20Journey-Dev.to-0a0a0a?style=for-the-badge)](https://dev.to/muhammad_muavia/ai-agents-dont-need-more-memory-they-need-memory-governance-15ej)
 [![Backend tests](https://img.shields.io/badge/Backend%20tests-101%20passing-22c55e?style=for-the-badge)](docs/submission_readiness.md)
 [![Qwen evaluation](https://img.shields.io/badge/Qwen%20evaluation-24%2F24-16a34a?style=for-the-badge)](docs/evaluation_results.md)
@@ -27,6 +28,7 @@ ignored, updated, or forgotten.
 > ### [Launch the live MemoPilot IQ deployment →](https://47-84-129-218.sslip.io/app)
 > Running publicly on **Alibaba Cloud ECS** in `ALIBABA_CLOUD_MODE`; no account
 > or credentials are required. [View deployment proof](docs/alibaba_cloud_proof.md)
+> [Watch the public demo video](https://youtu.be/UE2h4K_VaL8)
 > · [Read the Qwen Cloud build journey](https://dev.to/muhammad_muavia/ai-agents-dont-need-more-memory-they-need-memory-governance-15ej)
 
 ---
