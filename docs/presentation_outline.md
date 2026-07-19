@@ -19,9 +19,10 @@ context budget, applies lifecycle rules, and exposes a Memory Trace.
 
 ### Slide 4 — Architecture
 
-User → React + Vite → FastAPI → MemoPilot memory layer → Qwen (chat, extraction, embeddings).
-Show `assets/architecture.svg`; local mode uses SQLite, cloud mode targets
-Tablestore and OSS.
+User → React + Vite → FastAPI on Alibaba Cloud ECS → MemoPilot memory layer →
+Qwen Cloud (chat, extraction, embeddings). Show `assets/architecture.svg` with
+Alibaba Tablestore for persistent memories and Alibaba OSS for redacted
+snapshots and evaluation artifacts.
 
 ### Slide 5 — Memory lifecycle
 
@@ -51,13 +52,13 @@ historical-context reduction, and latency. Do not display preset figures.
 
 ### Slide 10 — Qwen and Alibaba Cloud proof
 
-Show Qwen usage in the live chat/extraction path. After deployment, show the
-actual Alibaba-mode `/health` response plus Tablestore and OSS console evidence.
-Until then, describe the Alibaba implementation as deployment-ready code, not
-as a completed cloud deployment.
+Show Qwen usage in the live chat/extraction path, the Alibaba Cloud badges, and
+the cross-session recall proof. Use `assets/proof/03-cross-session-recall.png`
+to show the retrieved Tablestore memory and its Memory Trace score.
 
 ### Slide 11 — Limits and roadmap
 
-Local demo mode is open; an Internet-facing service requires TLS, real identity
-management, key rotation, and distributed rate limiting. Next: complete the
-Alibaba deployment, attach evidence, and rerun final model-backed evaluation.
+The live demo is intentionally scoped to a hackathon deployment. A production
+service still needs TLS, real identity management, key rotation, and
+distributed rate limiting. Next: publish the demo video and attach the final
+model-backed evaluation report.

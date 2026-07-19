@@ -1,12 +1,13 @@
 # Alibaba Cloud Deployment Handoff
 
-Deploy only after the local release gate in
-[submission_readiness.md](submission_readiness.md) is green. This handoff
-lists the external resources and approvals required; it contains no secrets.
+The submitted build is deployed on Alibaba Cloud ECS in `ALIBABA_CLOUD_MODE`.
+See the [public proof gallery](alibaba_cloud_proof.md). This handoff now lists
+the release controls to apply to a future deployment or material release; it
+contains no secrets.
 
-## Freeze point
+## Future release freeze point
 
-Before provisioning any cloud resource:
+Before deploying a new version or provisioning another cloud resource:
 
 1. Record the exact `main` commit SHA.
 2. Confirm backend tests, frontend production build, dependency audit, Docker
@@ -33,7 +34,7 @@ before deployment:
 
 Never paste any of these values into Git, screenshots, browser code, or chat.
 
-## Deployment sequence
+## Deployment or release sequence
 
 1. Create the ECS/Function Compute/ACK target in the selected Alibaba region.
 2. Provision Tablestore and OSS, then grant only the required RAM permissions.
@@ -49,20 +50,16 @@ Never paste any of these values into Git, screenshots, browser code, or chat.
 8. Run the final model-backed benchmark once and save the raw JSON with commit
    SHA, model, UTC timestamp, and provider status.
 
-## Evidence capture checklist
+## Remaining evidence to capture
 
-Capture only after the checks above pass:
+The public app, automatic creation, and cross-session Tablestore recall are
+already captured in [the proof gallery](alibaba_cloud_proof.md). Before the
+final submission, also capture or verify:
 
-- signed-out public frontend URL;
-- public `/health` response with no credentials exposed;
-- ECS/FC/ACK console proof of the running backend;
-- Tablestore table with non-sensitive memory rows;
-- OSS bucket with redacted artifacts;
 - memory persistence before and after a backend restart;
 - final benchmark JSON for the exact deployed SHA;
 - public, English, under-three-minute demo video;
 - final deck with verified public links.
 
-Update [SUBMISSION.md](../SUBMISSION.md) and
-[submission_readiness.md](submission_readiness.md) only after each item is
-verified. Do not label deployment evidence as complete beforehand.
+Update [SUBMISSION.md](../SUBMISSION.md) with the public video URL after it is
+uploaded. Do not add credentials or private account details to any evidence.

@@ -6,10 +6,10 @@ import { Reveal } from "./Reveal";
 const FLOW = [
   { label: "User", Icon: IconUser, tone: "slate" },
   { label: "React Frontend", Icon: IconMonitor, tone: "blue" },
-  { label: "FastAPI Backend", Icon: IconServer, tone: "blue" },
+  { label: "FastAPI on ECS", Icon: IconServer, tone: "blue" },
   { label: "MemoPilot Memory Layer", Icon: IconCpu, tone: "indigo" },
   { label: "Qwen Cloud", Icon: IconCloud, tone: "orange" },
-  { label: "Alibaba Memory Store / OSS", Icon: IconDatabase, tone: "amber" },
+  { label: "Tablestore + OSS", Icon: IconDatabase, tone: "amber" },
   { label: "Memory Trace Dashboard", Icon: IconTrace, tone: "cyan" },
 ];
 
@@ -53,9 +53,9 @@ export function ArchitectureFlow() {
         </div>
 
         <p className="mx-auto mt-8 max-w-3xl text-center text-sm text-slate-500">
-          Runs in <strong>LOCAL_MODE</strong> (SQLite + local vectors) with no
-          keys, and upgrades to <strong>ALIBABA_CLOUD_MODE</strong> (Tablestore +
-          OSS) automatically when cloud credentials are present.
+          The submitted build runs in <strong>ALIBABA_CLOUD_MODE</strong> on ECS:
+          Qwen Cloud handles model calls, while Tablestore and OSS provide
+          durable Alibaba Cloud storage.
         </p>
       </div>
     </section>

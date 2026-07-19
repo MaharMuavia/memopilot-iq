@@ -1,27 +1,37 @@
-flowchart TD
-    U[User] --> FE[React + Vite + Tailwind Frontend]
-    FE -->|REST /api| BE[FastAPI Backend]
+flowchart LR
+    U[User]
 
-    subgraph MOS[MemoPilot Memory-Governance Layer]
-        EX[Memory Extractor]
-        CL[Memory Classifier]
-        SC[Memory Scorer]
-        RET[Hybrid Retriever]
-        CB[Context Budget Manager]
-        FE2[Forgetting Engine]
-        SUP[Contradiction / Supersession]
-        TR[Memory Trace Explainer]
-        EV[Evaluation Benchmark Runner]
+    subgraph ECS[Alibaba Cloud ECS · Docker deployment]
+        FE[React + Vite frontend<br/>served by Nginx]
+        BE[FastAPI backend<br/>REST API · health · CORS]
+
+        subgraph MG[MemoPilot Memory-Governance Layer]
+            EX[Extractor + Classifier]
+            RT[Hybrid Retriever + Scorer]
+            CB[Context Budget + Trace]
+            LF[Forgetting + Supersession<br/>+ User Controls]
+        end
+
+        FE -->|/api| BE
+        BE --> MG
     end
 
-    BE --> MOS
-    EX --> QC[Qwen Cloud Chat API]
-    RET --> QE[Qwen Embedding API]
-    CB --> QC
-    QC --> RESP[Answer + Trace] --> FE
+    QC[Qwen Cloud / DashScope<br/>Chat · JSON extraction · embeddings]
+    TS[(Alibaba Tablestore<br/>Persistent memories + events)]
+    OSS[(Alibaba OSS<br/>Redacted snapshots + evaluation reports)]
 
-    MOS -->|LOCAL_MODE| LS[(SQLite + Local Vectors)]
-    MOS -->|ALIBABA_CLOUD_MODE| TS[(Alibaba Tablestore)]
-    MOS --> OSS[(Alibaba OSS — logs / snapshots / eval reports)]
+    U -->|public web| FE
+    MG -->|model calls| QC
+    MG -->|memory reads + writes| TS
+    BE -->|turn snapshots| OSS
 
-    BE -.deployed on.-> ECS[Alibaba Cloud ECS / Function Compute / ACK]
+    classDef user fill:#ffffff,stroke:#94a3b8,color:#0f172a,stroke-width:1.5px;
+    classDef compute fill:#eff6ff,stroke:#60a5fa,color:#0f172a,stroke-width:1.5px;
+    classDef governance fill:#eef2ff,stroke:#818cf8,color:#0f172a,stroke-width:1.5px;
+    classDef qwen fill:#fff7ed,stroke:#fb923c,color:#0f172a,stroke-width:1.5px;
+    classDef storage fill:#fffbeb,stroke:#fbbf24,color:#0f172a,stroke-width:1.5px;
+    class U user;
+    class FE,BE compute;
+    class EX,RT,CB,LF governance;
+    class QC qwen;
+    class TS,OSS storage;

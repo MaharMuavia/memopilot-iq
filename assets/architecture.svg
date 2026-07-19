@@ -1,86 +1,85 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="940" height="620" viewBox="0 0 940 620" font-family="Inter, Segoe UI, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="820" viewBox="0 0 1440 820" role="img" aria-labelledby="title description">
+  <title id="title">MemoPilot IQ deployed Alibaba Cloud architecture</title>
+  <desc id="description">The user connects to a React frontend and FastAPI backend running in Alibaba Cloud ECS. The MemoPilot memory-governance layer uses Qwen Cloud, Alibaba Tablestore, and Alibaba OSS.</desc>
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#f7f9fc"/>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
       <stop offset="1" stop-color="#eef2ff"/>
+    </linearGradient>
+    <linearGradient id="ecs" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fbff"/>
+      <stop offset="1" stop-color="#eff6ff"/>
     </linearGradient>
     <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
       <path d="M0,0 L8,3 L0,6 z" fill="#64748b"/>
     </marker>
     <style>
-      .box{rx:14;ry:14;stroke-width:1.5;}
-      .t{font-size:13px;fill:#0f172a;}
-      .h{font-size:14px;font-weight:700;fill:#0f172a;}
-      .s{font-size:11px;fill:#475569;}
-      .edge{stroke:#64748b;stroke-width:1.5;fill:none;marker-end:url(#arrow);}
-      .dash{stroke-dasharray:5 4;}
+      .title{font:700 26px Inter,Segoe UI,Arial,sans-serif;fill:#0f172a}.subtitle{font:14px Inter,Segoe UI,Arial,sans-serif;fill:#475569}.cluster{font:700 16px Inter,Segoe UI,Arial,sans-serif;fill:#1e3a8a}.heading{font:700 15px Inter,Segoe UI,Arial,sans-serif;fill:#0f172a}.body{font:13px Inter,Segoe UI,Arial,sans-serif;fill:#334155}.note{font:12px Inter,Segoe UI,Arial,sans-serif;fill:#475569}.edge{stroke:#64748b;stroke-width:2;fill:none;marker-end:url(#arrow)}.label{font:12px Inter,Segoe UI,Arial,sans-serif;fill:#475569}.box{stroke-width:1.5}.subbox{stroke-width:1.2}
     </style>
   </defs>
 
-  <rect width="940" height="620" fill="url(#bg)"/>
-  <text x="30" y="40" class="h" font-size="20">MemoPilot IQ — Architecture (Track 1: MemoryAgent)</text>
+  <rect width="1440" height="820" fill="url(#background)"/>
+  <text x="48" y="54" class="title">MemoPilot IQ — Deployed Alibaba Cloud Architecture</text>
+  <text x="48" y="81" class="subtitle">Track 1: MemoryAgent · transparent cross-session memory with governed recall</text>
 
-  <!-- User -->
-  <rect x="40" y="80" width="150" height="56" rx="14" fill="#ffffff" stroke="#cbd5e1"/>
-  <text x="115" y="106" class="h" text-anchor="middle">User</text>
-  <text x="115" y="124" class="s" text-anchor="middle">developer / student</text>
+  <rect x="48" y="344" width="142" height="104" rx="18" fill="#ffffff" stroke="#94a3b8" class="box"/>
+  <text x="119" y="385" class="heading" text-anchor="middle">User</text>
+  <text x="119" y="411" class="body" text-anchor="middle">developer / student</text>
 
-  <!-- Frontend -->
-  <rect x="40" y="180" width="150" height="70" rx="14" fill="#e0ecff" stroke="#93c5fd"/>
-  <text x="115" y="208" class="h" text-anchor="middle">Frontend</text>
-  <text x="115" y="226" class="s" text-anchor="middle">React + Vite + TS</text>
-  <text x="115" y="240" class="s" text-anchor="middle">Tailwind (light UI)</text>
+  <rect x="238" y="116" width="720" height="590" rx="24" fill="url(#ecs)" stroke="#60a5fa" stroke-width="1.8"/>
+  <text x="272" y="157" class="cluster">Alibaba Cloud ECS</text>
+  <text x="272" y="181" class="note">Docker: frontend (Nginx) + FastAPI backend</text>
 
-  <!-- Backend -->
-  <rect x="40" y="300" width="150" height="70" rx="14" fill="#dbeafe" stroke="#60a5fa"/>
-  <text x="115" y="328" class="h" text-anchor="middle">FastAPI</text>
-  <text x="115" y="346" class="s" text-anchor="middle">async REST /api</text>
-  <text x="115" y="360" class="s" text-anchor="middle">CORS · /health</text>
+  <rect x="274" y="330" width="188" height="116" rx="16" fill="#dbeafe" stroke="#60a5fa" class="box"/>
+  <text x="368" y="371" class="heading" text-anchor="middle">React + Vite</text>
+  <text x="368" y="394" class="body" text-anchor="middle">frontend served by Nginx</text>
+  <text x="368" y="416" class="note" text-anchor="middle">Chat · Trace · Controls</text>
 
-  <!-- MemoPilot memory-governance layer -->
-  <rect x="260" y="160" width="360" height="300" rx="16" fill="#ffffff" stroke="#a5b4fc"/>
-  <text x="440" y="186" class="h" text-anchor="middle" fill="#4338ca">MemoPilot Memory-Governance Layer</text>
-  <g>
-    <rect x="280" y="200" width="155" height="40" rx="10" fill="#eef2ff" stroke="#c7d2fe"/><text x="357" y="225" class="t" text-anchor="middle">Extractor + Classifier</text>
-    <rect x="445" y="200" width="155" height="40" rx="10" fill="#eef2ff" stroke="#c7d2fe"/><text x="522" y="225" class="t" text-anchor="middle">Scorer</text>
-    <rect x="280" y="250" width="155" height="40" rx="10" fill="#eef2ff" stroke="#c7d2fe"/><text x="357" y="275" class="t" text-anchor="middle">Hybrid Retriever</text>
-    <rect x="445" y="250" width="155" height="40" rx="10" fill="#eef2ff" stroke="#c7d2fe"/><text x="522" y="275" class="t" text-anchor="middle">Context Budget</text>
-    <rect x="280" y="300" width="155" height="40" rx="10" fill="#eef2ff" stroke="#c7d2fe"/><text x="357" y="325" class="t" text-anchor="middle">Forgetting Engine</text>
-    <rect x="445" y="300" width="155" height="40" rx="10" fill="#eef2ff" stroke="#c7d2fe"/><text x="522" y="325" class="t" text-anchor="middle">Supersession</text>
-    <rect x="280" y="350" width="155" height="40" rx="10" fill="#eef2ff" stroke="#c7d2fe"/><text x="357" y="375" class="t" text-anchor="middle">Trace Explainer</text>
-    <rect x="445" y="350" width="155" height="40" rx="10" fill="#eef2ff" stroke="#c7d2fe"/><text x="522" y="375" class="t" text-anchor="middle">Eval Benchmark</text>
-    <rect x="280" y="400" width="320" height="40" rx="10" fill="#f1f5f9" stroke="#cbd5e1"/><text x="440" y="425" class="t" text-anchor="middle">User Memory Controls — pin · archive · forget · export</text>
-  </g>
+  <rect x="510" y="330" width="176" height="116" rx="16" fill="#dbeafe" stroke="#3b82f6" class="box"/>
+  <text x="598" y="371" class="heading" text-anchor="middle">FastAPI</text>
+  <text x="598" y="394" class="body" text-anchor="middle">REST API · /health</text>
+  <text x="598" y="416" class="note" text-anchor="middle">CORS · snapshots</text>
 
-  <!-- Qwen Cloud -->
-  <rect x="690" y="180" width="210" height="80" rx="14" fill="#fff7ed" stroke="#fdba74"/>
-  <text x="795" y="208" class="h" text-anchor="middle" fill="#c2410c">Qwen Cloud</text>
-  <text x="795" y="226" class="s" text-anchor="middle">Chat / reasoning (qwen-plus)</text>
-  <text x="795" y="240" class="s" text-anchor="middle">Memory extraction (JSON)</text>
-  <text x="795" y="254" class="s" text-anchor="middle">Embeddings (text-embedding-v3)</text>
+  <rect x="730" y="222" width="190" height="360" rx="18" fill="#eef2ff" stroke="#818cf8" class="box"/>
+  <text x="825" y="258" class="heading" text-anchor="middle">MemoPilot Layer</text>
+  <text x="825" y="281" class="note" text-anchor="middle">memory governance</text>
+  <rect x="748" y="302" width="154" height="48" rx="11" fill="#f8faff" stroke="#a5b4fc" class="subbox"/>
+  <text x="825" y="332" class="body" text-anchor="middle">Extractor + Classifier</text>
+  <rect x="748" y="365" width="154" height="48" rx="11" fill="#f8faff" stroke="#a5b4fc" class="subbox"/>
+  <text x="825" y="395" class="body" text-anchor="middle">Retriever + Scorer</text>
+  <rect x="748" y="428" width="154" height="48" rx="11" fill="#f8faff" stroke="#a5b4fc" class="subbox"/>
+  <text x="825" y="458" class="body" text-anchor="middle">Budget + Trace</text>
+  <rect x="748" y="491" width="154" height="62" rx="11" fill="#f8faff" stroke="#a5b4fc" class="subbox"/>
+  <text x="825" y="518" class="body" text-anchor="middle">Forgetting +</text>
+  <text x="825" y="538" class="body" text-anchor="middle">Supersession + Controls</text>
 
-  <!-- Stores -->
-  <rect x="690" y="290" width="210" height="56" rx="14" fill="#fef3c7" stroke="#fcd34d"/>
-  <text x="795" y="314" class="h" text-anchor="middle" fill="#b45309">Alibaba Tablestore</text>
-  <text x="795" y="332" class="s" text-anchor="middle">persistent memory (or SQLite local)</text>
+  <rect x="1035" y="150" width="350" height="132" rx="18" fill="#fff7ed" stroke="#fb923c" class="box"/>
+  <text x="1210" y="193" class="heading" text-anchor="middle">Qwen Cloud / DashScope</text>
+  <text x="1210" y="220" class="body" text-anchor="middle">qwen3.7-max · JSON memory extraction</text>
+  <text x="1210" y="243" class="body" text-anchor="middle">text-embedding-v3</text>
 
-  <rect x="690" y="360" width="210" height="56" rx="14" fill="#fef3c7" stroke="#fcd34d"/>
-  <text x="795" y="384" class="h" text-anchor="middle" fill="#b45309">Alibaba OSS</text>
-  <text x="795" y="402" class="s" text-anchor="middle">logs · snapshots · eval reports</text>
+  <rect x="1035" y="350" width="350" height="126" rx="18" fill="#fffbeb" stroke="#fbbf24" class="box"/>
+  <text x="1210" y="393" class="heading" text-anchor="middle">Alibaba Tablestore</text>
+  <text x="1210" y="420" class="body" text-anchor="middle">persistent memories + audit events</text>
+  <text x="1210" y="443" class="note" text-anchor="middle">cross-session retrieval</text>
 
-  <!-- Deploy -->
-  <rect x="690" y="450" width="210" height="50" rx="14" fill="#ecfeff" stroke="#67e8f9"/>
-  <text x="795" y="472" class="h" text-anchor="middle" fill="#0e7490">Alibaba ECS / FC / ACK</text>
-  <text x="795" y="489" class="s" text-anchor="middle">backend deployment target</text>
+  <rect x="1035" y="544" width="350" height="126" rx="18" fill="#fffbeb" stroke="#fbbf24" class="box"/>
+  <text x="1210" y="587" class="heading" text-anchor="middle">Alibaba OSS</text>
+  <text x="1210" y="614" class="body" text-anchor="middle">redacted turn snapshots</text>
+  <text x="1210" y="637" class="note" text-anchor="middle">evaluation reports</text>
 
-  <!-- edges -->
-  <line x1="115" y1="136" x2="115" y2="180" class="edge"/>
-  <line x1="115" y1="250" x2="115" y2="300" class="edge"/>
-  <line x1="190" y1="335" x2="260" y2="320" class="edge"/>
-  <line x1="620" y1="230" x2="690" y2="222" class="edge"/>
-  <line x1="620" y1="300" x2="690" y2="315" class="edge"/>
-  <line x1="620" y1="370" x2="690" y2="385" class="edge"/>
-  <line x1="190" y1="365" x2="690" y2="470" class="edge dash"/>
+  <path d="M190 396 H274" class="edge"/>
+  <text x="224" y="377" class="label" text-anchor="middle">public web</text>
+  <path d="M462 388 H510" class="edge"/>
+  <text x="486" y="370" class="label" text-anchor="middle">/api</text>
+  <path d="M686 388 H730" class="edge"/>
+  <path d="M920 300 C970 260 980 220 1035 220" class="edge"/>
+  <text x="978" y="243" class="label" text-anchor="middle">Qwen calls</text>
+  <path d="M920 405 H1035" class="edge"/>
+  <text x="978" y="387" class="label" text-anchor="middle">read / write</text>
+  <path d="M686 446 C815 610 900 606 1035 606" class="edge"/>
+  <text x="875" y="632" class="label" text-anchor="middle">redacted snapshots</text>
 
-  <text x="30" y="600" class="s">Response = answer + used_memories + memory_actions + trace + mode. Mode auto-resolves LOCAL ↔ ALIBABA_CLOUD with safe fallback.</text>
+  <text x="48" y="766" class="subtitle">Every displayed memory decision is traceable: retrieve → score → budget → inject or skip → explain.</text>
+  <text x="48" y="792" class="note">Submitted deployment uses Alibaba Cloud ECS, Qwen Cloud, Tablestore, and OSS. No local-storage component is part of this architecture.</text>
 </svg>

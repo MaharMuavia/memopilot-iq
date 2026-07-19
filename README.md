@@ -1,5 +1,11 @@
 # MemoPilot IQ
 
+[![Track](https://img.shields.io/badge/Qwen%20Cloud-Track%201%3A%20MemoryAgent-4f46e5?style=for-the-badge)](SUBMISSION.md)
+[![Alibaba Cloud](https://img.shields.io/badge/Deployed%20on-Alibaba%20Cloud%20ECS-ff6a00?style=for-the-badge)](docs/alibaba_cloud_proof.md)
+[![License](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Open%20App-2563eb?style=for-the-badge)](http://47.84.129.218/app)
+[![Build Journey](https://img.shields.io/badge/Build%20Journey-Dev.to-0a0a0a?style=for-the-badge)](https://dev.to/muhammad_muavia/ai-agents-dont-need-more-memory-they-need-memory-governance-15ej)
+
 > **A self-curating persistent-memory agent that remembers, forgets, and explains what matters.**
 
 **Qwen Cloud Global AI Hackathon — Track 1: MemoryAgent**
@@ -11,6 +17,10 @@ persistently, retrieves only the most relevant ones inside a strict token
 budget, updates and supersedes outdated memories, expires temporary ones, and
 shows a transparent **Memory Trace** explaining why each memory was used,
 ignored, updated, or forgotten.
+
+**Live deployment:** [Open MemoPilot IQ on Alibaba Cloud ECS](http://47.84.129.218/app)
+· [view deployment proof](docs/alibaba_cloud_proof.md) ·
+[read the Qwen Cloud build journey](https://dev.to/muhammad_muavia/ai-agents-dont-need-more-memory-they-need-memory-governance-15ej).
 
 ---
 
@@ -48,13 +58,10 @@ APIs, an **Alibaba Cloud** persistence/deployment adapter, a custom memory scori
 selective forgetting, a clean modular architecture, an evaluation benchmark, and
 a transparent UI.
 
-It runs in two modes:
-- **LOCAL_MODE** — SQLite + in-process vectors; runs on a laptop with **no
-  cloud keys** thanks to a deterministic offline fallback for Qwen.
-- **ALIBABA_CLOUD_MODE** — Alibaba Cloud Tablestore + OSS, activated
-  automatically when cloud credentials are present.
-
-The current mode is always visible in the UI header and on `GET /health`.
+The submitted build runs in **ALIBABA_CLOUD_MODE**: Alibaba Cloud ECS hosts the
+Docker deployment, Qwen Cloud powers chat/extraction/embeddings, Alibaba
+Tablestore persists memories and events, and Alibaba OSS receives redacted turn
+snapshots. The live mode is visible in the UI header and on `GET /health`.
 
 ## Problem statement
 AI assistants forget everything between sessions. Developers and students
@@ -80,7 +87,7 @@ layer that knows what to remember, what to forget, and can prove its reasoning.
 - 🕸️ **Live Memory Graph** — interactive visualization of memories with supersession/related edges, critical rings, and insight nodes.
 - 📈 **Analytics dashboard** — memory growth, type/status distribution, forgetting rate, token savings.
 - 🔒 **Secret-safe** — secrets are redacted before storage; never committed.
-- ☁️ **Local ↔ Alibaba Cloud** dual mode with automatic fallback.
+- ☁️ **Alibaba Cloud deployment** — ECS compute, Qwen Cloud, Tablestore, and OSS.
 - ✅ **CI + Docker** — GitHub Actions (tests + build) and one-command `docker compose up`.
 - 🏭 **Production platform** — optional API-key auth, per-key rate limiting,
   Prometheus `/metrics`, paginated + filtered memory API, per-memory audit
@@ -103,7 +110,7 @@ request lifecycle. Rendered diagram: [assets/architecture.svg](assets/architectu
 User → React + Vite frontend → FastAPI backend → MemoPilot memory layer
    MemoPilot memory layer → Qwen Cloud chat API
    MemoPilot memory layer → Qwen embedding API
-   MemoPilot memory layer → Alibaba Tablestore (or SQLite locally)
+   MemoPilot memory layer → Alibaba Tablestore (persistent memories + events)
    MemoPilot memory layer → Alibaba OSS (logs / snapshots / eval reports)
    MemoPilot memory layer → Context Builder → Qwen Cloud → Response + Trace
 ```
@@ -125,8 +132,8 @@ whole app, tests and benchmark working end-to-end.
 - **OSS** — raw turn logs, memory snapshots, eval reports ([`oss_client.py`](backend/app/storage/oss_client.py)).
 - **Deployment** — Docker image + `serverless.yaml` for ECS / Function Compute / ACK.
 Full guide & proof checklist: [docs/deployment_alibaba.md](docs/deployment_alibaba.md).
-The final cloud, benchmark, video, deck, and public-link gates are tracked in
-[docs/submission_readiness.md](docs/submission_readiness.md).
+See the [live deployment proof gallery](docs/alibaba_cloud_proof.md) and the
+[published Qwen Cloud build journey](https://dev.to/muhammad_muavia/ai-agents-dont-need-more-memory-they-need-memory-governance-15ej).
 
 ## Memory-governance algorithm
 Full detail (scoring weights, retrieval, extraction, states/types) in
@@ -197,8 +204,9 @@ cd backend && SEED_DEMO=1 uvicorn app.main:app --port 8000
 cd backend; $env:SEED_DEMO=1; uvicorn app.main:app --port 8000
 ```
 
-No Qwen/Alibaba keys are required to run locally — the app starts in
-`LOCAL_MODE` with the offline Qwen fallback.
+No Qwen or Alibaba credentials are required for isolated local development;
+the app has a deterministic offline fallback for development and tests. The
+submitted deployment uses the Alibaba Cloud services shown above.
 
 ## Environment variables
 Copy [`.env.example`](.env.example) to `backend/.env` and fill in real values
@@ -206,14 +214,14 @@ Copy [`.env.example`](.env.example) to `backend/.env` and fill in real values
 
 | Variable | Purpose |
 |---|---|
-| `APP_MODE` | `local` or `alibaba` |
+| `APP_MODE` | Use `alibaba` for the submitted cloud deployment |
 | `QWEN_API_KEY` / `QWEN_BASE_URL` | Qwen Cloud auth + endpoint |
 | `QWEN_CHAT_MODEL` / `QWEN_EMBEDDING_MODEL` | Qwen models |
 | `ALIBABA_ACCESS_KEY_ID/SECRET/REGION` | Alibaba Cloud credentials |
 | `ALIBABA_OSS_BUCKET/ENDPOINT` | OSS storage |
 | `ALIBABA_TABLESTORE_ENDPOINT/INSTANCE` | Tablestore memory store |
-| `MEMORY_STORE` | `sqlite` or `alibaba` |
-| `DATABASE_URL` | SQLite path for local mode |
+| `MEMORY_STORE` | Use `alibaba` for the submitted cloud deployment |
+| `DATABASE_URL` | Optional development database path |
 | `FRONTEND_ORIGIN` | Frontend CORS origin, comma-separated origins, or `*` for a public demo |
 | `MEMORY_TOKEN_BUDGET` / `RETRIEVAL_TOP_K` | Context budget and retrieval depth |
 | `EVAL_MAX_CONCURRENCY` | Concurrent model calls during evaluation (default 4, maximum 8) |
@@ -284,9 +292,13 @@ See [docs/judging_mapping.md](docs/judging_mapping.md) for the full rubric and
 rule-compliance checklist.
 
 ## Screenshots
-Before submission, add captures of the **landing page** (`/`), Chat + Trace,
-Timeline, Evaluation dashboard, and a real Alibaba `/health` response to
-`assets/`. Do not add cloud-proof captures until the deployment is live.
+Verified Alibaba Cloud evidence is in [docs/alibaba_cloud_proof.md](docs/alibaba_cloud_proof.md):
+
+| Automatic memory creation | Cross-session recall |
+|---|---|
+| ![Automatic memory creation](assets/proof/02-automatic-memory-creation.png) | ![Cross-session recall](assets/proof/03-cross-session-recall.png) |
+
+The final public video will demonstrate the same flow in under three minutes.
 
 ## License
 [MIT](LICENSE).

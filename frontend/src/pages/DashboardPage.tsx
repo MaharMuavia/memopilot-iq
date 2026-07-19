@@ -213,7 +213,7 @@ function StatusBadges({
         className={`chip ${cloud ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-700"}`}
         title={`Memory store: ${health.memory_store}`}
       >
-        {cloud ? "Alibaba Store" : "SQLite"}
+        {cloud ? "Alibaba Store" : "Local Store"}
       </span>
     </>
   );

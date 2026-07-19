@@ -8,7 +8,7 @@ const FEATURES = [
   {
     Icon: IconLayers,
     title: "Persistent Memory",
-    body: "Structured memory records persist across sessions in SQLite or Alibaba Cloud Tablestore.",
+    body: "Structured memory records and lifecycle events persist across sessions in Alibaba Cloud Tablestore.",
   },
   {
     Icon: IconLink,

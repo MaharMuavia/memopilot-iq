@@ -43,7 +43,7 @@ export function ModeBadge({ mode }: { mode: string }) {
   return (
     <span
       className={`chip ${cloud ? "bg-orange-100 text-orange-700" : "bg-emerald-100 text-emerald-700"}`}
-      title={cloud ? "Persisting to Alibaba Cloud" : "Running locally (SQLite + local vectors)"}
+      title={cloud ? "Persisting to Alibaba Cloud" : "Running with local development storage"}
     >
       <span className={`h-1.5 w-1.5 rounded-full ${cloud ? "bg-orange-500" : "bg-emerald-500"}`} />
       {cloud ? "Alibaba Cloud" : "Local"}

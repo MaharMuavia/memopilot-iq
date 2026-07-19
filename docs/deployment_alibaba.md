@@ -4,8 +4,8 @@ MemoPilot IQ has Alibaba Cloud integration code for **Qwen Cloud (DashScope)**
 AI calls, **Tablestore** persistent memory, and **OSS** redacted turn
 snapshots and evaluation reports. The backend is containerised and can be
 deployed to **ECS**, **Function Compute (FC3.0)**, or **Container Service for
-Kubernetes (ACK)**. This repository does not yet claim a completed deployment;
-use the evidence checklist below after deploying.
+Kubernetes (ACK)**. The submitted build is live on **Alibaba Cloud ECS** in
+`ALIBABA_CLOUD_MODE`; see [the proof gallery](alibaba_cloud_proof.md).
 
 ## Alibaba Cloud integration in the codebase
 
@@ -68,17 +68,16 @@ s deploy           # uses serverless.yaml; inject secrets as encrypted env vars
 Push the image to Alibaba Container Registry (ACR), then apply a Deployment +
 Service that mounts the secrets from a Kubernetes `Secret`.
 
-## 4. Deployment proof to include in the repo
+## 4. Submission evidence
 
-Add the following to `docs/` or `assets/` before submission (screenshots are
-acceptable proof):
+The repository includes a safe, public proof package in
+[`docs/alibaba_cloud_proof.md`](alibaba_cloud_proof.md):
 
-- `assets/proof_health_alibaba.png` — `GET /health` showing `ALIBABA_CLOUD_MODE`.
-- `assets/proof_tablestore.png` — Tablestore console showing the
-  `memopilot_memories` table with rows.
-- `assets/proof_oss.png` — OSS bucket showing `memopilot/turns/*.json` snapshots.
-- `assets/proof_ecs_or_fc.png` — the running ECS instance / FC function URL.
+- public deployed-app retrieval from Alibaba Tablestore;
+- automatic memory creation; and
+- cross-session recall with an explainable Memory Trace.
 
-> The configuration selects cloud mode when credentials are supplied. Validate
-> the running health endpoint and the actual Tablestore/OSS writes before
-> representing the deployment as complete.
+The source-level proof is [`backend/app/memory/store_alibaba.py`](../backend/app/memory/store_alibaba.py)
+for Tablestore, [`backend/app/storage/oss_client.py`](../backend/app/storage/oss_client.py)
+for OSS, and [`backend/app/qwen_client.py`](../backend/app/qwen_client.py) for
+Qwen Cloud / DashScope.

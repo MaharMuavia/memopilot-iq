@@ -29,9 +29,9 @@ and [Devpost official rules](https://qwencloud-hackathon.devpost.com/rules).
 | Qwen chat, extraction, and embedding integration | Ready in code | Final deployment reports `qwen_configured: true` |
 | MemoryAgent lifecycle and transparent trace | Ready | Demo proves recall, supersession, and exclusion of stale memory |
 | Automated backend/frontend validation | Ready | Final commit passes tests, build, audits, and Docker config validation |
-| Alibaba Cloud deployment | **Blocking** | Public backend is running on Alibaba infrastructure |
-| Public working-project URL | **Blocking** | Opens without private credentials and remains available through judging |
-| Cloud proof | **Blocking** | Capture `/health`, service URL, and Tablestore/OSS evidence without secrets |
+| Alibaba Cloud deployment | Ready | Public backend runs on Alibaba Cloud ECS in `ALIBABA_CLOUD_MODE` |
+| Public working-project URL | Ready | [http://47.84.129.218/app](http://47.84.129.218/app) opens without private credentials |
+| Cloud proof | Ready | [Proof gallery](alibaba_cloud_proof.md) shows automated creation and cross-session Tablestore recall |
 | Final model-backed benchmark | **Blocking** | Run on the deployed commit and download the JSON report |
 | Public demo video | **Blocking** | Under 3:00, English or English subtitles, no copyrighted music |
 | Presentation deck | **Blocking** | Export the 11-slide outline to PPT/PDF and verify every link |
@@ -82,8 +82,10 @@ generic chatbot. The strongest proof sequence is:
 4. The final Qwen-backed evaluation quantifies the behavior against the
    no-memory baseline.
 
-Do not claim production-scale retrieval, completed cloud deployment, or
-benchmark superiority beyond the evidence included in the final submission.
+Do not claim production-scale retrieval or benchmark superiority beyond the
+evidence included in the final submission. The Alibaba Cloud deployment claim
+is supported by the [public proof gallery](alibaba_cloud_proof.md) and the
+source-level [Tablestore adapter](../backend/app/memory/store_alibaba.py).
 
 ## Final go/no-go check
 

@@ -1,72 +1,72 @@
-# Architecture — MemoPilot IQ
+# Deployed Architecture — MemoPilot IQ
 
-MemoPilot IQ separates a thin chat surface from a dedicated **MemoPilot memory
-layer**. The frontend never talks to memory storage directly; every decision
-flows through that layer, which is the only component
-that talks to Qwen Cloud and to the persistent store.
+MemoPilot IQ is deployed on **Alibaba Cloud ECS**. The public React frontend
+and FastAPI backend run as Docker containers on the ECS instance. Every memory
+decision passes through the MemoPilot memory-governance layer, which is the
+only layer allowed to call Qwen Cloud or persistent Alibaba Cloud services.
+
+![MemoPilot IQ deployed Alibaba Cloud architecture](../assets/architecture.svg)
 
 ```mermaid
-flowchart TD
-    U[User] --> FE[React + Vite + Tailwind Frontend]
-    FE -->|REST /api| BE[FastAPI Backend]
+flowchart LR
+    U[User]
 
-    subgraph MOS[MemoPilot Memory-Governance Layer]
-        EX[Memory Extractor]
-        CL[Memory Classifier]
-        SC[Memory Scorer]
-        RET[Hybrid Retriever]
-        CB[Context Budget Manager]
-        FE2[Forgetting Engine]
-        SUP[Contradiction / Supersession]
-        TR[Memory Trace Explainer]
-        EV[Evaluation Benchmark Runner]
+    subgraph ECS[Alibaba Cloud ECS · Docker deployment]
+        FE[React + Vite frontend<br/>served by Nginx]
+        BE[FastAPI backend<br/>REST API · health · CORS]
+
+        subgraph MG[MemoPilot Memory-Governance Layer]
+            EX[Extractor + Classifier]
+            RT[Hybrid Retriever + Scorer]
+            CB[Context Budget + Trace]
+            LF[Forgetting + Supersession<br/>+ User Controls]
+        end
+
+        FE -->|/api| BE
+        BE --> MG
     end
 
-    BE --> MOS
-    EX --> QC[Qwen Cloud Chat API]
-    RET --> QE[Qwen Embedding API]
-    CB --> QC
-    QC --> RESP[Answer + Trace] --> FE
+    QC[Qwen Cloud / DashScope<br/>Chat · JSON extraction · embeddings]
+    TS[(Alibaba Tablestore<br/>Persistent memories + events)]
+    OSS[(Alibaba OSS<br/>Redacted snapshots + evaluation reports)]
 
-    MOS -->|LOCAL_MODE| LS[(SQLite + Local Vectors)]
-    MOS -->|ALIBABA_CLOUD_MODE| TS[(Alibaba Tablestore)]
-    MOS --> OSS[(Alibaba OSS — logs / snapshots / eval reports)]
-
-    BE -.deployed on.-> ECS[Alibaba Cloud ECS / Function Compute / ACK]
+    U -->|public web| FE
+    MG -->|model calls| QC
+    MG -->|memory reads + writes| TS
+    BE -->|turn snapshots| OSS
 ```
 
-## Request lifecycle (POST /api/chat)
+## Request lifecycle (`POST /api/chat`)
 
-1. **Forgetting sweep** — expire deadlines/temporary memories, archive stale
-   low-importance memories (`memory/forgetting.py`).
-2. **Embed query** — Qwen embedding endpoint (offline hashing fallback).
-3. **Hybrid retrieve** — dense cosine + sparse keyword overlap + structured
-   filters (`user_id`, `project_id`, status), critical/pinned prioritised
-   (`memory/retriever.py`).
-4. **Score** — the memory-governance scoring formula (`memory/scorer.py`).
-5. **Budget** — ContextBuilder injects within a 2,500-token budget, prioritising
-   critical/pinned records only when they fit (`memory/context_builder.py`).
-6. **Answer** — Qwen chat with the budgeted system prompt.
-7. **Extract** — the Memory Editor extracts new structured memories, detects
-   contradictions → supersession, redacts secrets (`memory/extractor.py`).
-8. **Snapshot** — turn persisted to OSS (or local snapshot).
-9. **Respond** — `answer`, `used_memories`, `memory_actions`, `trace`, `mode`.
+1. **Receive** — Nginx serves the React application and proxies `/api` calls to
+   FastAPI on the same Alibaba Cloud ECS instance.
+2. **Govern** — the memory layer runs lifecycle rules, then retrieves active,
+   user-scoped records from Alibaba Tablestore.
+3. **Retrieve and score** — Qwen embeddings, sparse keyword overlap, memory
+   metadata, recency, importance, confidence, and project scope are combined
+   into an explainable score.
+4. **Budget** — ContextBuilder injects only the highest-value memories that fit
+   the hard 2,500-token context budget; every inclusion and skip is recorded in
+   Memory Trace.
+5. **Reason** — Qwen Cloud / DashScope produces the answer from the governed
+   context.
+6. **Learn** — the Memory Editor extracts durable memories, redacts
+   secret-like values, detects contradictions, and creates supersession events.
+7. **Persist** — memory records and audit events are written to Alibaba
+   Tablestore. Redacted turn snapshots and evaluation reports are sent to
+   Alibaba OSS.
+8. **Explain** — FastAPI returns the answer, used-memory list, lifecycle
+   actions, and complete Memory Trace to the frontend.
 
-## Storage modes
+## Deployed Alibaba Cloud services
 
-| | LOCAL_MODE | ALIBABA_CLOUD_MODE |
+| Service | Responsibility | Implementation |
 |---|---|---|
-| Metadata | SQLite (`store_sqlite.py`) | Tablestore (`store_alibaba.py`) |
-| Vectors | in-process cosine | embedding stored per row |
-| Logs/snapshots | `./snapshots/*.json` | Alibaba OSS bucket |
-| Selected when | default / no cloud keys | `MEMORY_STORE=alibaba` + creds present |
+| Alibaba Cloud ECS | Public Docker runtime for frontend and backend | [`deploy/ecs_deploy.sh`](../deploy/ecs_deploy.sh) |
+| Qwen Cloud / DashScope | Chat, structured memory extraction, embeddings | [`backend/app/qwen_client.py`](../backend/app/qwen_client.py) |
+| Alibaba Tablestore | Persistent memories and lifecycle audit events | [`backend/app/memory/store_alibaba.py`](../backend/app/memory/store_alibaba.py) |
+| Alibaba OSS | Redacted turn snapshots and evaluation artifacts | [`backend/app/storage/oss_client.py`](../backend/app/storage/oss_client.py) |
 
-The mode is resolved in `config.Settings.resolved_mode()` and surfaced on
-`GET /health` and in the UI header, with automatic fallback to local if cloud
-SDKs/credentials are missing.
-
-To regenerate a PNG from the Mermaid source:
-
-```bash
-npx -y @mermaid-js/mermaid-cli -i assets/architecture.mmd -o assets/architecture.svg
-```
+The diagram intentionally shows the submitted **Alibaba Cloud deployment**. It
+does not depict developer-only fallback storage, so judges can see the exact
+cloud architecture demonstrated in the proof screenshots.
