@@ -20,10 +20,16 @@ interface Turn {
 
 const STARTERS = [
   "I prefer FastAPI backend, React + Vite, Alibaba Cloud, light UI, and short answers. Never commit API keys.",
-  "Design the Alibaba Cloud backend architecture in five concise bullets.",
+  "Summarize MemoPilot IQ's currently deployed Alibaba Cloud architecture in five concise bullets. Use only implemented services; do not propose alternatives.",
   "For the next iteration after this submission, migrate the frontend to Next.js instead of React + Vite. Confirm this plan in two sentences.",
   "What frontend does this submitted build use today, and what is planned after submission?",
 ];
+
+function memoryChipLabel(memory: MemoryRecord, maxLength = 40) {
+  const label = (memory.summary || memory.content).trim();
+  if (label.length <= maxLength) return label;
+  return `${label.slice(0, maxLength - 1).trimEnd()}…`;
+}
 
 export function ChatPanel({
   sessionId,
@@ -115,7 +121,7 @@ export function ChatPanel({
                 {turn.used.slice(0, 6).map((memory) => (
                   <span key={memory.memory_id} title={memory.content} className="chip bg-brand-50 text-brand-700">
                     <TypeBadge type={memory.type} />
-                    {memory.summary.slice(0, 28)}
+                    {memoryChipLabel(memory)}
                   </span>
                 ))}
               </div>

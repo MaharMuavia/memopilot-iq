@@ -22,6 +22,46 @@ async def test_extracts_multiple_typed_memories(memos):
 
 
 @pytest.mark.asyncio
+async def test_provider_cannot_promote_preference_to_critical(memos):
+    async def extracted_memories(*_args, **_kwargs):
+        return {
+            "new_memories": [
+                {
+                    "type": "preference",
+                    "content": "User prefers short, concise answers.",
+                    "summary": "Communication style: Short answers",
+                    "importance": 1.0,
+                    "confidence": 1.0,
+                    "is_critical": True,
+                },
+                {
+                    "type": "critical",
+                    "content": "Never commit API keys.",
+                    "summary": "Security constraint: Never commit API keys",
+                    "importance": 1.0,
+                    "confidence": 1.0,
+                    "is_critical": False,
+                },
+            ]
+        }
+
+    memos.qwen.extract_json = extracted_memories
+    await memos.remember(
+        user_id="u",
+        project_id="p",
+        session_id="s1",
+        message="I prefer short answers. Never commit API keys.",
+    )
+
+    memories = await memos.store.list("u", "p")
+    preference = next(m for m in memories if m.type == MemoryType.preference)
+    critical = next(m for m in memories if m.type == MemoryType.critical)
+
+    assert preference.is_critical is False
+    assert critical.is_critical is True
+
+
+@pytest.mark.asyncio
 async def test_questions_are_not_stored(memos):
     async def fail_if_called(*_args, **_kwargs):
         raise AssertionError("Pure questions must not call the Memory Editor.")

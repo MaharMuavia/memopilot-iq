@@ -99,13 +99,17 @@ def test_system_prompt_contains_only_verified_current_implementation():
         retrieval_latency_ms=0.0,
     )
 
-    assert "current frontend is React 18 with Vite" in prompt
+    assert "submitted public deployment runs on Alibaba Cloud ECS" in prompt
+    assert "React 18 with Vite is served by Nginx" in prompt
+    assert "FastAPI backend" in prompt
     assert "Next.js" not in prompt
     assert "SQLite" not in prompt
-    assert "Alibaba Tablestore and OSS" in prompt
-    assert "Milvus, Qdrant, and AnalyticDB are not part" in prompt
+    assert "Alibaba Tablestore persists memory records" in prompt
+    assert "calculates dense cosine similarity" in prompt
+    assert "Alibaba OSS stores redacted turn snapshots" in prompt
+    assert "Function Compute, ACK, PrivateLink, KMS" in prompt
+    assert "not part of the submitted deployment" in prompt
     assert "MemoPilot memory layer" in prompt
-    assert "do not claim a public Alibaba deployment is live" in prompt
 
 
 def test_system_prompt_keeps_product_grounding_out_of_generic_projects():

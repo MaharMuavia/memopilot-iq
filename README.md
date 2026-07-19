@@ -111,7 +111,7 @@ User → React + Vite frontend → FastAPI backend → MemoPilot memory layer
    MemoPilot memory layer → Qwen Cloud chat API
    MemoPilot memory layer → Qwen embedding API
    MemoPilot memory layer → Alibaba Tablestore (persistent memories + events)
-   MemoPilot memory layer → Alibaba OSS (logs / snapshots / eval reports)
+   MemoPilot memory layer → Alibaba OSS (redacted snapshots / eval reports)
    MemoPilot memory layer → Context Builder → Qwen Cloud → Response + Trace
 ```
 
@@ -129,8 +129,8 @@ whole app, tests and benchmark working end-to-end.
 
 ## How Alibaba Cloud is used
 - **Tablestore** — persistent memory + event store ([`store_alibaba.py`](backend/app/memory/store_alibaba.py)).
-- **OSS** — raw turn logs, memory snapshots, eval reports ([`oss_client.py`](backend/app/storage/oss_client.py)).
-- **Deployment** — Docker image + `serverless.yaml` for ECS / Function Compute / ACK.
+- **OSS** — redacted turn snapshots and evaluation artifacts ([`oss_client.py`](backend/app/storage/oss_client.py)).
+- **Submitted deployment** — Nginx and FastAPI Docker containers on Alibaba Cloud ECS.
 Full guide & proof checklist: [docs/deployment_alibaba.md](docs/deployment_alibaba.md).
 See the [live deployment proof gallery](docs/alibaba_cloud_proof.md) and the
 [published Qwen Cloud build journey](https://dev.to/muhammad_muavia/ai-agents-dont-need-more-memory-they-need-memory-governance-15ej).

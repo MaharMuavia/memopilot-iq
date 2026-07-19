@@ -290,7 +290,10 @@ class MemoryExtractor:
         except ValueError:
             privacy_level = PrivacyLevel.public
 
-        is_critical = bool(raw.get("is_critical")) or mtype == MemoryType.critical
+        # Provider JSON is untrusted. Criticality must agree with the validated
+        # memory type; otherwise an ordinary preference can bypass relevance
+        # admission and consume context on every future turn.
+        is_critical = mtype == MemoryType.critical
         # Model output is untrusted. Clamp it before Pydantic validates the
         # record so one malformed extraction cannot break the chat request or
         # inflate a context window.
