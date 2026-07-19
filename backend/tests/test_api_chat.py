@@ -83,6 +83,67 @@ def test_explicit_memory_request_uses_fallback_when_model_returns_empty(client):
     )
 
 
+def test_chat_skips_unrelated_same_project_memories(client):
+    from app.memory.scorer import score_memory
+    from app.models import MemoryRecord, MemoryType
+
+    memories = [
+        MemoryRecord(
+            user_id="t",
+            project_id="qwen-memoryagent",
+            session_id="s1",
+            type=MemoryType.decision,
+            content="User's final demo label is CLOUD-PROOF-2026.",
+            importance=0.8,
+        ),
+        MemoryRecord(
+            user_id="t",
+            project_id="qwen-memoryagent",
+            session_id="s1",
+            type=MemoryType.project,
+            content="MemoPilot uses Alibaba Tablestore for persistent memory.",
+            importance=0.9,
+        ),
+    ]
+    similarities = [0.57, 0.42]
+    scored = []
+    for memory, similarity in zip(memories, similarities):
+        components = score_memory(memory, similarity, "qwen-memoryagent")
+        components["dense_similarity"] = similarity
+        components["keyword_overlap"] = 0.0
+        scored.append((memory, components))
+
+    async def fixed_retrieval(*_args, **_kwargs):
+        return scored, len(scored), 1.0
+
+    captured = {}
+
+    async def capture_chat(messages):
+        captured["system"] = messages[0]["content"]
+        return "The submitted build uses React 18 with Vite."
+
+    async def no_memories(*_args, **_kwargs):
+        return {"new_memories": [], "updates": [], "forget": []}
+
+    client.app.state.memos.retriever.retrieve = fixed_retrieval
+    client.app.state.memos.qwen.chat = capture_chat
+    client.app.state.memos.qwen.extract_json = no_memories
+
+    response = client.post("/api/chat", json={
+        "user_id": "t",
+        "project_id": "qwen-memoryagent",
+        "session_id": "s2",
+        "message": "Which frontend does this submitted build use?",
+    })
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["used_memories"] == []
+    assert len(body["trace"]["included"]) == 0
+    assert len(body["trace"]["skipped"]) == 2
+    assert "Next.js" not in captured["system"]
+
+
 def test_secret_is_redacted(client):
     captured = {}
     client.app.state.oss.put_snapshot = lambda _name, payload: captured.update(payload)

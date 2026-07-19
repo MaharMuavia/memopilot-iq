@@ -91,6 +91,10 @@ class HybridRetriever:
             sparse = _keyword_overlap(query, mem)
             similarity = max(dense, 0.5 * dense + 0.5 * sparse)
             components = score_memory(mem, similarity, project_id)
+            # Preserve both retrieval signals so the context admission gate can
+            # reject unrelated memories before score bonuses dominate.
+            components["dense_similarity"] = dense
+            components["keyword_overlap"] = sparse
             scored.append((mem, components))
 
         # Critical / pinned always sort first, then by final score.

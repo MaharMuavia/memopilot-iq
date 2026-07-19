@@ -15,7 +15,10 @@ def _scored(content, project="p", critical=False, sim=0.5, importance=0.5):
         type=MemoryType.critical if critical else MemoryType.preference,
         status=MemoryStatus.pinned if critical else MemoryStatus.active,
     )
-    return mem, score_memory(mem, sim, "p")
+    components = score_memory(mem, sim, "p")
+    components["dense_similarity"] = sim
+    components["keyword_overlap"] = 0.0
+    return mem, components
 
 
 def test_critical_memory_respects_strict_budget():
@@ -46,7 +49,47 @@ def test_trace_records_included_and_skipped():
     assert len(trace.skipped) == 3
 
 
-def test_system_prompt_separates_current_implementation_from_plans():
+def test_unrelated_same_project_memories_are_not_injected():
+    builder = ContextBuilder(token_budget=2500, top_k=8)
+    scored = [
+        _scored("User's final demo label is CLOUD-PROOF-2026.", sim=0.57, importance=0.8),
+        _scored("MemoPilot uses Alibaba Tablestore for persistent memory.", sim=0.42, importance=0.9),
+    ]
+
+    _, trace, used = builder.build(
+        "Which frontend does this submitted build use?",
+        scored,
+        "p",
+        candidates_considered=2,
+        retrieval_latency_ms=1.0,
+    )
+
+    assert used == []
+    assert len(trace.included) == 0
+    assert len(trace.skipped) == 2
+    assert all("below relevance threshold" in item.reason for item in trace.skipped)
+
+
+def test_keyword_match_can_admit_memory_when_embedding_is_weak():
+    builder = ContextBuilder(token_budget=2500, top_k=8)
+    memory, components = _scored(
+        "The submitted frontend uses React 18 with Vite.", sim=0.40
+    )
+    components["keyword_overlap"] = 0.50
+
+    _, trace, used = builder.build(
+        "Which frontend does this submitted build use?",
+        [(memory, components)],
+        "p",
+        candidates_considered=1,
+        retrieval_latency_ms=1.0,
+    )
+
+    assert used == [memory]
+    assert len(trace.included) == 1
+
+
+def test_system_prompt_contains_only_verified_current_implementation():
     builder = ContextBuilder(token_budget=2500, top_k=8)
     prompt, _, _ = builder.build(
         "What stack is implemented?",
@@ -57,8 +100,8 @@ def test_system_prompt_separates_current_implementation_from_plans():
     )
 
     assert "current frontend is React 18 with Vite" in prompt
-    assert "Next.js can be a requested future migration" in prompt
-    assert "Local mode uses SQLite and local vector retrieval" in prompt
+    assert "Next.js" not in prompt
+    assert "SQLite" not in prompt
     assert "Alibaba Tablestore and OSS" in prompt
     assert "Milvus, Qdrant, and AnalyticDB are not part" in prompt
     assert "MemoPilot memory layer" in prompt

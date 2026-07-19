@@ -57,6 +57,8 @@ class MemoryOS:
         self.context_builder = ContextBuilder(
             token_budget=self.settings.memory_token_budget,
             top_k=self.settings.retrieval_top_k,
+            min_similarity=self.settings.retrieval_min_similarity,
+            min_keyword_overlap=self.settings.retrieval_min_keyword_overlap,
         )
 
     async def init(self) -> None:

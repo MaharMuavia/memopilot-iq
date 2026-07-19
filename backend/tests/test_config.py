@@ -41,6 +41,8 @@ def test_blank_credentials_and_invalid_numeric_values_are_safe(monkeypatch):
     monkeypatch.setenv("ALIBABA_ACCESS_KEY_ID", " ")
     monkeypatch.setenv("MEMORY_TOKEN_BUDGET", "not-a-number")
     monkeypatch.setenv("RETRIEVAL_TOP_K", "0")
+    monkeypatch.setenv("RETRIEVAL_MIN_SIMILARITY", "not-a-number")
+    monkeypatch.setenv("RETRIEVAL_MIN_KEYWORD_OVERLAP", "1.5")
 
     settings = Settings()
 
@@ -48,3 +50,5 @@ def test_blank_credentials_and_invalid_numeric_values_are_safe(monkeypatch):
     assert settings.alibaba_configured is False
     assert settings.memory_token_budget == 2500
     assert settings.retrieval_top_k == 8
+    assert settings.retrieval_min_similarity == 0.62
+    assert settings.retrieval_min_keyword_overlap == 0.20

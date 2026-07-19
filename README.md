@@ -224,6 +224,8 @@ Copy [`.env.example`](.env.example) to `backend/.env` and fill in real values
 | `DATABASE_URL` | Optional development database path |
 | `FRONTEND_ORIGIN` | Frontend CORS origin, comma-separated origins, or `*` for a public demo |
 | `MEMORY_TOKEN_BUDGET` / `RETRIEVAL_TOP_K` | Context budget and retrieval depth |
+| `RETRIEVAL_MIN_SIMILARITY` | Semantic admission threshold; default `0.62` |
+| `RETRIEVAL_MIN_KEYWORD_OVERLAP` | Lexical admission threshold; default `0.20` |
 | `EVAL_MAX_CONCURRENCY` | Concurrent model calls during evaluation (default 4, maximum 8) |
 | `MEMOPILOT_API_KEYS` / `RATE_LIMIT_PER_MINUTE` | Optional API auth and rate limit |
 

@@ -35,10 +35,8 @@ SYSTEM_PROMPT = (
 
 PROJECT_GROUNDING = (
     "--- VERIFIED MEMOPILOT IQ IMPLEMENTATION FACTS ---\n"
-    "- The current frontend is React 18 with Vite. Next.js can be a requested "
-    "future migration, but it is not the implemented frontend.\n"
+    "- The current frontend is React 18 with Vite.\n"
     "- The backend is FastAPI.\n"
-    "- Local mode uses SQLite and local vector retrieval.\n"
     "- Qwen chat and embeddings use Alibaba Cloud DashScope.\n"
     "- The implemented cloud storage adapters target Alibaba Tablestore and OSS. "
     "Milvus, Qdrant, and AnalyticDB are not part of the current implementation.\n"
@@ -63,9 +61,17 @@ MEMOPILOT_PROJECT_IDS = frozenset({
 
 
 class ContextBuilder:
-    def __init__(self, token_budget: int = 2500, top_k: int = 8) -> None:
+    def __init__(
+        self,
+        token_budget: int = 2500,
+        top_k: int = 8,
+        min_similarity: float = 0.62,
+        min_keyword_overlap: float = 0.20,
+    ) -> None:
         self.token_budget = token_budget
         self.top_k = top_k
+        self.min_similarity = min_similarity
+        self.min_keyword_overlap = min_keyword_overlap
 
     def build(
         self,
@@ -89,6 +95,12 @@ class ContextBuilder:
         def is_priority(mem: MemoryRecord) -> bool:
             return mem.is_critical or mem.status == MemoryStatus.pinned
 
+        def is_relevant(comp: dict) -> bool:
+            return (
+                comp.get("semantic_similarity", 0.0) >= self.min_similarity
+                or comp.get("keyword_overlap", 0.0) >= self.min_keyword_overlap
+            )
+
         # Priority pass: critical/pinned memories are considered first, but
         # the configured budget remains a hard ceiling for every request.
         ordered = sorted(
@@ -99,10 +111,20 @@ class ContextBuilder:
         for mem, comp in ordered:
             cost = approx_tokens(mem.content)
             priority = is_priority(mem)
+            relevant = priority or is_relevant(comp)
             within_topk = included_count < self.top_k
             fits = tokens_used + cost <= self.token_budget
 
-            if priority and not fits:
+            if not relevant:
+                reason = (
+                    "Skipped — below relevance threshold "
+                    f"(semantic {comp.get('semantic_similarity', 0.0):.2f} < "
+                    f"{self.min_similarity:.2f}; keyword overlap "
+                    f"{comp.get('keyword_overlap', 0.0):.2f} < "
+                    f"{self.min_keyword_overlap:.2f})."
+                )
+                include = False
+            elif priority and not fits:
                 reason = "Critical/pinned memory skipped — token budget exhausted; shorten or split it."
                 include = False
             elif priority:

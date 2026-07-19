@@ -58,6 +58,16 @@ def _positive_env_int(name: str, default: int) -> int:
     return parsed if parsed > 0 else default
 
 
+def _unit_interval_env_float(name: str, default: float) -> float:
+    """Read a float in [0, 1] without allowing bad env values to break boot."""
+    value = os.getenv(name)
+    try:
+        parsed = float(value.strip()) if value and value.strip() else default
+    except ValueError:
+        return default
+    return parsed if 0.0 <= parsed <= 1.0 else default
+
+
 class Settings(BaseModel):
     """Strongly-typed view over the environment."""
 
@@ -125,6 +135,20 @@ class Settings(BaseModel):
     )
     retrieval_top_k: int = Field(
         default_factory=lambda: _positive_env_int("RETRIEVAL_TOP_K", 8)
+    )
+    retrieval_min_similarity: float = Field(
+        default_factory=lambda: _unit_interval_env_float(
+            "RETRIEVAL_MIN_SIMILARITY", 0.62
+        ),
+        ge=0.0,
+        le=1.0,
+    )
+    retrieval_min_keyword_overlap: float = Field(
+        default_factory=lambda: _unit_interval_env_float(
+            "RETRIEVAL_MIN_KEYWORD_OVERLAP", 0.20
+        ),
+        ge=0.0,
+        le=1.0,
     )
 
     @property
