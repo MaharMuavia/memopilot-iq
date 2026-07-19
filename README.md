@@ -18,9 +18,10 @@ budget, updates and supersedes outdated memories, expires temporary ones, and
 shows a transparent **Memory Trace** explaining why each memory was used,
 ignored, updated, or forgotten.
 
-**Live deployment:** [Open MemoPilot IQ on Alibaba Cloud ECS](http://47.84.129.218/app)
-· [view deployment proof](docs/alibaba_cloud_proof.md) ·
-[read the Qwen Cloud build journey](https://dev.to/muhammad_muavia/ai-agents-dont-need-more-memory-they-need-memory-governance-15ej).
+> ### [Launch the live MemoPilot IQ deployment →](http://47.84.129.218/app)
+> Running publicly on **Alibaba Cloud ECS** in `ALIBABA_CLOUD_MODE`; no account
+> or credentials are required. [View deployment proof](docs/alibaba_cloud_proof.md)
+> · [Read the Qwen Cloud build journey](https://dev.to/muhammad_muavia/ai-agents-dont-need-more-memory-they-need-memory-governance-15ej)
 
 ---
 
@@ -296,11 +297,21 @@ See [docs/judging_mapping.md](docs/judging_mapping.md) for the full rubric and
 rule-compliance checklist.
 
 ## Screenshots
-Verified Alibaba Cloud evidence is in [docs/alibaba_cloud_proof.md](docs/alibaba_cloud_proof.md):
+These captures come from the [live Alibaba Cloud deployment](http://47.84.129.218/app).
+Select any image to open the full-resolution proof. The complete evidence trail
+is documented in [docs/alibaba_cloud_proof.md](docs/alibaba_cloud_proof.md).
 
-| Automatic memory creation | Cross-session recall |
-|---|---|
-| ![Automatic memory creation](assets/proof/02-automatic-memory-creation.png) | ![Cross-session recall](assets/proof/03-cross-session-recall.png) |
+### Alibaba Tablestore retrieval
+
+[![Alibaba Tablestore memory retrieval](assets/proof/01-cloud-memory-retrieval.png)](assets/proof/01-cloud-memory-retrieval.png)
+
+### Automatic memory creation
+
+[![Automatic memory creation](assets/proof/02-automatic-memory-creation.png)](assets/proof/02-automatic-memory-creation.png)
+
+### Cross-session recall
+
+[![Cross-session recall](assets/proof/03-cross-session-recall.png)](assets/proof/03-cross-session-recall.png)
 
 The final public video will demonstrate the same flow in under three minutes.
 
