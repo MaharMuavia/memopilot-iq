@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge)](LICENSE)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-HTTPS-2563eb?style=for-the-badge)](https://47-84-129-218.sslip.io/app)
 [![Build Journey](https://img.shields.io/badge/Build%20Journey-Dev.to-0a0a0a?style=for-the-badge)](https://dev.to/muhammad_muavia/ai-agents-dont-need-more-memory-they-need-memory-governance-15ej)
-[![Backend tests](https://img.shields.io/badge/Backend%20tests-100%20passing-22c55e?style=for-the-badge)](docs/submission_readiness.md)
+[![Backend tests](https://img.shields.io/badge/Backend%20tests-101%20passing-22c55e?style=for-the-badge)](docs/submission_readiness.md)
 [![Qwen evaluation](https://img.shields.io/badge/Qwen%20evaluation-24%2F24-16a34a?style=for-the-badge)](docs/evaluation_results.md)
 
 > **A self-curating persistent-memory agent that remembers, forgets, and explains what matters.**
@@ -295,7 +295,7 @@ Frontend type-check / build:
 cd frontend && npm run build
 ```
 
-Current release verification: **100 backend tests pass** and the production
+Current release verification: **101 backend tests pass** and the production
 frontend build completes successfully.
 
 ## Demo script
