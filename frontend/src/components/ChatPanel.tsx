@@ -20,8 +20,8 @@ interface Turn {
 
 const STARTERS = [
   "I prefer FastAPI backend, React + Vite, Alibaba Cloud, light UI, and short answers. Never commit API keys.",
-  "Design the backend architecture.",
-  "For the next iteration after this submission, migrate the frontend to Next.js instead of React + Vite.",
+  "Design the Alibaba Cloud backend architecture in five concise bullets.",
+  "For the next iteration after this submission, migrate the frontend to Next.js instead of React + Vite. Confirm this plan in two sentences.",
   "What frontend does this submitted build use today, and what is planned after submission?",
 ];
 
