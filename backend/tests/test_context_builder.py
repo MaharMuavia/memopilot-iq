@@ -111,6 +111,42 @@ def test_keyword_match_can_admit_memory_when_embedding_is_weak():
     assert len(trace.included) == 1
 
 
+def test_broad_architecture_request_admits_project_governance_preferences():
+    builder = ContextBuilder(token_budget=2500, top_k=8)
+    memory, components = _scored(
+        "Cloud provider preference: Alibaba Cloud", sim=0.40
+    )
+
+    _, trace, used = builder.build(
+        "Design the backend architecture for my project.",
+        [(memory, components)],
+        "p",
+        candidates_considered=1,
+        retrieval_latency_ms=1.0,
+    )
+
+    assert used == [memory]
+    assert "broad architecture/design request" in trace.included[0].reason
+
+
+def test_broad_request_does_not_admit_other_project_memory():
+    builder = ContextBuilder(token_budget=2500, top_k=8)
+    memory, components = _scored(
+        "Cloud provider preference: Alibaba Cloud", project="other", sim=0.40
+    )
+
+    _, trace, used = builder.build(
+        "Design the backend architecture for my project.",
+        [(memory, components)],
+        "p",
+        candidates_considered=1,
+        retrieval_latency_ms=1.0,
+    )
+
+    assert used == []
+    assert len(trace.skipped) == 1
+
+
 def test_system_prompt_contains_only_verified_current_implementation():
     builder = ContextBuilder(token_budget=2500, top_k=8)
     prompt, _, _ = builder.build(

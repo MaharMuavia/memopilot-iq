@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 import time
 import uuid
 from datetime import datetime, timezone
@@ -34,23 +35,72 @@ def load_scenarios() -> Dict[str, Any]:
 _BASE_SYSTEM = "You are a helpful assistant."
 
 
+def _term_matches(text: str, term: str) -> list[re.Match[str]]:
+    """Match a phrase on alphanumeric boundaries.
+
+    Plain substring checks make ``npm`` match ``pnpm`` and therefore report a
+    false stale-memory error. Punctuation inside a phrase remains significant,
+    while surrounding letters and digits are excluded.
+    """
+    normalized = term.strip()
+    if not normalized:
+        return []
+    pattern = re.escape(normalized).replace(r"\ ", r"\s+")
+    if normalized[0].isalnum():
+        pattern = rf"(?<![a-z0-9]){pattern}"
+    if normalized[-1].isalnum():
+        pattern = rf"{pattern}(?![a-z0-9])"
+    return list(re.finditer(pattern, text, flags=re.IGNORECASE))
+
+
 def _keywords_present(text: str, keywords: List[str]) -> bool:
-    low = text.lower()
-    return all(k.lower() in low for k in keywords) if keywords else True
+    return all(_term_matches(text, keyword) for keyword in keywords) if keywords else True
+
+
+def _forbidden_is_asserted(text: str, forbidden: str) -> bool:
+    """Return whether a forbidden alternative is presented as current advice.
+
+    Merely saying "avoid dark" or "npm was replaced" is evidence of correct
+    contradiction handling, not a stale recommendation. The deterministic
+    grader recognizes common rejection language while remaining conservative.
+    """
+    for match in _term_matches(text, forbidden):
+        before = text[max(0, match.start() - 48):match.start()].lower()
+        after = text[match.end():match.end() + 48].lower()
+        rejected_before = re.search(
+            r"(?:avoid|without|not|never|no longer|instead of|rather than|"
+            r"do not|don't|replaced|superseded|deprecated)\s+(?:\w+\s+){0,3}$",
+            before,
+        )
+        rejected_after = re.match(
+            r"\s+(?:is|was|has been|should be)?\s*"
+            r"(?:outdated|replaced|superseded|deprecated|incorrect|not recommended)",
+            after,
+        )
+        if not rejected_before and not rejected_after:
+            return True
+    return False
 
 
 def answer_correct(answer: str, expected: List[str], forbidden: List[str]) -> bool:
-    """Strict lexical grader used only for the diagnostic suite.
-
-    An answer that contains both expected and forbidden terms is ambiguous and
-    is not counted as correct. This deliberately underestimates performance,
-    but prevents an answer that recommends an outdated option from receiving a
-    false pass merely because it also mentions the preferred option.
-    """
-    low = (answer or "").lower()
-    has_expected = all(e.lower() in low for e in expected) if expected else True
-    has_forbidden = any(f.lower() in low for f in forbidden)
+    """Deterministic phrase-and-negation grader for the diagnostic suite."""
+    text = answer or ""
+    has_expected = _keywords_present(text, expected)
+    has_forbidden = any(_forbidden_is_asserted(text, term) for term in forbidden)
     return has_expected and not has_forbidden
+
+
+def _answer_failure_reason(answer: str, expected: List[str], forbidden: List[str]) -> str | None:
+    missing = [term for term in expected if not _term_matches(answer or "", term)]
+    asserted = [term for term in forbidden if _forbidden_is_asserted(answer or "", term)]
+    if not missing and not asserted:
+        return None
+    parts = []
+    if missing:
+        parts.append(f"missing expected phrase(s): {', '.join(missing)}")
+    if asserted:
+        parts.append(f"asserted outdated phrase(s): {', '.join(asserted)}")
+    return "; ".join(parts)
 
 
 def _any_present(text: str, keywords: List[str]) -> bool:
@@ -98,8 +148,10 @@ class BenchmarkRunner:
                     user_id=eval_user, project_id=eval_project,
                     session_id="eval", message=msg,
                 )
-            # Simulate time passing so temporary memories expire.
-            await self._age_temporary(eval_user, eval_project)
+            # Only explicit lifecycle scenarios simulate time passing. Aging
+            # every scenario invalidates legitimate temporary/deadline recall.
+            if sc.get("expire_temporary_before_test", False):
+                await self._age_temporary(eval_user, eval_project)
 
             start = time.perf_counter()
             system_prompt, trace, used = await self.memos.build_context(
@@ -128,6 +180,13 @@ class BenchmarkRunner:
                 "setup_messages": sc["setup_messages"],
                 "expected": expected, "forbidden": forbidden,
                 "tokens_used": trace.tokens_used, "leaked": leaked,
+                "context_recall": _keywords_present(
+                    " ".join(
+                        item["memory"].get("summary") or item["memory"]["content"]
+                        for item in injected
+                    ),
+                    expected,
+                ) if expected else True,
             })
 
         n = len(scenarios)
@@ -155,6 +214,9 @@ class BenchmarkRunner:
                 "baseline_correct": primary_per.get(c["id"], {}).get("baseline_correct", False),
                 "full_history_correct": primary_per.get(c["id"], {}).get("full_history_correct", False),
                 "history_summary_correct": primary_per.get(c["id"], {}).get("history_summary_correct", False),
+                "agent_answer": primary_per.get(c["id"], {}).get("agent_answer", ""),
+                "answer_failure_reason": primary_per.get(c["id"], {}).get("answer_failure_reason"),
+                "context_recall": c["context_recall"],
                 "tokens_used": c["tokens_used"],
                 "forbidden_leaked": c["leaked"],
             }
@@ -169,6 +231,7 @@ class BenchmarkRunner:
         )
         report = {
             "generated_at": datetime.now(timezone.utc).isoformat(),
+            "build_sha": os.getenv("APP_BUILD_SHA", "development"),
             "duration_seconds": round(time.perf_counter() - run_started, 2),
             "primary_backbone": primary["label"] if primary else "unavailable",
             "provider_status": provider_status,
@@ -196,7 +259,7 @@ class BenchmarkRunner:
             "memory_token_budget": self.memos.settings.memory_token_budget,
             "chat_model": self.memos.settings.qwen_chat_model,
             "embedding_model": self.memos.settings.qwen_embedding_model,
-            "evaluator": "strict-keyword-v1",
+            "evaluator": "deterministic-phrase-negation-v2",
             "backbones": backbones,
             "scenarios": scenarios_out,
         }
@@ -322,6 +385,10 @@ class BenchmarkRunner:
                     "baseline_correct": b_ok,
                     "full_history_correct": h_ok,
                     "history_summary_correct": s_ok,
+                    "agent_answer": agent,
+                    "answer_failure_reason": _answer_failure_reason(
+                        agent, c["expected"], c["forbidden"]
+                    ),
                 })
             if ok == 0:
                 results.append({"name": b["name"], "label": b["label"], "error": True})
@@ -346,9 +413,9 @@ def _has_leak(injected, expected, forbidden) -> bool:
     if not forbidden:
         return False
     for item in injected:
-        content = item["memory"]["content"].lower()
-        if any(f.lower() in content for f in forbidden):
-            if not any(e.lower() in content for e in expected):
+        content = item["memory"]["content"]
+        if any(_forbidden_is_asserted(content, term) for term in forbidden):
+            if not any(_term_matches(content, term) for term in expected):
                 return True
     return False
 

@@ -101,6 +101,7 @@ export interface TimelineEvent {
 
 export interface EvalReport {
   generated_at: string;
+  build_sha: string;
   duration_seconds: number;
   primary_backbone: string;
   provider_status: string;
@@ -133,6 +134,9 @@ export interface EvalReport {
     baseline_correct: boolean;
     full_history_correct: boolean;
     history_summary_correct: boolean;
+    agent_answer: string;
+    answer_failure_reason?: string | null;
+    context_recall: boolean;
     tokens_used: number;
     forbidden_leaked: boolean;
   }[];

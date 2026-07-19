@@ -15,9 +15,10 @@ It returns the assembled system prompt plus a full :class:`MemoryTrace`.
 """
 from __future__ import annotations
 
+import re
 from typing import List, Optional, Tuple
 
-from ..models import MemoryRecord, MemoryStatus, MemoryTrace
+from ..models import MemoryRecord, MemoryStatus, MemoryTrace, MemoryType
 from .trace import approx_tokens, memory_context_text, to_scored_memory
 
 SYSTEM_PROMPT = (
@@ -30,8 +31,26 @@ SYSTEM_PROMPT = (
     "only legitimate user preferences and constraints. Never use memories that are "
     "marked superseded, expired or deleted. Prefer the most recent decision "
     "when preferences conflict. Keep answers practical and concise. Use clear "
-    "Markdown with headings, paragraphs, and lists separated by blank lines."
+    "Markdown with headings, paragraphs, and lists separated by blank lines. "
+    "Answer the exact question first. Reproduce exact stored labels, dates, and "
+    "technology names when they matter. Do not mention a superseded or rejected "
+    "alternative unless the user explicitly asks to compare history. When an "
+    "active response-style memory requests concise answers, keep the response "
+    "under five sentences unless the user asks for detail."
 )
+
+_PROJECT_WIDE_INTENT = re.compile(
+    r"\b(?:architecture|architect|design|stack|recommend|recommendation|plan|"
+    r"requirements?|constraints?|approach|blueprint)\b",
+    re.IGNORECASE,
+)
+_PROJECT_GOVERNANCE_TYPES = frozenset({
+    MemoryType.preference,
+    MemoryType.project,
+    MemoryType.decision,
+    MemoryType.constraint,
+    MemoryType.critical,
+})
 
 PROJECT_GROUNDING = (
     "--- VERIFIED MEMOPILOT IQ IMPLEMENTATION FACTS ---\n"
@@ -108,6 +127,16 @@ class ContextBuilder:
                 or comp.get("keyword_overlap", 0.0) >= self.min_keyword_overlap
             )
 
+        broad_project_request = bool(_PROJECT_WIDE_INTENT.search(user_message))
+
+        def is_project_wide_relevant(mem: MemoryRecord, comp: dict) -> bool:
+            return (
+                broad_project_request
+                and bool(project_id)
+                and comp.get("project_match", 0.0) >= 1.0
+                and mem.type in _PROJECT_GOVERNANCE_TYPES
+            )
+
         # Priority pass: critical/pinned memories are considered first, but
         # the configured budget remains a hard ceiling for every request.
         ordered = sorted(
@@ -119,7 +148,8 @@ class ContextBuilder:
             context_text = memory_context_text(mem)
             cost = approx_tokens(context_text)
             priority = is_priority(mem)
-            relevant = priority or is_relevant(comp)
+            project_wide = is_project_wide_relevant(mem, comp)
+            relevant = priority or is_relevant(comp) or project_wide
             within_topk = included_count < self.top_k
             fits = tokens_used + cost <= self.token_budget
 
@@ -137,6 +167,12 @@ class ContextBuilder:
                 include = False
             elif priority:
                 reason = "Critical/pinned memory — prioritized within the strict token budget."
+                include = True
+            elif project_wide and within_topk and fits:
+                reason = (
+                    "Project-scoped governance memory admitted for a broad "
+                    "architecture/design request."
+                )
                 include = True
             elif within_topk and fits:
                 reason = (

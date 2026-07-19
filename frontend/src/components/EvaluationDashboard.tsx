@@ -58,6 +58,7 @@ export function EvaluationDashboard() {
           {report && (
             <p className="mt-0.5 text-xs text-slate-400">
               {report.primary_backbone} · {report.evaluator} · {report.duration_seconds}s
+              {` · build ${report.build_sha.slice(0, 12)}`}
             </p>
           )}
         </div>
@@ -133,7 +134,9 @@ export function EvaluationDashboard() {
               {report.scenarios.map((s) => (
                 <tr key={s.id} className="border-t border-slate-100">
                   <td className="py-1.5 text-slate-700">{s.title}</td>
-                  <td><Mark ok={s.memory_agent_correct} /></td>
+                  <td title={s.answer_failure_reason ?? "Answer passed deterministic grading"}>
+                    <Mark ok={s.memory_agent_correct} />
+                  </td>
                   <td><Mark ok={s.baseline_correct} /></td>
                   <td><Mark ok={s.full_history_correct} /></td>
                   <td><Mark ok={s.history_summary_correct} /></td>

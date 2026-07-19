@@ -145,6 +145,7 @@
     {
       "id": "expire_staging",
       "title": "Expiry: temporary status",
+      "expire_temporary_before_test": true,
       "setup_messages": ["Temporary note: the staging server is down today only."],
       "test_question": "Is the staging server still down?",
       "expected_answer_keywords": [],
@@ -153,6 +154,7 @@
     {
       "id": "expire_temp_flag",
       "title": "Expiry: temporary feature flag",
+      "expire_temporary_before_test": true,
       "setup_messages": ["Temporary: feature flag X is enabled just for today's test."],
       "test_question": "Is feature flag X still enabled?",
       "expected_answer_keywords": [],
@@ -193,9 +195,9 @@
     {
       "id": "deadline_recall",
       "title": "Deadline recall",
-      "setup_messages": ["The submission deadline is 2026-07-09."],
+      "setup_messages": ["The submission deadline is 2030-07-09."],
       "test_question": "When is the submission due?",
-      "expected_answer_keywords": ["2026-07-09"],
+      "expected_answer_keywords": ["2030-07-09"],
       "must_not_use_keywords": []
     },
     {

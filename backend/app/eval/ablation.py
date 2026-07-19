@@ -101,8 +101,9 @@ class AblationRunner:
             for msg in sc["setup_messages"]:
                 await self.memos.remember(user_id=user, project_id=project,
                                           session_id="abl", message=msg)
-            # expire temporary memories so the lifecycle case is exercised
-            await self._age_temporary(user, project)
+            # Time advances only in scenarios that explicitly test expiry.
+            if sc.get("expire_temporary_before_test", False):
+                await self._age_temporary(user, project)
             await self.memos.forgetting.sweep(user, project)
 
             q_emb = await self.memos.qwen.embed(sc["test_question"])
@@ -148,9 +149,23 @@ class AblationRunner:
                         for memory, components in scored
                     ]
                 started = time.perf_counter()
-                injected = self._assemble(
-                    variant_scored, weights, priority, include_excluded, budget, top_k
-                )
+                if name == "Full governance":
+                    production_candidates = [
+                        (memory, components)
+                        for memory, components in variant_scored
+                        if memory.status not in _EXCLUDED
+                    ]
+                    _, _, injected = self.memos.context_builder.build(
+                        sc["test_question"],
+                        production_candidates,
+                        project,
+                        candidates_considered=len(production_candidates),
+                        retrieval_latency_ms=0.0,
+                    )
+                else:
+                    injected = self._assemble(
+                        variant_scored, weights, priority, include_excluded, budget, top_k
+                    )
                 elapsed_ms = (time.perf_counter() - started) * 1000.0
                 inj_dicts = [{"memory": {"content": memory_context_text(m), "memory_id": m.memory_id}}
                              for m in injected]
@@ -193,7 +208,7 @@ class AblationRunner:
         return {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "build_sha": os.getenv("APP_BUILD_SHA", "development"),
-            "evaluator": "deterministic-memory-layer-ablation-v2",
+            "evaluator": "deterministic-memory-layer-ablation-v3",
             "variants": results,
             "num_scenarios": len(scenarios),
             "retrieval_top_k": TOP_K,
