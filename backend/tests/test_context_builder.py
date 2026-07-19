@@ -49,6 +49,28 @@ def test_trace_records_included_and_skipped():
     assert len(trace.skipped) == 3
 
 
+def test_context_uses_canonical_summary_but_trace_retains_audit_content():
+    builder = ContextBuilder(token_budget=2500, top_k=2)
+    memory, components = _scored(
+        "Use FastAPI for the backend instead of Flask.", sim=0.9
+    )
+    memory.summary = "Current backend framework: FastAPI"
+
+    prompt, trace, used = builder.build(
+        "Which backend framework is current?",
+        [(memory, components)],
+        "p",
+        candidates_considered=1,
+        retrieval_latency_ms=1.0,
+    )
+
+    assert used == [memory]
+    assert "Current backend framework: FastAPI" in prompt
+    assert "instead of Flask" not in prompt
+    assert trace.included[0].memory["content"] == memory.content
+    assert trace.included[0].approx_tokens == len(memory.summary) // 4
+
+
 def test_unrelated_same_project_memories_are_not_injected():
     builder = ContextBuilder(token_budget=2500, top_k=8)
     scored = [

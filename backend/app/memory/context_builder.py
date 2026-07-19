@@ -18,7 +18,7 @@ from __future__ import annotations
 from typing import List, Optional, Tuple
 
 from ..models import MemoryRecord, MemoryStatus, MemoryTrace
-from .trace import approx_tokens, to_scored_memory
+from .trace import approx_tokens, memory_context_text, to_scored_memory
 
 SYSTEM_PROMPT = (
     "You are MemoPilot IQ, a persistent-memory AI assistant for developers and "
@@ -116,7 +116,8 @@ class ContextBuilder:
 
         included_count = 0
         for mem, comp in ordered:
-            cost = approx_tokens(mem.content)
+            context_text = memory_context_text(mem)
+            cost = approx_tokens(context_text)
             priority = is_priority(mem)
             relevant = priority or is_relevant(comp)
             within_topk = included_count < self.top_k
@@ -151,7 +152,7 @@ class ContextBuilder:
                 include = False
 
             if include:
-                selected_lines.append(f"- [{mem.type.value}] {mem.content}")
+                selected_lines.append(f"- [{mem.type.value}] {context_text}")
                 tokens_used += cost
                 included_count += 1
                 used_memories.append(mem)

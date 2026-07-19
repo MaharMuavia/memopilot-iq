@@ -29,7 +29,7 @@ from ..memory import MemoryOS
 from ..memory.embeddings import cosine_similarity
 from ..memory.retriever import _keyword_overlap
 from ..memory.scorer import WEIGHTS, score_memory
-from ..memory.trace import approx_tokens
+from ..memory.trace import approx_tokens, memory_context_text
 from ..models import MemoryRecord, MemoryStatus
 from .benchmark import _has_leak, _keywords_present, load_scenarios
 
@@ -152,13 +152,15 @@ class AblationRunner:
                     variant_scored, weights, priority, include_excluded, budget, top_k
                 )
                 elapsed_ms = (time.perf_counter() - started) * 1000.0
-                inj_dicts = [{"memory": {"content": m.content, "memory_id": m.memory_id}}
+                inj_dicts = [{"memory": {"content": memory_context_text(m), "memory_id": m.memory_id}}
                              for m in injected]
-                inj_text = " ".join(m.content for m in injected)
+                inj_text = " ".join(memory_context_text(m) for m in injected)
 
                 t = tallies[name]
                 t["latencies"].append(elapsed_ms)
-                t["tokens"] += sum(approx_tokens(memory.content) for memory in injected)
+                t["tokens"] += sum(
+                    approx_tokens(memory_context_text(memory)) for memory in injected
+                )
                 if has_expected:
                     t["recall_tot"] += 1
                     if _keywords_present(inj_text, expected):
@@ -228,7 +230,7 @@ class AblationRunner:
 
         injected, tokens, count = [], 0, 0
         for m, _ in cands:
-            cost = approx_tokens(m.content)
+            cost = approx_tokens(memory_context_text(m))
             if is_priority(m) and tokens + cost <= budget:
                 injected.append(m)
                 tokens += cost

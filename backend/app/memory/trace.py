@@ -14,6 +14,11 @@ def approx_tokens(text: str) -> int:
     return max(1, len(text) // 4)
 
 
+def memory_context_text(memory: MemoryRecord) -> str:
+    """Use the canonical compact proposition while retaining full audit content."""
+    return memory.summary.strip() or memory.content
+
+
 def to_scored_memory(
     memory: MemoryRecord,
     components: dict,
@@ -30,5 +35,5 @@ def to_scored_memory(
         },
         included=included,
         reason=reason,
-        approx_tokens=approx_tokens(memory.content),
+        approx_tokens=approx_tokens(memory_context_text(memory)),
     )
