@@ -28,7 +28,7 @@ and [Devpost official rules](https://qwencloud-hackathon.devpost.com/rules).
 | Setup, architecture, algorithm, and security docs | Ready | A new judge can run local mode from the README |
 | Qwen chat, extraction, and embedding integration | Ready | Public health reports Qwen configured and online |
 | MemoryAgent lifecycle and transparent trace | Ready | Public demos prove recall, supersession, and stale-memory exclusion |
-| Automated backend/frontend validation | Ready | 92 backend tests and the frontend production build pass |
+| Automated backend/frontend validation | Ready | 94 backend tests and the frontend production build pass |
 | Alibaba Cloud deployment | Ready | Public backend runs on ECS in `ALIBABA_CLOUD_MODE` |
 | Public working-project URL | Ready | [http://47.84.129.218/app](http://47.84.129.218/app) opens without credentials |
 | Cloud proof | Ready | [Proof gallery](alibaba_cloud_proof.md) shows automatic creation and cross-session Tablestore recall |

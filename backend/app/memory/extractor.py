@@ -249,11 +249,81 @@ class MemoryExtractor:
             if mem.is_critical:
                 continue
             if action == "supersede":
+                new_content = redact_secrets(
+                    str(upd.get("new_content") or "").strip()
+                )[:4000]
+                same_turn = [
+                    candidate
+                    for candidate in existing
+                    if candidate.memory_id != mem.memory_id
+                    and candidate.source_message_id == source_message_id
+                    and candidate.status in {MemoryStatus.active, MemoryStatus.pinned}
+                ]
+                replacement = None
+                if same_turn:
+                    replacement = max(
+                        same_turn,
+                        key=lambda candidate: (
+                            _similar(candidate.content, new_content)
+                            if new_content
+                            else candidate.importance
+                        ),
+                    )
+                elif new_content and not contains_secret(new_content):
+                    replacement = self._to_record(
+                        {
+                            "type": mem.type.value,
+                            "content": new_content,
+                            "summary": new_content[:80],
+                            "importance": max(0.7, mem.importance),
+                            "confidence": upd.get("confidence", 0.85),
+                            "tags": [*mem.tags, "qwen-update"],
+                            "privacy_level": mem.privacy_level.value,
+                            "reason": upd.get("reason") or "Replacement from Qwen update.",
+                        },
+                        user_id,
+                        project_id,
+                        session_id,
+                        source_message_id,
+                        new_content,
+                    )
+                    replacement.embedding = await self.qwen.embed(replacement.content)
+                    await self.store.add(replacement)
+                    existing.append(replacement)
+                    actions.created.append({
+                        "memory_id": replacement.memory_id,
+                        "type": replacement.type.value,
+                        "content": replacement.content,
+                    })
+                    await self._event(
+                        actions,
+                        user_id,
+                        project_id,
+                        "created",
+                        replacement,
+                        replacement.reason,
+                    )
+
+                # A supersede action without a durable replacement would erase
+                # the current truth. Preserve the old memory instead.
+                if replacement is None:
+                    logger.warning(
+                        "Ignored Qwen supersede for %s because no replacement was supplied",
+                        mem.memory_id,
+                    )
+                    continue
+                replacement.supersedes = mem.memory_id
+                await self.store.update(replacement)
                 mem.status = MemoryStatus.superseded
+                mem.superseded_by = replacement.memory_id
                 mem.updated_at = datetime.now(timezone.utc)
                 mem.reason = str(upd.get("reason") or "Superseded by a newer decision.")
                 await self.store.update(mem)
-                actions.superseded.append({"memory_id": mem.memory_id, "via": "llm_update"})
+                actions.superseded.append({
+                    "memory_id": mem.memory_id,
+                    "superseded_by": replacement.memory_id,
+                    "via": "llm_update",
+                })
                 await self._event(actions, user_id, project_id, "superseded", mem, mem.reason)
             elif action == "archive":
                 mem.status = MemoryStatus.archived

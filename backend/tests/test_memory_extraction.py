@@ -196,5 +196,91 @@ async def test_qwen_update_handles_general_contradiction_outside_fixed_taxonomy(
     refreshed = await memos.store.get(old.memory_id)
     assert refreshed is not None
     assert refreshed.status == MemoryStatus.superseded
+    assert refreshed.superseded_by
     active = await memos.store.list("u", "p")
-    assert any("hospitals" in memory.content.lower() for memory in active)
+    replacement = next(
+        memory for memory in active if "hospitals" in memory.content.lower()
+    )
+    assert replacement.supersedes == old.memory_id
+
+
+@pytest.mark.asyncio
+async def test_qwen_supersede_update_creates_missing_replacement(memos):
+    old = MemoryRecord(
+        memory_id="mem_old_color",
+        user_id="u",
+        project_id="p",
+        session_id="s1",
+        type=MemoryType.preference,
+        content="The release verification color is cobalt.",
+        importance=0.8,
+    )
+    await memos.store.add(old)
+
+    async def update_without_new_memory(*_args, **_kwargs):
+        return {
+            "new_memories": [],
+            "updates": [{
+                "old_memory_id": old.memory_id,
+                "action": "supersede",
+                "new_content": "The release verification color is amber.",
+                "reason": "The user changed the verification color.",
+            }],
+            "forget": [],
+        }
+
+    memos.qwen.extract_json = update_without_new_memory
+    actions = await memos.remember(
+        user_id="u",
+        project_id="p",
+        session_id="s2",
+        message="Change my release verification color from cobalt to amber.",
+    )
+
+    refreshed = await memos.store.get(old.memory_id)
+    assert refreshed is not None
+    assert refreshed.status == MemoryStatus.superseded
+    assert refreshed.superseded_by
+    replacement = await memos.store.get(refreshed.superseded_by)
+    assert replacement is not None
+    assert replacement.status == MemoryStatus.active
+    assert replacement.supersedes == old.memory_id
+    assert "amber" in replacement.content.lower()
+    assert actions.created and actions.superseded
+
+
+@pytest.mark.asyncio
+async def test_qwen_supersede_without_replacement_preserves_current_memory(memos):
+    old = MemoryRecord(
+        memory_id="mem_preserve",
+        user_id="u",
+        project_id="p",
+        session_id="s1",
+        type=MemoryType.decision,
+        content="The launch region is Singapore.",
+    )
+    await memos.store.add(old)
+
+    async def invalid_update(*_args, **_kwargs):
+        return {
+            "new_memories": [],
+            "updates": [{
+                "old_memory_id": old.memory_id,
+                "action": "supersede",
+                "new_content": "",
+            }],
+            "forget": [],
+        }
+
+    memos.qwen.extract_json = invalid_update
+    actions = await memos.remember(
+        user_id="u",
+        project_id="p",
+        session_id="s2",
+        message="We changed the launch region.",
+    )
+
+    refreshed = await memos.store.get(old.memory_id)
+    assert refreshed is not None
+    assert refreshed.status == MemoryStatus.active
+    assert actions.superseded == []
