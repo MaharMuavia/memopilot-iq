@@ -57,6 +57,7 @@ docker run -d \
   -e APP_BUILD_SHA="$BUILD_SHA" \
   -e PORT=8000 \
   -e DATABASE_URL=sqlite:////data/memopilot.db \
+  -e EVAL_REPORT_PATH=/data/latest-eval-report.json \
   -v "$DATA_VOLUME":/data \
   "$BACKEND_IMAGE" >/dev/null
 

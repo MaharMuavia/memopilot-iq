@@ -5,7 +5,10 @@ MemoPilot IQ is deployed on **Alibaba Cloud ECS** in
 calls, Alibaba Tablestore for durable memory, and Alibaba OSS for redacted turn
 snapshots and evaluation artifacts.
 
-The public demonstration URL is [http://47.84.129.218/app](http://47.84.129.218/app).
+The public demonstration URL is the secured
+[HTTPS deployment](https://47-84-129-218.sslip.io/app). `GET /health` exposes
+the deployed build SHA, active storage backend, schema, Qwen status, and tenant
+isolation mode without exposing credentials.
 
 ## 1. Retrieved memory from Alibaba Tablestore
 

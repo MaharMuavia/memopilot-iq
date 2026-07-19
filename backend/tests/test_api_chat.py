@@ -292,3 +292,20 @@ def test_eval_runs(client):
     assert report["duration_seconds"] >= 0
     assert report["memory_token_budget"] == 2500
     assert report["outdated_memory_errors"] == 0
+
+
+def test_evaluation_report_file_round_trip(tmp_path):
+    from app.routes.eval import load_persisted_report, persist_report
+
+    path = tmp_path / "latest-eval.json"
+    report = {
+        "generated_at": "2030-01-01T00:00:00+00:00",
+        "build_sha": "abc123",
+        "evaluator": "test-evaluator",
+        "scenarios": [],
+    }
+
+    persist_report(str(path), report)
+
+    assert load_persisted_report(str(path)) == report
+    assert load_persisted_report(str(tmp_path / "missing.json")) is None

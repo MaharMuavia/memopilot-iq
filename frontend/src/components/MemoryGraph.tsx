@@ -52,7 +52,7 @@ export function MemoryGraph({ refreshKey }: { refreshKey: number }) {
   if (data.nodes.length === 0) {
     return (
       <div className="glass p-6 text-center text-sm text-slate-500">
-        No memories yet. Run the Judge Demo or chat to populate the graph.
+        No memories yet. Run the lifecycle check or use live Chat to populate the graph.
       </div>
     );
   }

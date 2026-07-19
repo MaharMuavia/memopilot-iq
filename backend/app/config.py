@@ -178,6 +178,9 @@ class Settings(BaseModel):
     database_url: str = Field(
         default_factory=lambda: _env_or_default("DATABASE_URL", "sqlite:///./memopilot.db")
     )
+    eval_report_path: Optional[str] = Field(
+        default_factory=lambda: _optional_env("EVAL_REPORT_PATH")
+    )
 
     # --- Web ---
     frontend_origin: str = Field(

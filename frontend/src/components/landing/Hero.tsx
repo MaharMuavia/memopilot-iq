@@ -42,7 +42,7 @@ export function Hero() {
             Launch MemoPilot IQ →
           </Link>
           <Link to="/app" className="btn-ghost px-5 py-2.5 text-base">
-            Try Judge Demo
+            Open Live Memory Demo
           </Link>
         </div>
 

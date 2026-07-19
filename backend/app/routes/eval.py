@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import asyncio
+import json
+from pathlib import Path
+from typing import Any, Optional
 
 from fastapi import APIRouter, HTTPException, Request
 
@@ -12,6 +15,32 @@ from ..utils.platform import require_admin
 router = APIRouter(prefix="/api/eval", tags=["evaluation"])
 
 
+def load_persisted_report(path: Optional[str]) -> Optional[dict[str, Any]]:
+    """Load a previously verified report for read-only public presentation."""
+    if not path:
+        return None
+    try:
+        report = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    required = {"generated_at", "build_sha", "evaluator", "scenarios"}
+    return report if isinstance(report, dict) and required.issubset(report) else None
+
+
+def persist_report(path: Optional[str], report: dict[str, Any]) -> None:
+    """Atomically persist the latest synthetic evaluation report when enabled."""
+    if not path:
+        return
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary = target.with_suffix(f"{target.suffix}.tmp")
+    temporary.write_text(
+        json.dumps(report, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    temporary.replace(target)
+
+
 @router.post("/run")
 async def run_eval(request: Request):
     require_admin(request)
@@ -19,6 +48,11 @@ async def run_eval(request: Request):
     runner = BenchmarkRunner(memos)
     report = await runner.run()
     request.app.state.last_eval_report = report
+    await asyncio.to_thread(
+        persist_report,
+        memos.settings.eval_report_path,
+        report,
+    )
 
     # Persist the report (OSS in cloud mode, local snapshot otherwise).
     try:

@@ -7,7 +7,8 @@ on Alibaba Cloud ECS for deployment-proof recording. ~10 minutes.
 1. **ECS → Instances → Create Instance** (Pay-as-you-go is fine for a demo).
 2. Image: **Alibaba Cloud Linux 3** (or Ubuntu 22.04). Size: `ecs.e-c1m1` / 1 vCPU 2 GB is enough.
 3. Assign a **public IP** (or bind an EIP).
-4. **Security Group → inbound rules → Add:** allow TCP **80** and **443** (and **22** for SSH) from `0.0.0.0/0`.
+4. **Security Group → inbound rules → Add:** allow TCP **80** and **443** from
+   `0.0.0.0/0`; restrict TCP **22** to your own public IP/CIDR.
 5. Note the **public IP** and your SSH login (key pair or password).
 
 ## 1. SSH in and get the code
@@ -51,12 +52,13 @@ to the existing port-80 frontend. Keep TCP 443 open in the ECS security group.
 ## 5. Verify it's live on Alibaba Cloud
 From your own laptop:
 ```bash
-curl http://<your-ecs-public-ip>/health
+PUBLIC_HOST=47-84-129-218.sslip.io
+curl "https://$PUBLIC_HOST/health"
 ```
-Open `http://<your-ecs-public-ip>/app` for the application, and try a real
+Open `https://<your-sslip-host>/app` for the application, and try a real
 memory turn from a terminal:
 ```bash
-curl -X POST http://<your-ecs-public-ip>/api/chat \
+curl -c cookies.txt -b cookies.txt -X POST "https://$PUBLIC_HOST/api/chat" \
   -H "Content-Type: application/json" \
   -d '{"user_id":"judge","project_id":"p","session_id":"s1","message":"I prefer FastAPI and Alibaba Cloud. Never commit API keys."}'
 ```
@@ -64,7 +66,8 @@ curl -X POST http://<your-ecs-public-ip>/api/chat \
 ## 6. Record the proof video (~30–60s, separate from the demo)
 Screen-record:
 1. The Alibaba Cloud **ECS console** showing your running instance + public IP.
-2. A terminal/browser hitting `http://<that-public-ip>/health` → response shows the service is up.
+2. A terminal/browser hitting `https://<sslip-host>/health` → response shows
+   the service, Alibaba store, isolation mode, and exact build SHA.
 3. A real `POST /api/chat` returning an answer + extracted memories.
 4. (Optional) The **Security Group** rules page, to prove it's the same instance.
 

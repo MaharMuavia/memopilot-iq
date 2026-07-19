@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title description">
+  <title id="title">MemoPilot IQ final Qwen evaluation</title>
+  <desc id="description">Governed memory achieved 100 percent accuracy, 100 percent context recall, zero stale-memory errors, and 21 percent historical-context token reduction on 24 scenarios.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07111f"/>
+      <stop offset="1" stop-color="#111d35"/>
+    </linearGradient>
+    <linearGradient id="primary" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#22c55e"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="675" fill="url(#background)"/>
+  <circle cx="1080" cy="55" r="210" fill="#2563eb" opacity="0.08"/>
+  <circle cx="80" cy="650" r="240" fill="#22c55e" opacity="0.06"/>
+
+  <g font-family="Inter, Segoe UI, Arial, sans-serif">
+    <text x="70" y="72" fill="#93c5fd" font-size="18" font-weight="700" letter-spacing="2">FINAL CLOUD EVALUATION</text>
+    <text x="70" y="120" fill="#f8fafc" font-size="38" font-weight="800">MemoPilot IQ · Qwen Memory Governance</text>
+    <text x="70" y="151" fill="#94a3b8" font-size="18">24 synthetic scenarios · deployed on Alibaba Cloud · build 97b1ff57f36c</text>
+
+    <g filter="url(#shadow)">
+      <rect x="70" y="188" width="1060" height="292" rx="22" fill="#101c31" stroke="#263750"/>
+    </g>
+    <text x="104" y="228" fill="#e2e8f0" font-size="19" font-weight="700">Answer accuracy by context strategy</text>
+
+    <g font-size="16" fill="#cbd5e1">
+      <text x="104" y="275">MemoPilot full governance</text>
+      <rect x="330" y="256" width="710" height="25" rx="12.5" fill="#1e293b"/>
+      <rect x="330" y="256" width="710" height="25" rx="12.5" fill="url(#primary)"/>
+      <text x="1060" y="275" fill="#86efac" font-weight="800">100%</text>
+
+      <text x="104" y="331">LLM history summary</text>
+      <rect x="330" y="312" width="710" height="25" rx="12.5" fill="#1e293b"/>
+      <rect x="330" y="312" width="653" height="25" rx="12.5" fill="#64748b"/>
+      <text x="1060" y="331" font-weight="700">92%</text>
+
+      <text x="104" y="387">Raw full history</text>
+      <rect x="330" y="368" width="710" height="25" rx="12.5" fill="#1e293b"/>
+      <rect x="330" y="368" width="589" height="25" rx="12.5" fill="#475569"/>
+      <text x="1060" y="387" font-weight="700">83%</text>
+
+      <text x="104" y="443">No memory</text>
+      <rect x="330" y="424" width="710" height="25" rx="12.5" fill="#1e293b"/>
+      <rect x="330" y="424" width="270" height="25" rx="12.5" fill="#334155"/>
+      <text x="1060" y="443" font-weight="700">38%</text>
+    </g>
+
+    <g filter="url(#shadow)">
+      <rect x="70" y="510" width="245" height="105" rx="18" fill="#101c31" stroke="#263750"/>
+      <rect x="335" y="510" width="245" height="105" rx="18" fill="#101c31" stroke="#263750"/>
+      <rect x="600" y="510" width="245" height="105" rx="18" fill="#101c31" stroke="#263750"/>
+      <rect x="865" y="510" width="265" height="105" rx="18" fill="#101c31" stroke="#263750"/>
+    </g>
+    <g text-anchor="middle">
+      <text x="192" y="553" fill="#86efac" font-size="30" font-weight="800">22 / 22</text>
+      <text x="192" y="583" fill="#94a3b8" font-size="15">context recall</text>
+      <text x="457" y="553" fill="#86efac" font-size="30" font-weight="800">0</text>
+      <text x="457" y="583" fill="#94a3b8" font-size="15">stale-memory errors</text>
+      <text x="722" y="553" fill="#93c5fd" font-size="30" font-weight="800">−21%</text>
+      <text x="722" y="583" fill="#94a3b8" font-size="15">historical context tokens</text>
+      <text x="997" y="553" fill="#93c5fd" font-size="30" font-weight="800">7.3 ms</text>
+      <text x="997" y="583" fill="#94a3b8" font-size="15">average retrieval</text>
+    </g>
+
+    <text x="70" y="651" fill="#64748b" font-size="14">Qwen 3.7 Max · provider online · 0 fallbacks · raw JSON committed in assets/evaluation/</text>
+  </g>
+</svg>

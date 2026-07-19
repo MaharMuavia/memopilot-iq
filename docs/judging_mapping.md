@@ -13,7 +13,7 @@
 - ✅ Uses Qwen Cloud API (chat, extraction, embeddings)
 - ⏳ Alibaba Cloud deployment evidence — capture after the final ECS/FC deployment
 - ⏳ Public working-project URL — keep available through the judging period
-- ⏳ Final Qwen-backed benchmark JSON from the submitted cloud build
+- ✅ Final Qwen-backed benchmark JSON and ablation from deployed build `97b1ff57f36c`
 - ⏳ Public under-3-minute demo video and exported presentation deck
 - ✅ Public/open-source, **MIT** `LICENSE`
 - ✅ README install + testing instructions

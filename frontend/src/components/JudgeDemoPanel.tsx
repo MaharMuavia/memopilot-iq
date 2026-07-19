@@ -32,11 +32,11 @@ export function JudgeDemoPanel({ onComplete }: { onComplete?: () => void }) {
           </span>
           <div>
             <h3 className="text-sm font-bold text-slate-800">
-              Run the 90-second Memory Lifecycle Demo
+              Optional deterministic lifecycle check
             </h3>
             <p className="text-xs text-slate-500">
-              Replays 4 sessions: memory creation → cross-session recall →
-              supersession → critical recall, with full trace accounting.
+              Replays four provider-independent sessions to verify creation,
+              recall, supersession, critical priority, and trace accounting.
             </p>
             <p className="mt-1 text-[11px] text-slate-500">
               This replay is deterministic; use Chat for a live Qwen response.
@@ -50,7 +50,7 @@ export function JudgeDemoPanel({ onComplete }: { onComplete?: () => void }) {
             </button>
           )}
           <button className="btn-primary px-4 py-2 text-sm" onClick={run} disabled={loading}>
-            {loading ? "Running…" : "Run Judge Demo"}
+            {loading ? "Running…" : "Run Lifecycle Check"}
           </button>
         </div>
       </div>

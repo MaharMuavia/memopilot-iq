@@ -28,15 +28,15 @@ and [Devpost official rules](https://qwencloud-hackathon.devpost.com/rules).
 | Setup, architecture, algorithm, and security docs | Ready | A new judge can run local mode from the README |
 | Qwen chat, extraction, and embedding integration | Ready | Public health reports Qwen configured and online |
 | MemoryAgent lifecycle and transparent trace | Ready | Public demos prove recall, supersession, and stale-memory exclusion |
-| Automated backend/frontend validation | Ready | 95 backend tests and the frontend production build pass |
+| Automated backend/frontend validation | Ready | 100 backend tests and the frontend production build pass |
 | Alibaba Cloud deployment | Ready | Public backend runs on ECS in `ALIBABA_CLOUD_MODE` |
-| Public working-project URL | Ready | [http://47.84.129.218/app](http://47.84.129.218/app) opens without credentials |
+| Public working-project URL | Ready | [HTTPS deployment](https://47-84-129-218.sslip.io/app) opens without credentials and returns HSTS |
 | Cloud proof | Ready | [Proof gallery](alibaba_cloud_proof.md) shows automatic creation and cross-session Tablestore recall |
 | Architecture diagram | Ready | SVG, Mermaid source, and architecture guide are committed |
 | Project description and track | Ready | `SUBMISSION.md` identifies Track 1: MemoryAgent and includes submission copy |
 | Optional blog prize | Ready | Published Dev.to build journey is linked from the README and submission package |
 | Presentation deck | Ready | Editable deck is committed at `assets/memopilot-iq-hackathon-deck.pptx` |
-| Final evaluation evidence | In progress | Comparative evaluator is implemented; commit the raw report from the exact deployed revision before recording |
+| Final evaluation evidence | Ready | [Qwen report and ablation](evaluation_results.md) embed deployed SHA `97b1ff57f36c`; provider online, zero fallbacks |
 | Public demo video | **Blocking** | Under 3:00, public, English or English subtitles, no copyrighted music |
 | Devpost submission | **Blocking** | Add track, description, repository, working URL, proof code link, architecture, video, and optional blog |
 
@@ -45,20 +45,18 @@ must not be represented as completed before the public link or form exists.
 
 ## Remaining critical path
 
-The repository code and cloud deployment are validated, but the release is not
-complete until the final evaluation artifact and entrant-owned media are done:
+The repository code, cloud deployment, and evaluation evidence are validated,
+but the release is not complete until entrant-owned media is done:
 
-1. **Capture final evaluation evidence.** Run the comparative evaluator against
-   the deployed revision and commit its raw JSON plus a concise summary.
-2. **Record the public deployment.** Follow `docs/demo_script.md`, stay under
+1. **Record the public deployment.** Follow `docs/demo_script.md`, stay under
    three minutes, and never show credentials, account numbers, or cloud-console
    details.
-3. **Upload the video publicly.** Use YouTube, Vimeo, or Facebook Video and
+2. **Upload the video publicly.** Use YouTube, Vimeo, or Facebook Video and
    verify playback in a signed-out window.
-4. **Complete the submission form.** Add Track 1: MemoryAgent, the project
+3. **Complete the submission form.** Add Track 1: MemoryAgent, the project
    description, repository, live URL, Alibaba proof code link, architecture,
    video, and optional blog URL.
-5. **Perform a final link check.** Open the form links signed out and confirm
+4. **Perform a final link check.** Open the form links signed out and confirm
    the repository still shows the MIT license and latest `main` commit.
 
 ## Judge-facing positioning

@@ -1,0 +1,65 @@
+{
+  "generated_at": "2026-07-19T12:41:12.712509+00:00",
+  "build_sha": "97b1ff57f36c",
+  "evaluator": "deterministic-memory-layer-ablation-v3",
+  "variants": [
+    {
+      "variant": "Full conversation history",
+      "context_recall": 1.0,
+      "stale_memory_leak_rate": 0.33,
+      "lifecycle_safety": 0.67,
+      "critical_inclusion": null,
+      "avg_context_tokens": 13.5,
+      "retrieval_latency_p50_ms": 0.0,
+      "retrieval_latency_p95_ms": 0.0
+    },
+    {
+      "variant": "Full governance",
+      "context_recall": 1.0,
+      "stale_memory_leak_rate": 0.0,
+      "lifecycle_safety": 1.0,
+      "critical_inclusion": 1.0,
+      "avg_context_tokens": 11.3,
+      "retrieval_latency_p50_ms": 0.09,
+      "retrieval_latency_p95_ms": 0.127
+    },
+    {
+      "variant": "Dense-only retrieval",
+      "context_recall": 1.0,
+      "stale_memory_leak_rate": 0.0,
+      "lifecycle_safety": 1.0,
+      "critical_inclusion": 1.0,
+      "avg_context_tokens": 11.3,
+      "retrieval_latency_p50_ms": 0.006,
+      "retrieval_latency_p95_ms": 0.009
+    },
+    {
+      "variant": "Recency-only retrieval",
+      "context_recall": 1.0,
+      "stale_memory_leak_rate": 0.0,
+      "lifecycle_safety": 1.0,
+      "critical_inclusion": 1.0,
+      "avg_context_tokens": 11.3,
+      "retrieval_latency_p50_ms": 0.003,
+      "retrieval_latency_p95_ms": 0.004
+    },
+    {
+      "variant": "Hybrid without lifecycle exclusion",
+      "context_recall": 1.0,
+      "stale_memory_leak_rate": 0.21,
+      "lifecycle_safety": 0.79,
+      "critical_inclusion": 1.0,
+      "avg_context_tokens": 14.4,
+      "retrieval_latency_p50_ms": 0.004,
+      "retrieval_latency_p95_ms": 0.006
+    }
+  ],
+  "num_scenarios": 24,
+  "retrieval_top_k": 8,
+  "memory_token_budget": 2500,
+  "qwen_answer_calls": 0,
+  "notes": [
+    "This ablation evaluates memory assembly, not final-answer quality.",
+    "Latency measures in-process assembly after embeddings are available."
+  ]
+}

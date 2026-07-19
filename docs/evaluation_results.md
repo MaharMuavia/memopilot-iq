@@ -1,55 +1,74 @@
-# Evaluation Protocol and Reporting
+# Final Evaluation Results
 
-MemoPilot IQ includes a **24-scenario diagnostic suite** covering preference
-recall, cross-session recall, supersession, temporary-memory expiry, critical
-constraints, and multi-fact composition. Run it with `POST /api/eval/run` or
-the Evaluation dashboard.
+The final evidence was generated on **2026-07-19** by Alibaba Cloud deployment
+[`97b1ff57f36c`](https://github.com/MaharMuavia/memopilot-iq/commit/97b1ff57f36c)
+using **Qwen 3.7 Max** for chat and **text-embedding-v3** for embeddings.
+Provider status was `online` with **zero fallbacks**.
 
-`POST /api/eval/ablation` separately compares five memory assembly strategies:
-full conversation history, dense-only retrieval, recency-only retrieval,
-hybrid retrieval without lifecycle exclusion, and MemoPilot's full governance
-policy. It reports context recall, stale-memory leakage, lifecycle safety,
-average context tokens, and p50/p95 in-process assembly latency. It makes zero
-answer-model calls and does not claim final-answer accuracy.
+[![Final evaluation summary](../assets/evaluation/benchmark-summary.svg)](../assets/evaluation/benchmark-summary.svg)
 
-## What the report measures
+## Answer-quality comparison
 
-- Strict keyword accuracy for the memory-augmented answer, no-memory baseline,
-  raw full-history baseline, and model-generated history-summary baseline. An
-  answer containing a forbidden/outdated term is not counted as a pass, even
-  if it also contains an expected term.
-- Recall in the assembled context at the configured retrieval depth.
-- Stale-memory leaks in the assembled context.
-- Historical-context token reduction, comparing selected memory text against
-  the complete seeded history. Shared system and current-message tokens are
-  excluded from both sides.
-- Retrieval latency, model label, evaluator version, scenario count, and
-  retrieval depth.
-- UTC generation time, end-to-end duration, provider status and fallback count,
-  chat/embedding model names, token budget, and bounded-concurrency
-  configuration. The UI can download the complete JSON report for the
-  submission evidence bundle.
-- Provider-reported prompt, completion, and total-token usage for the run.
-  Monetary cost is not guessed because model prices can change by region and
-  date.
-- The ablation artifact also includes the deployed `APP_BUILD_SHA`, evaluator
-  version, and explicit methodology notes.
+All four strategies answered the same 24 synthetic scenarios. The scenarios
+cover preferences, cross-session recall, supersession, expiry, critical
+constraints, mistake/deadline recall, and multi-fact composition.
 
-## Reproducibility rules
+| Strategy | Accuracy |
+|---|---:|
+| **MemoPilot full governance** | **100% (24/24)** |
+| Model-generated history summary | 92% |
+| Raw full conversation history | 83% |
+| No memory | 38% |
 
-1. Run the benchmark against the exact model used in the submission demo.
-2. Save the returned JSON report under `assets/evaluation/` with the date,
-   model, and commit SHA in the filename.
-3. If comparing models, run the same suite and prompt version for each model;
-   report all runs, not only the best one.
-4. Treat this as a diagnostic benchmark, not a claim of general long-context
-   superiority. LoCoMo results, if included, must retain their dataset,
-   command, model, and scoring configuration.
+Additional observed metrics:
 
-## Before submission
+| Metric | Result |
+|---|---:|
+| Recall in admitted context | **100% (22/22 recall-bearing cases)** |
+| Outdated-memory errors | **0** |
+| Historical-context tokens | 256 vs. 323 raw-history tokens (**21% reduction**) |
+| Average retrieval latency | **7.3 ms** |
+| Provider-reported total tokens for the complete evaluation job | 44,508 |
 
-Replace this protocol-only document with a concise table generated from the
-final deployed build. Include the raw JSON artifact, environment-free command,
-model name, retrieval depth, evaluator version, date, and any failure/skip
-counts. Do not reuse numbers produced by a different model, prompt, benchmark
-version, or deployment.
+Raw report:
+[`final-qwen-eval-2026-07-19-97b1ff57f36c.json`](../assets/evaluation/final-qwen-eval-2026-07-19-97b1ff57f36c.json)
+
+## Memory-layer ablation
+
+The ablation holds the scenario memories constant and changes only the context
+assembly strategy. It makes **zero final-answer model calls**. Latency is the
+in-process assembly time after embeddings are available.
+
+| Variant | Context recall | Stale leak | Lifecycle safety | Avg context tokens |
+|---|---:|---:|---:|---:|
+| Full conversation history | 100% | 33% | 67% | 13.5 |
+| **MemoPilot full governance** | **100%** | **0%** | **100%** | **11.3** |
+| Dense-only + lifecycle exclusion | 100% | 0% | 100% | 11.3 |
+| Recency-only + lifecycle exclusion | 100% | 0% | 100% | 11.3 |
+| Hybrid without lifecycle exclusion | 100% | 21% | 79% | 14.4 |
+
+The result isolates the most important contribution: **lifecycle exclusion
+prevents stale decisions from entering context**. It does not claim that the
+ranking formula is universally better than dense or recency ranking on this
+small diagnostic suite.
+
+Raw report:
+[`final-ablation-2026-07-19-97b1ff57f36c.json`](../assets/evaluation/final-ablation-2026-07-19-97b1ff57f36c.json)
+
+## Grading and reproducibility
+
+- The answer evaluator is `deterministic-phrase-negation-v2`.
+- Expected concepts and declared aliases must be present.
+- Alphanumeric boundaries prevent substring errors such as treating `npm` as
+  present inside `pnpm`.
+- A rejected alternative (for example, “avoid dark”) is not counted as a stale
+  recommendation.
+- Each scenario includes its Qwen answer, context-recall flag, and any grading
+  failure reason in the raw JSON.
+- The deployed build SHA, model names, provider status, fallback count, token
+  usage, evaluator version, scenario count, and run duration are embedded in
+  the raw report.
+
+This is a project diagnostic, not a claim of general long-context benchmark
+superiority. Archived LoCoMo experiments remain documented separately and are
+not used as headline submission evidence.

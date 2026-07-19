@@ -56,8 +56,10 @@ The public app, automatic creation, and cross-session Tablestore recall are
 already captured in [the proof gallery](alibaba_cloud_proof.md). Before the
 final submission, also capture or verify:
 
-- memory persistence before and after a backend restart;
-- final benchmark JSON for the exact deployed SHA;
+- memory persistence before and after a backend restart (verified by the
+  cross-session proof and subsequent container redeployments);
+- final benchmark JSON for the exact deployed SHA (committed under
+  `assets/evaluation/`);
 - public, English, under-three-minute demo video;
 - final deck with verified public links.
 
