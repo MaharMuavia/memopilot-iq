@@ -52,6 +52,7 @@ docker run -d \
   --name "$BACKEND_CONTAINER" \
   --restart unless-stopped \
   --network "$NETWORK" \
+  --network-alias backend \
   --env-file "$ENV_FILE" \
   -e APP_BUILD_SHA="$BUILD_SHA" \
   -e PORT=8000 \
