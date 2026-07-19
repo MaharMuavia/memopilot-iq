@@ -27,6 +27,20 @@ _PRIMARY_TABLE = "memopilot_memories"
 _EVENTS_TABLE = "memopilot_events"
 
 
+def _attribute_value(attribute_columns: Any, name: str) -> Any:
+    """Return an OTS attribute value across supported SDK row shapes.
+
+    The Tablestore SDK can include a timestamp as the third item in each
+    attribute tuple, for example ``("data", value, timestamp)``. Converting
+    those tuples with ``dict()`` raises ``ValueError`` and makes every read
+    path fail even though writes succeed.
+    """
+    for column in attribute_columns or []:
+        if len(column) >= 2 and column[0] == name:
+            return column[1]
+    return None
+
+
 class AlibabaTablestoreMemoryStore(MemoryStore):
     """Tablestore-backed implementation.
 
@@ -116,7 +130,7 @@ class AlibabaTablestoreMemoryStore(MemoryStore):
             _, row, _ = client.get_row(_PRIMARY_TABLE, [("pk", memory_id)], [], None, 1)
             if not row:
                 return None
-            return dict(row.attribute_columns).get("data")
+            return _attribute_value(row.attribute_columns, "data")
 
         data = await asyncio.to_thread(_get)
         return MemoryRecord.model_validate_json(data) if data else None
@@ -149,7 +163,7 @@ class AlibabaTablestoreMemoryStore(MemoryStore):
                 table, Direction.FORWARD, start, end, [], 5000
             )
             for r in rows:
-                data = dict(r.attribute_columns).get("data")
+                data = _attribute_value(r.attribute_columns, "data")
                 if data:
                     rows_out.append(json.loads(data))
             start = next_start

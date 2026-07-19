@@ -58,6 +58,31 @@ def test_chat_creates_and_uses_memory(client):
     assert "fastapi" in contents or "api keys" in contents
 
 
+def test_explicit_memory_request_uses_fallback_when_model_returns_empty(client):
+    async def empty_extraction(*_args, **_kwargs):
+        return {"new_memories": [], "updates": [], "forget": []}
+
+    client.app.state.memos.qwen.extract_json = empty_extraction
+
+    created = client.post("/api/chat", json={
+        "user_id": "t", "project_id": "p", "session_id": "s1",
+        "message": "Remember this for later: my deployment verification code is MP-ALIBABA-2026.",
+    })
+    assert created.status_code == 200
+    assert created.json()["memory_actions"]["created"]
+
+    recalled = client.post("/api/chat", json={
+        "user_id": "t", "project_id": "p", "session_id": "s2",
+        "message": "What is my deployment verification code?",
+    })
+    assert recalled.status_code == 200
+    assert recalled.json()["trace"]["candidates_considered"] >= 1
+    assert any(
+        "mp-alibaba-2026" in memory["content"].lower()
+        for memory in recalled.json()["used_memories"]
+    )
+
+
 def test_secret_is_redacted(client):
     captured = {}
     client.app.state.oss.put_snapshot = lambda _name, payload: captured.update(payload)

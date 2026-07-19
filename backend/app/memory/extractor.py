@@ -77,6 +77,12 @@ _CONTRADICTION_CUES = [
     "rather than", "not anymore", "use .* instead",
 ]
 
+_EXPLICIT_MEMORY_INTENT = re.compile(
+    r"\bremember\s+(?:this|that|it|for\s+later)\b|"
+    r"\b(?:save|store|keep|note)\s+(?:this|that|it)\s+(?:for\s+later|as\s+a\s+memory)\b",
+    re.IGNORECASE,
+)
+
 def _similar(a: str, b: str) -> float:
     return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
@@ -122,6 +128,14 @@ class MemoryExtractor:
         )
 
         new_memories: List[Dict[str, Any]] = result.get("new_memories", []) or []
+        # The model occasionally treats an explicit "remember this" sentence
+        # as conversational filler and returns an empty list. That makes the
+        # core product promise unreliable, so use the deterministic extractor
+        # only for explicit memory intent. Secret filtering below still guards
+        # every resulting record before it is persisted.
+        if not new_memories and _EXPLICIT_MEMORY_INTENT.search(safe_message):
+            result = self.qwen.deterministic_extract(safe_message)
+            new_memories = result.get("new_memories", []) or []
         explicit_contradiction = any(
             re.search(cue, safe_message.lower()) for cue in _CONTRADICTION_CUES
         )

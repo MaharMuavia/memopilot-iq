@@ -121,6 +121,20 @@ class QwenClient:
             self._provider_status = "degraded_offline_fallback"
             return self._offline_extract(user_prompt)
 
+    def deterministic_extract(self, user_message: str) -> Dict[str, Any]:
+        """Extract a memory deterministically when an explicit request is missed.
+
+        This is deliberately separate from provider-failure handling: it keeps
+        the live provider status intact while making an explicit user request
+        to remember a fact reliable even if the model returns an empty list.
+        """
+        result = self._offline_extract(f"USER MESSAGE:\n{user_message}")
+        for memory in result.get("new_memories", []):
+            memory["reason"] = (
+                "Deterministic fallback classified an explicit memory request."
+            )
+        return result
+
     # ------------------------------------------------------------------
     # Embeddings
     # ------------------------------------------------------------------
