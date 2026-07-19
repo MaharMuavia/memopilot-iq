@@ -25,7 +25,7 @@ const STARTERS = [
   "What frontend does this submitted build use today, and what is planned after submission?",
 ];
 
-function memoryChipLabel(memory: MemoryRecord, maxLength = 40) {
+function memoryChipLabel(memory: MemoryRecord, maxLength = 48) {
   const label = (memory.summary || memory.content).trim();
   if (label.length <= maxLength) return label;
   return `${label.slice(0, maxLength - 1).trimEnd()}…`;
